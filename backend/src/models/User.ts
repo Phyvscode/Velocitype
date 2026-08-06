@@ -7,6 +7,8 @@ export interface IUser extends Document {
   password: string;
   createdAt: Date;
   updatedAt: Date;
+  fontFamily?: string;
+  colorTheme?: any;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
@@ -31,6 +33,14 @@ const userSchema = new Schema<IUser>(
       required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
     },
+    fontFamily: {
+      type: String,
+      default: 'Inter',
+    },
+    colorTheme: {
+      type: Schema.Types.Mixed,
+      default: { name: 'Amber Glow', value: '#fbbf24', isGradient: false },
+    }
   },
   {
     timestamps: true,

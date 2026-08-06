@@ -4,6 +4,8 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  fontFamily?: string;
+  colorTheme?: any;
 }
 
 export interface UserProfileResponse {
@@ -101,6 +103,27 @@ class ApiClient {
     return this.request<UserProfileResponse>('/auth/me');
   }
 
+  public async forgotPassword(email: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  public async verifyOTP(email: string, otp: string): Promise<{ resetToken: string }> {
+    return this.request<{ resetToken: string }>('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
+    });
+  }
+
+  public async resetPassword(resetToken: string, newPassword: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ resetToken, newPassword }),
+    });
+  }
+
   public logout(): void {
     this.setToken(null);
   }
@@ -137,6 +160,13 @@ class ApiClient {
 
   public async getLeaderboard(): Promise<LeaderboardEntry[]> {
     return this.request<LeaderboardEntry[]>('/results/leaderboard');
+  }
+
+  public async updateSettings(settings: { fontFamily?: string, colorTheme?: any }): Promise<any> {
+    return this.request('/auth/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
   }
 }
 

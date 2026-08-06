@@ -8,6 +8,8 @@ import {
   applyGoogleFont,
   applyUploadedFontFile,
 } from '@/lib/fonts';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 
 interface Props {
   isOpen: boolean;
@@ -19,6 +21,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
   const [currentFont, setCurrentFont] = useState<string>(() => getStoredFont());
   const [customInput, setCustomInput] = useState<string>('');
   const [activeCategory, setActiveCategory] = useState<string>('All');
+  const { user } = useAuth();
 
   // File Upload State
   const [dragOver, setDragOver] = useState(false);
@@ -32,15 +35,21 @@ export default function FontModal({ isOpen, onClose }: Props) {
   // cards below — otherwise "The quick brown fox" just renders in whatever
   // font happens to be globally active right now instead of each font.
   useEffect(() => {
-    const linkId = 'font-modal-preview-stylesheet';
-    if (document.getElementById(linkId)) return;
+    const CHUNK_SIZE = 30; // Keep URLs under 2,000 characters
+    
+    // Check if we already loaded the first chunk to prevent duplicates
+    if (document.getElementById('font-modal-preview-stylesheet-0')) return;
 
-    const families = PRESET_FONTS.map((f) => `family=${f.googleFont}:wght@400;600`).join('&');
-    const link = document.createElement('link');
-    link.id = linkId;
-    link.rel = 'stylesheet';
-    link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
-    document.head.appendChild(link);
+    for (let i = 0; i < PRESET_FONTS.length; i += CHUNK_SIZE) {
+      const chunk = PRESET_FONTS.slice(i, i + CHUNK_SIZE);
+      const families = chunk.map((f) => `family=${f.googleFont}:wght@400;600`).join('&');
+      
+      const link = document.createElement('link');
+      link.id = `font-modal-preview-stylesheet-${i}`;
+      link.rel = 'stylesheet';
+      link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+      document.head.appendChild(link);
+    }
   }, []);
 
   // Register a preview-only @font-face for the uploaded font, so the "Live
@@ -78,6 +87,9 @@ export default function FontModal({ isOpen, onClose }: Props) {
     setCurrentFont(fontName);
     setActiveSource('google');
     applyGoogleFont(fontName);
+    if (user) {
+      api.updateSettings({ fontFamily: fontName }).catch(err => console.error(err));
+    }
   };
 
   const handleApplyCustomGoogleFont = (e: React.FormEvent) => {
@@ -142,9 +154,9 @@ export default function FontModal({ isOpen, onClose }: Props) {
       <div className="w-full max-w-2xl bg-[#161922] border border-slate-700/60 p-6 sm:p-8 shadow-2xl relative max-h-[85vh] flex flex-col">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors p-1"
+          className="absolute top-4 right-4 text-white hover:text-slate-200 transition-colors p-2 text-xl font-bold exclude-theme"
         >
-          
+          ✕
         </button>
 
         <div className="flex items-center gap-3 mb-6">

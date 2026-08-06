@@ -3,7 +3,9 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import TestResult from '../models/TestResult.js';
 import SavedWord from '../models/SavedWord.js';
+import OTP from '../models/OTP.js';
 import { AuthRequest } from '../middleware/auth.js';
+import nodemailer from 'nodemailer';
 
 const generateToken = (id: string): string => {
   return jwt.sign(
@@ -43,6 +45,8 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
           id: user._id,
           username: user.username,
           email: user.email,
+          fontFamily: user.fontFamily,
+          colorTheme: user.colorTheme,
         },
       });
     } else {
@@ -74,6 +78,8 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
           id: user._id,
           username: user.username,
           email: user.email,
+          fontFamily: user.fontFamily,
+          colorTheme: user.colorTheme,
         },
       });
     } else {
@@ -105,6 +111,8 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<Response> 
         username: user.username,
         email: user.email,
         createdAt: user.createdAt,
+        fontFamily: user.fontFamily,
+        colorTheme: user.colorTheme,
       },
       stats: {
         testCount,
@@ -114,6 +122,173 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<Response> 
     });
   } catch (error: any) {
     console.error('GetMe Error:', error);
+    return res.status(500).json({ message: error.message || 'Server error' });
+  }
+};
+
+const getTransporter = async () => {
+  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+  } else {
+    const testAccount = await nodemailer.createTestAccount();
+    return nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Please provide an email address' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate 6 digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Remove existing OTPs for this email
+    await OTP.deleteMany({ email });
+
+    // Save new OTP (expires in 5 minutes)
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    await OTP.create({
+      email,
+      otp: otpCode,
+      expiresAt,
+    });
+
+    const transporter = await getTransporter();
+    const info = await transporter.sendMail({
+      from: '"Velocitype" <noreply@velocitype.com>',
+      to: email,
+      subject: 'Velocitype Password Reset',
+      text: `Your password reset code is: ${otpCode}. It will expire in 5 minutes.`,
+      html: `<b>Your password reset code is: ${otpCode}</b><br/>It will expire in 5 minutes.`,
+    });
+
+    console.log('OTP sent: %s', info.messageId);
+    if (!process.env.SMTP_HOST) {
+      console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+    }
+
+    return res.json({ message: 'OTP sent successfully' });
+  } catch (error: any) {
+    console.error('ForgotPassword Error:', error);
+    return res.status(500).json({ message: error.message || 'Server error' });
+  }
+};
+
+export const verifyOTP = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    const record = await OTP.findOne({ email });
+    if (!record) {
+      return res.status(400).json({ message: 'No active OTP found. Please request a new one.' });
+    }
+
+    if (new Date() > record.expiresAt) {
+      await OTP.deleteOne({ email });
+      return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
+    }
+
+    if (record.otp !== otp) {
+      record.attempts += 1;
+      if (record.attempts >= 5) {
+        await OTP.deleteOne({ email });
+        return res.status(400).json({ message: 'Too many failed attempts. Please request a new OTP.' });
+      }
+      await record.save();
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    // OTP is valid. Issue a temporary reset token.
+    await OTP.deleteOne({ email });
+    const resetToken = jwt.sign(
+      { email },
+      process.env.JWT_SECRET || 'velocitype_secret_jwt_key_2026',
+      { expiresIn: '15m' }
+    );
+
+    return res.json({ resetToken });
+  } catch (error: any) {
+    console.error('VerifyOTP Error:', error);
+    return res.status(500).json({ message: error.message || 'Server error' });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { resetToken, newPassword } = req.body;
+    if (!resetToken || !newPassword) {
+      return res.status(400).json({ message: 'Reset token and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    let decoded: any;
+    try {
+      decoded = jwt.verify(resetToken, process.env.JWT_SECRET || 'velocitype_secret_jwt_key_2026');
+    } catch (err) {
+      return res.status(400).json({ message: 'Invalid or expired reset token' });
+    }
+
+    const user = await User.findOne({ email: decoded.email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    return res.json({ message: 'Password reset successfully' });
+  } catch (error: any) {
+    console.error('ResetPassword Error:', error);
+    return res.status(500).json({ message: error.message || 'Server error' });
+  }
+};
+
+export const updateSettings = async (req: AuthRequest, res: Response): Promise<Response> => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const { fontFamily, colorTheme } = req.body;
+    if (fontFamily) user.fontFamily = fontFamily;
+    if (colorTheme) user.colorTheme = colorTheme;
+
+    await user.save();
+
+    return res.json({ message: 'Settings updated' });
+  } catch (error: any) {
+    console.error('UpdateSettings Error:', error);
     return res.status(500).json({ message: error.message || 'Server error' });
   }
 };

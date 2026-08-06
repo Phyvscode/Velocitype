@@ -104,10 +104,9 @@ let loadPromise: Promise<void> | null = null;
 //    obscure/archaic entries nobody would recognize.
 // Intersecting the two keeps only words that are both familiar and real,
 // which matters a lot once the pool gets narrowed down to just the letters
-// on a given keyboard row. Both are hosted on GitHub's raw CDN with
-// permissive CORS headers.
+// on a given keyboard row.
 const REAL_DICTIONARY_URL =
-  'https://raw.githubusercontent.com/dwyl/english-words/master/words.txt';
+  'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/english_10k.json';
 
 const SEVERE_SWEARS = new Set([
   'fuck', 'fucking', 'fucker', 'fucks', 'faggot', 'faggots', 'bitch', 'bitches', 'bitching', 
@@ -117,7 +116,7 @@ const SEVERE_SWEARS = new Set([
   'motherfucker', 'motherfucking', 'asshole', 'assholes', 'bastard', 'bastards', 'twat', 'twats', 'wank', 'wanker'
 ]);
 
-const CACHE_KEY = 'velocitype_dictionary_cache_v5';
+const CACHE_KEY = 'velocitype_dictionary_cache_v6';
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // re-fetch at most once a week
 
 function readCache(): string[] | null {
@@ -167,8 +166,8 @@ export async function loadDictionary(): Promise<void> {
         if (!realRes.ok) {
           throw new Error(`Dictionary fetch failed: ${realRes.status}`);
         }
-        const realText = await realRes.text();
-        const realWords = parseWordList(realText);
+        const realData = await realRes.json();
+        const realWords = new Set(realData.words as string[]);
 
         words = [...realWords].filter((w) => !SEVERE_SWEARS.has(w));
         writeCache(words);

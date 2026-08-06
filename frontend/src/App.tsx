@@ -40,18 +40,12 @@ function App() {
   // any game screen renders, so preferences are already active by the
   // time sign-in happens — not reset by it.
   useEffect(() => {
-    initializeActiveFont();
-    initializeActiveColor();
-    initializeActiveUiTextColor();
+    // initializeActiveFont();
+    // initializeActiveColor();
+    // initializeActiveUiTextColor();
   }, []);
 
-  // Automatically open the Sign Up page at start when website opens if not logged in
-  useEffect(() => {
-    if (!loading && !user) {
-      setAuthMode('signup');
-      setIsAuthOpen(true);
-    }
-  }, [loading, user]);
+
 
   const openAuth = (mode: 'login' | 'signup' = 'signup') => {
     setAuthMode(mode);
@@ -99,7 +93,7 @@ function App() {
           onStart={handleStart}
           onOpenLibrary={() => setScreen('library')}
           onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
-          onOpenAuth={() => openAuth('signup')}
+          onOpenAuth={() => openAuth('login')}
           onOpenFont={() => setIsFontModalOpen(true)}
           onOpenColor={() => setIsColorModalOpen(true)} // <-- Added Prop mapping
           onOpenUiColor={() => setIsUiColorModalOpen(true)}

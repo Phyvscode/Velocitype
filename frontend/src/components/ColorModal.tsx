@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 import { HexColorPicker } from 'react-colorful';
 import { SOLID_COLORS, GRADIENT_COLORS, getStoredColor, applyTextColor, type ThemeColor } from '@/lib/colors';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 
 interface Props {
   isOpen: boolean;
@@ -11,6 +13,7 @@ interface Props {
 export default function ColorModal({ isOpen, onClose }: Props) {
   const [activeTab, setActiveTab] = useState<'solid' | 'gradient'>('solid');
   const [activeColor, setActiveColor] = useState<string>(() => getStoredColor()?.value ?? '');
+  const { user } = useAuth();
 
   useEffect(() => {
     if (isOpen) {
@@ -29,14 +32,24 @@ export default function ColorModal({ isOpen, onClose }: Props) {
     applyTextColor(color, true);
   };
 
+  const handleClose = () => {
+    if (user) {
+      const stored = getStoredColor();
+      if (stored) {
+        api.updateSettings({ colorTheme: stored }).catch(console.error);
+      }
+    }
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
       <div className="w-full max-w-3xl bg-[#161922] border border-slate-700/60 p-6 sm:p-8 shadow-2xl relative max-h-[85vh] flex flex-col">
         <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors p-1"
+          onClick={handleClose}
+          className="absolute top-4 right-4 text-white hover:text-slate-200 transition-colors p-2 text-xl font-bold exclude-theme"
         >
-          
+          ✕
         </button>
 
         <div className="flex items-center gap-3 mb-6">

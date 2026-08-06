@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api, type User, type UserProfileResponse } from '@/lib/api';
+import { applyGoogleFont } from '@/lib/fonts';
+import { applyTextColor } from '@/lib/colors';
 
 interface AuthContextType {
   user: User | null;
@@ -24,9 +26,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await api.getMe();
       setUser(res.user);
       setStats(res.stats);
+      if (res.user.fontFamily) applyGoogleFont(res.user.fontFamily);
+      if (res.user.colorTheme) applyTextColor(res.user.colorTheme, true);
     } catch {
       setUser(null);
       setStats(null);
+      applyGoogleFont('Inter');
+      applyTextColor({ name: 'Amber Glow', value: '#fbbf24', isGradient: false }, true);
     } finally {
       setLoading(false);
     }
@@ -50,6 +56,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     api.logout();
     setUser(null);
     setStats(null);
+    // Reset to defaults
+    applyGoogleFont('Inter');
+    applyTextColor({ name: 'Amber Glow', value: '#fbbf24', isGradient: false }, true);
   };
 
   const refreshUser = async () => {

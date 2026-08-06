@@ -26,8 +26,8 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export default function GameScreen({ config, onFinish, onQuit }: Props) {
-  const { rows, duration, minLen, maxLen } = config;
-  const pool = useMemo(() => filterWords(rows as RowKey[], minLen, maxLen), [rows, minLen, maxLen]);
+  const { rows, duration, minLen, maxLen, customSentences } = config;
+  const pool = useMemo(() => customSentences && customSentences.length > 0 ? customSentences : filterWords(rows as RowKey[], minLen, maxLen), [rows, minLen, maxLen, customSentences]);
 
   // A shuffled queue of all pool words; when exhausted, reshuffle for a fresh cycle.
   const queueRef = useRef<string[]>(shuffle(pool));
@@ -192,7 +192,7 @@ export default function GameScreen({ config, onFinish, onQuit }: Props) {
           {currentWord.split('').map((ch, ci) => {
             let cls = 'text-slate-500';
             if (ci < typed.length) {
-              cls = typed[ci] === ch ? 'text-amber-300 theme-text-override' : 'text-rose-400 underline';
+              cls = typed[ci] === ch ? 'text-amber-300 theme-text-override' : 'text-rose-400 underline exclude-theme';
             } else if (ci === typed.length) {
               cls = 'text-slate-100 theme-text-override';
             }
@@ -202,7 +202,7 @@ export default function GameScreen({ config, onFinish, onQuit }: Props) {
                 ref={(el) => { letterRefs.current[ci] = el; }}
                 className={`inline-block transition-colors ${cls}`}
               >
-                {ch}
+                {ch === ' ' ? '\u00A0' : ch}
               </span>
             );
           })}

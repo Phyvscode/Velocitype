@@ -45,9 +45,9 @@ export default function LeaderboardModal({ isOpen, onClose }: Props) {
       <div className="w-full max-w-2xl bg-[#161922] border border-slate-700/60 p-6 shadow-2xl relative max-h-[85vh] flex flex-col">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors"
+          className="absolute top-4 right-4 text-white hover:text-slate-200 transition-colors p-2 text-xl font-bold exclude-theme"
         >
-          
+          ✕
         </button>
 
         <div className="flex items-center gap-3 mb-6">
