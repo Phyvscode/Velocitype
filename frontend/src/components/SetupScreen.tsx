@@ -5,6 +5,7 @@ import { filterWords } from '@/lib/words';
 import { useAuth } from '@/contexts/AuthContext';
 import { parseFile, extractSentences, type ParsedDocument } from '@/lib/fileParser';
 import { generateSentences } from '@/lib/quotes';
+import VersusModeSetup from './VersusModeSetup';
 
 export interface GameConfig {
   rows: RowKey[];
@@ -22,6 +23,7 @@ interface Props {
   onOpenFont: () => void;
   onOpenColor: () => void;
   onOpenUiColor: () => void;
+  onLobbyJoined: (code: string) => void;
 }
 
 const ROW_LABELS: { key: RowKey; label: string; keys: string }[] = [
@@ -46,6 +48,7 @@ export default function SetupScreen({
   onOpenFont,
   onOpenColor,
   onOpenUiColor,
+  onLobbyJoined,
 }: Props) {
   const { user, stats, logout } = useAuth();
   const [rows, setRows] = useState<RowKey[]>(['home']);
@@ -669,6 +672,44 @@ export default function SetupScreen({
             </div>
           </div>
         )}
+          </>
+        )}
+
+        {/* Versus Toggle */}
+        {(!activeMode || activeMode === 'versus') && (
+          <>
+            <button 
+              onClick={() => setActiveMode(activeMode === 'versus' ? null : 'versus')}
+              className={`w-full p-6 border transition-all text-left group mt-4 ${
+                activeMode === 'versus' 
+                  ? 'bg-amber-400/5 border-amber-400/50' 
+                  : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold flex items-center gap-3 text-slate-100">
+                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${
+                    activeMode === 'versus' ? 'bg-amber-400 text-slate-900' : 'bg-slate-700 text-slate-300 group-hover:bg-amber-400/20 group-hover:text-amber-400'
+                  }`}>
+                    V
+                  </span>
+                  Versus (Multiplayer)
+                </h2>
+                <span className={`text-sm font-medium transition-colors ${
+                  activeMode === 'versus' ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-300'
+                }`}>
+                  {activeMode === 'versus' ? 'Close settings' : 'Configure & Play'}
+                </span>
+              </div>
+            </button>
+
+            {activeMode === 'versus' && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-300 mt-8">
+                <VersusModeSetup 
+                  onLobbyJoined={onLobbyJoined}
+                />
+              </div>
+            )}
           </>
         )}
       </div>

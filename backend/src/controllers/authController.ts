@@ -47,6 +47,7 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
           email: user.email,
           fontFamily: user.fontFamily,
           colorTheme: user.colorTheme,
+          elo: user.elo,
         },
       });
     } else {
@@ -80,6 +81,7 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
           email: user.email,
           fontFamily: user.fontFamily,
           colorTheme: user.colorTheme,
+          elo: user.elo,
         },
       });
     } else {
@@ -113,6 +115,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<Response> 
         createdAt: user.createdAt,
         fontFamily: user.fontFamily,
         colorTheme: user.colorTheme,
+        elo: user.elo,
       },
       stats: {
         testCount,

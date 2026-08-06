@@ -27,6 +27,10 @@ const userSchema = new Schema({
     colorTheme: {
         type: Schema.Types.Mixed,
         default: { name: 'Amber Glow', value: '#fbbf24', isGradient: false },
+    },
+    elo: {
+        type: Number,
+        default: 10,
     }
 }, {
     timestamps: true,

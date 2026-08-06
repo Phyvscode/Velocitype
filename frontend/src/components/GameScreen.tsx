@@ -13,6 +13,8 @@ interface Props {
   config: GameConfig;
   onFinish: (typed: TypedWord[]) => void;
   onQuit: () => void;
+  onProgress?: (progress: number, wpm: number) => void;
+  hideHeader?: boolean;
 }
 
 // Fisher-Yates shuffle
@@ -25,7 +27,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-export default function GameScreen({ config, onFinish, onQuit }: Props) {
+export default function GameScreen({ config, onFinish, onQuit, onProgress, hideHeader }: Props) {
   const { rows, duration, minLen, maxLen, customSentences } = config;
   const pool = useMemo(() => customSentences && customSentences.length > 0 ? customSentences : filterWords(rows as RowKey[], minLen, maxLen), [rows, minLen, maxLen, customSentences]);
 
@@ -95,11 +97,21 @@ export default function GameScreen({ config, onFinish, onQuit }: Props) {
           finish();
           return 0;
         }
+        
+        // Calculate WPM
+        const timeElapsed = duration - (t - 1);
+        const correctWords = completedRef.current.filter(w => w.correct).length;
+        const currentWpm = timeElapsed > 0 ? (correctWords / timeElapsed) * 60 : 0;
+        
+        if (onProgress) {
+          onProgress((timeElapsed / duration) * 100, currentWpm);
+        }
+        
         return t - 1;
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [started, finish]);
+  }, [started, finish, duration, onProgress]);
 
   // Focus input on mount.
   useEffect(() => {
@@ -157,18 +169,19 @@ export default function GameScreen({ config, onFinish, onQuit }: Props) {
   return (
     <div className="min-h-screen bg-[#0f1117] text-slate-100 flex flex-col items-center px-4 py-8">
       {/* Top bar */}
-      <div className="w-full max-w-4xl flex items-center justify-between mb-8">
-        <button
-          onClick={onQuit}
-          className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
-        >
-          Quit
-        </button>
-        <div className="flex items-center gap-2 text-2xl font-bold tabular-nums">
-          
-          <span className={timeLeft <= 5 ? 'text-rose-400' : 'text-slate-100'}>{timeLeft}s</span>
+      {!hideHeader && (
+        <div className="w-full max-w-4xl flex items-center justify-between mb-8">
+          <button
+            onClick={onQuit}
+            className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            Quit
+          </button>
+          <div className="flex items-center gap-2 text-2xl font-bold tabular-nums">
+            <span className={timeLeft <= 5 ? 'text-rose-400' : 'text-slate-100'}>{timeLeft}s</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Centered single word */}
       <div className="flex-1 flex flex-col items-center justify-center w-full">

@@ -35,6 +35,7 @@ export const registerUser = async (req, res) => {
                     email: user.email,
                     fontFamily: user.fontFamily,
                     colorTheme: user.colorTheme,
+                    elo: user.elo,
                 },
             });
         }
@@ -67,6 +68,7 @@ export const loginUser = async (req, res) => {
                     email: user.email,
                     fontFamily: user.fontFamily,
                     colorTheme: user.colorTheme,
+                    elo: user.elo,
                 },
             });
         }
@@ -99,6 +101,7 @@ export const getMe = async (req, res) => {
                 createdAt: user.createdAt,
                 fontFamily: user.fontFamily,
                 colorTheme: user.colorTheme,
+                elo: user.elo,
             },
             stats: {
                 testCount,

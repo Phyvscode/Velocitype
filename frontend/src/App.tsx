@@ -12,13 +12,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { initializeActiveFont } from '@/lib/fonts';
 import { initializeActiveColor, initializeActiveUiTextColor } from '@/lib/colors';
 import { loadDictionary } from '@/lib/words';
+import LobbyScreen from '@/components/LobbyScreen';
+import MultiplayerGame from '@/components/MultiplayerGame';
 
-type Screen = 'setup' | 'game' | 'results' | 'library';
+type Screen = 'setup' | 'game' | 'results' | 'library' | 'lobby' | 'multiplayerGame';
 
 function App() {
   const { user, loading } = useAuth();
   const [screen, setScreen] = useState<Screen>('setup');
   const [config, setConfig] = useState<GameConfig | null>(null);
+  const [lobbyCode, setLobbyCode] = useState<string | null>(null);
   const [typed, setTyped] = useState<TypedWord[]>([]);
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
@@ -95,8 +98,28 @@ function App() {
           onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
           onOpenAuth={() => openAuth('login')}
           onOpenFont={() => setIsFontModalOpen(true)}
-          onOpenColor={() => setIsColorModalOpen(true)} // <-- Added Prop mapping
+          onOpenColor={() => setIsColorModalOpen(true)} 
           onOpenUiColor={() => setIsUiColorModalOpen(true)}
+          onLobbyJoined={(code) => {
+            setLobbyCode(code);
+            setScreen('lobby');
+          }}
+        />
+      )}
+
+      {screen === 'lobby' && lobbyCode && (
+        <LobbyScreen 
+          lobbyCode={lobbyCode}
+          onLeave={() => { setLobbyCode(null); setScreen('setup'); }}
+          onGameStart={(cfg) => { setConfig(cfg); setScreen('multiplayerGame'); }}
+        />
+      )}
+
+      {screen === 'multiplayerGame' && lobbyCode && config && (
+        <MultiplayerGame 
+          lobbyCode={lobbyCode}
+          config={config}
+          onLeave={() => { setLobbyCode(null); setScreen('setup'); }}
         />
       )}
       {screen === 'game' && config && (

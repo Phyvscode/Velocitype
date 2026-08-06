@@ -9,6 +9,7 @@ export interface IUser extends Document {
   updatedAt: Date;
   fontFamily?: string;
   colorTheme?: any;
+  elo: number;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
@@ -40,6 +41,10 @@ const userSchema = new Schema<IUser>(
     colorTheme: {
       type: Schema.Types.Mixed,
       default: { name: 'Amber Glow', value: '#fbbf24', isGradient: false },
+    },
+    elo: {
+      type: Number,
+      default: 10,
     }
   },
   {
