@@ -7,13 +7,15 @@ import LibraryScreen from '@/components/LibraryScreen';
 import AuthModal from '@/components/AuthModal';
 import LeaderboardModal from '@/components/LeaderboardModal';
 import FontModal from '@/components/FontModal';
-import ColorModal from '@/components/ColorModal'; // <-- Added Import
+import ColorModal from '@/components/ColorModal';
+import BgColorModal from '@/components/BgColorModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { initializeActiveFont } from '@/lib/fonts';
-import { initializeActiveColor, initializeActiveUiTextColor } from '@/lib/colors';
+import { initializeActiveColor, initializeActiveBgColor } from '@/lib/colors';
 import { loadDictionary } from '@/lib/words';
 import LobbyScreen from '@/components/LobbyScreen';
 import MultiplayerGame from '@/components/MultiplayerGame';
+import VirtualKeyboardConnector from '@/components/VirtualKeyboardConnector';
 
 type Screen = 'setup' | 'game' | 'results' | 'library' | 'lobby' | 'multiplayerGame';
 
@@ -27,7 +29,7 @@ function App() {
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState<boolean>(false);
   const [isFontModalOpen, setIsFontModalOpen] = useState<boolean>(false);
-  const [isColorModalOpen, setIsColorModalOpen] = useState<boolean>(false); // <-- Added State
+  const [isColorModalOpen, setIsColorModalOpen] = useState<boolean>(false);
   const [isUiColorModalOpen, setIsUiColorModalOpen] = useState<boolean>(false);
   const [dictReady, setDictReady] = useState<boolean>(false);
 
@@ -38,14 +40,30 @@ function App() {
     loadDictionary().finally(() => setDictReady(true));
   }, []);
 
+  const [useVirtualKeyboard, setUseVirtualKeyboard] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('velocitype_ai_webcam') === 'true';
+    return false;
+  });
+
+  useEffect(() => {
+    const handleStorage = () => {
+      setUseVirtualKeyboard(localStorage.getItem('velocitype_ai_webcam') === 'true');
+    };
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('ai_webcam_toggled', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('ai_webcam_toggled', handleStorage);
+    };
+  }, []);
+
   // Reapply whatever font (Google or uploaded) and text color the person
   // last chose. This runs once on app load, before the sign-in screen or
   // any game screen renders, so preferences are already active by the
   // time sign-in happens — not reset by it.
   useEffect(() => {
-    // initializeActiveFont();
-    // initializeActiveColor();
-    // initializeActiveUiTextColor();
+    initializeActiveColor();
+    initializeActiveBgColor();
   }, []);
 
 
@@ -75,22 +93,24 @@ function App() {
     setScreen('setup');
   };
 
-  if (!dictReady) {
+  const [fontLoaded, setFontLoaded] = useState(false);
+
+  useEffect(() => {
+    document.fonts.ready.then(() => {
+      setFontLoaded(true);
+    });
+  }, []);
+
+  if (loading || !dictReady || !fontLoaded) {
     return (
-      <div className="font-sans antialiased text-slate-100 bg-[#0f1117] min-h-screen flex flex-col items-center justify-center gap-4">
-        <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
-          
-        </div>
-        <div className="flex items-center gap-2 text-slate-400">
-          
-          Loading the word dictionary.
-        </div>
+      <div className="font-sans antialiased text-slate-100 bg-background min-h-[100dvh] flex flex-col items-center justify-center gap-4 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.2s_forwards]">
+        {/* We keep it blank/invisible for the first 200ms to prevent any FOUC, then softly fade in if it takes longer */}
       </div>
     );
   }
 
   return (
-    <div className="font-sans antialiased text-slate-100 bg-[#0f1117] min-h-screen">
+    <div className="font-sans antialiased text-slate-100 bg-background h-[100dvh] w-full overflow-y-auto overflow-x-hidden relative">
       {screen === 'setup' && (
         <SetupScreen
           onStart={handleStart}
@@ -123,20 +143,24 @@ function App() {
         />
       )}
       {screen === 'game' && config && (
-        <GameScreen
-          config={config}
-          onFinish={(results) => handleFinish(results)}
-          onQuit={handleHome}
-        />
+        <div className="h-full w-full">
+          <GameScreen
+            config={config}
+            onFinish={(results) => handleFinish(results)}
+            onQuit={handleHome}
+          />
+        </div>
       )}
       {screen === 'results' && config && (
-        <ResultsScreen
-          typed={typed}
-          duration={config.duration}
-          rows={config.rows}
-          onPlayAgain={handlePlayAgain}
-          onHome={handleHome}
-        />
+        <div className="h-full w-full">
+          <ResultsScreen
+            typed={typed}
+            duration={config.duration}
+            rows={config.rows}
+            onPlayAgain={handlePlayAgain}
+            onHome={handleHome}
+          />
+        </div>
       )}
       {screen === 'library' && (
         <LibraryScreen onBack={handleHome} onOpenAuth={() => openAuth('signup')} />
@@ -148,18 +172,11 @@ function App() {
         initialMode={authMode}
         onClose={() => setIsAuthOpen(false)}
       />
-      <LeaderboardModal
-        isOpen={isLeaderboardOpen}
-        onClose={() => setIsLeaderboardOpen(false)}
-      />
-      <FontModal
-        isOpen={isFontModalOpen}
-        onClose={() => setIsFontModalOpen(false)}
-      />
-      <ColorModal
-        isOpen={isColorModalOpen}
-        onClose={() => setIsColorModalOpen(false)}
-      /> {/* <-- Added Component */}
+      <LeaderboardModal isOpen={isLeaderboardOpen} onClose={() => setIsLeaderboardOpen(false)} />
+      <FontModal isOpen={isFontModalOpen} onClose={() => setIsFontModalOpen(false)} />
+      <ColorModal isOpen={isColorModalOpen} onClose={() => setIsColorModalOpen(false)} />
+      <BgColorModal isOpen={isUiColorModalOpen} onClose={() => setIsUiColorModalOpen(false)} />
+      {useVirtualKeyboard && <VirtualKeyboardConnector />}
     </div>
   );
 }

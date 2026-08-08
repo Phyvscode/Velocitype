@@ -6,6 +6,9 @@ import SavedWord from '../models/SavedWord.js';
 import OTP from '../models/OTP.js';
 import { AuthRequest } from '../middleware/auth.js';
 import nodemailer from 'nodemailer';
+import { OAuth2Client } from 'google-auth-library';
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const generateToken = (id: string): string => {
   return jwt.sign(
@@ -20,7 +23,7 @@ const generateToken = (id: string): string => {
 // @access  Public
 export const registerUser = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, avatarUrl } = req.body;
 
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'Please provide all fields' });
@@ -28,6 +31,9 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
 
     const userExists = await User.findOne({ email });
     if (userExists) {
+      if (userExists.googleId && !userExists.password) {
+        return res.status(400).json({ message: 'An account with this email already exists. Please continue with Google to sign in.' });
+      }
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
@@ -35,6 +41,8 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
       username,
       email,
       password,
+      avatarUrl,
+      profilePictureSource: avatarUrl ? 'upload' : undefined,
     });
 
     if (user) {
@@ -82,6 +90,7 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
           fontFamily: user.fontFamily,
           colorTheme: user.colorTheme,
           elo: user.elo,
+          avatarUrl: user.avatarUrl,
         },
       });
     } else {
@@ -90,6 +99,78 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
   } catch (error: any) {
     console.error('Login Error:', error);
     return res.status(500).json({ message: error.message || 'Server error' });
+  }
+};
+
+// @desc    Authenticate with Google
+// @route   POST /api/auth/google
+// @access  Public
+export const googleAuth = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({ message: 'Missing Google credential' });
+    }
+
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return res.status(400).json({ message: 'Invalid Google token' });
+    }
+
+    const { email, sub: googleId, name, picture } = payload;
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+      // Link Google account if not linked
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.authProvider = 'google';
+        if (!user.avatarUrl || user.profilePictureSource !== 'upload') {
+          if (picture) {
+            user.avatarUrl = picture;
+            user.profilePictureSource = 'google';
+          }
+        }
+        await user.save();
+      } else if (!user.avatarUrl && picture) {
+        user.avatarUrl = picture;
+        user.profilePictureSource = 'google';
+        await user.save();
+      }
+    } else {
+      // Create new user
+      user = await User.create({
+        username: name || email.split('@')[0],
+        email,
+        googleId,
+        authProvider: 'google',
+        avatarUrl: picture,
+        profilePictureSource: picture ? 'google' : undefined,
+      });
+    }
+
+    const token = generateToken(user._id.toString());
+    return res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        fontFamily: user.fontFamily,
+        colorTheme: user.colorTheme,
+        elo: user.elo,
+        avatarUrl: user.avatarUrl,
+      },
+    });
+  } catch (error: any) {
+    console.error('Google Auth Error:', error);
+    return res.status(500).json({ message: 'Google authentication failed' });
   }
 };
 
@@ -116,6 +197,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<Response> 
         fontFamily: user.fontFamily,
         colorTheme: user.colorTheme,
         elo: user.elo,
+        avatarUrl: user.avatarUrl,
       },
       stats: {
         testCount,

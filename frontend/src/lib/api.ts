@@ -6,6 +6,7 @@ export interface User {
   email: string;
   fontFamily?: string;
   colorTheme?: any;
+  avatarUrl?: string;
 }
 
 export interface UserProfileResponse {
@@ -81,10 +82,10 @@ class ApiClient {
   }
 
   // Auth Endpoints
-  public async signup(username: string, email: string, password: string): Promise<{ token: string; user: User }> {
+  public async signup(username: string, email: string, password: string, avatarUrl?: string): Promise<{ token: string; user: User }> {
     const data = await this.request<{ token: string; user: User }>('/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ username, email, password }),
+      body: JSON.stringify({ username, email, password, avatarUrl }),
     });
     this.setToken(data.token);
     return data;
@@ -94,6 +95,15 @@ class ApiClient {
     const data = await this.request<{ token: string; user: User }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
+    });
+    this.setToken(data.token);
+    return data;
+  }
+
+  public async googleLogin(credential: string): Promise<{ token: string; user: User }> {
+    const data = await this.request<{ token: string; user: User }>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
     });
     this.setToken(data.token);
     return data;

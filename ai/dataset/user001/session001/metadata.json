@@ -1,0 +1,11 @@
+{
+  "user_id": "user001",
+  "session_id": "session001",
+  "session_start": 1754640000.0,
+  "last_updated": 1754640512.0,
+  "total_keypresses": 0,
+  "correct_predictions": 0,
+  "prediction_accuracy": 0.0,
+  "average_wpm": 0.0,
+  "_schema_note": "This file is written automatically by ai/services/dataset_writer.py after every completed keypress. This example is a placeholder showing the shape of a fresh, empty session before any keys have been logged."
+}

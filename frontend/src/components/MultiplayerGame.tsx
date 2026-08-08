@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
-import TypingArea from '@/components/TypingArea';
+import GameScreen from './GameScreen';
 import { type GameConfig } from '@/components/SetupScreen';
 
 interface Props {
@@ -97,8 +97,8 @@ export default function MultiplayerGame({ lobbyCode, config, onLeave }: Props) {
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 px-4 py-8">
-      <div className="flex-1 border border-slate-700/50 rounded-lg overflow-hidden relative min-h-[400px]">
+    <div className="h-[100dvh] w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 p-4 lg:p-8 overflow-hidden bg-background">
+      <div className="flex-1 border border-slate-700/50 rounded-lg overflow-hidden relative min-h-0">
         <GameScreen 
           config={config} 
           onFinish={() => handleUpdate(100, players.find(p => p.id === socket?.id)?.wpm || 0, true)} 

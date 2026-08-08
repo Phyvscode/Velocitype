@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 
@@ -9,7 +10,7 @@ interface Props {
 }
 
 export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: Props) {
-  const { login, signup } = useAuth();
+  const { login, signup, googleLogin } = useAuth();
   type Mode = 'login' | 'signup' | 'forgot-password' | 'verify-otp' | 'reset-password';
   const [mode, setMode] = useState<Mode>(initialMode);
   
@@ -22,6 +23,8 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
   
   const [captchaValue, setCaptchaValue] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
+
+  const [avatarBase64, setAvatarBase64] = useState('');
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -59,6 +62,7 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
     setConfirmPassword('');
     setOtp('');
     setCaptchaInput('');
+    setAvatarBase64('');
     if (newMode === 'forgot-password') {
       generateCaptcha();
     }
@@ -90,6 +94,17 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
     }
   }, [mode, captchaValue]);
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarBase64(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -108,7 +123,7 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
           setLoading(false);
           return;
         }
-        await signup(username, email, password);
+        await signup(username, email, password, avatarBase64 || undefined);
         onClose();
       } else if (mode === 'forgot-password') {
         if (captchaInput !== captchaValue) {
@@ -217,6 +232,23 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
                 autoComplete="off"
                 className="w-full px-4 py-2.5 bg-slate-900/80 border border-slate-700/60 focus:border-amber-400 focus:outline-none text-slate-100 text-sm"
               />
+            </div>
+          )}
+
+          {mode === 'signup' && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Profile Picture (Optional)</label>
+              <div className="flex items-center gap-3">
+                {avatarBase64 && (
+                  <img src={avatarBase64} alt="Avatar preview" className="w-10 h-10 rounded-full object-cover border border-slate-700/60" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-amber-400 file:text-slate-950 hover:file:bg-amber-500 transition-colors cursor-pointer"
+                />
+              </div>
             </div>
           )}
 
@@ -338,6 +370,40 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
              mode === 'verify-otp' ? "Verify Code" : "Update Password"}
           </button>
         </form>
+
+        {(mode === 'signup' || mode === 'login') && (
+          <div className="mt-6 flex flex-col items-center">
+            <div className="flex w-full items-center mb-6">
+              <div className="flex-1 h-px bg-slate-700/60"></div>
+              <span className="px-3 text-xs uppercase tracking-widest font-semibold text-slate-500">or</span>
+              <div className="flex-1 h-px bg-slate-700/60"></div>
+            </div>
+            <div className="w-full flex justify-center">
+              <GoogleLogin
+                onSuccess={async (credentialResponse) => {
+                  try {
+                    setLoading(true);
+                    if (credentialResponse.credential) {
+                      await googleLogin(credentialResponse.credential);
+                      onClose();
+                    }
+                  } catch (err: any) {
+                    setError(err.message || 'Google authentication failed');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                onError={() => {
+                  setError('Google authentication failed');
+                }}
+                theme="filled_black"
+                shape="rectangular"
+                text="continue_with"
+                width="100%"
+              />
+            </div>
+          </div>
+        )}
 
         {mode === 'login' && (
           <div className="mt-4 text-center">

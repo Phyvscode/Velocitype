@@ -8,7 +8,8 @@ interface AuthContextType {
   stats: UserProfileResponse['stats'] | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (username: string, email: string, password: string) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
+  signup: (username: string, email: string, password: string, avatarUrl?: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -47,8 +48,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await fetchProfile();
   };
 
-  const signup = async (username: string, email: string, password: string) => {
-    await api.signup(username, email, password);
+  const googleLogin = async (credential: string) => {
+    await api.googleLogin(credential);
+    await fetchProfile();
+  };
+
+  const signup = async (username: string, email: string, password: string, avatarUrl?: string) => {
+    await api.signup(username, email, password, avatarUrl);
     await fetchProfile();
   };
 
@@ -66,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, stats, loading, login, signup, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, stats, loading, login, googleLogin, signup, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

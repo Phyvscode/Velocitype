@@ -68,17 +68,17 @@ export default function VersusModeSetup({ onLobbyJoined }: Props) {
   };
 
   return (
-    <div className="bg-slate-800/40 border border-slate-700/50">
-      <div className="flex border-b border-slate-700/50">
+    <div className="bg-transparent border border-slate-800 rounded">
+      <div className="flex border-b border-slate-800">
         <button
           onClick={() => setTab('join')}
-          className={`flex-1 p-4 font-bold transition-colors ${tab === 'join' ? 'bg-amber-400 text-slate-900' : 'text-slate-400 hover:bg-slate-800'}`}
+          className={`flex-1 p-4 font-mono text-[10px] uppercase tracking-widest transition-colors ${tab === 'join' ? 'text-[var(--hot)]' : 'text-slate-500 hover:text-white'}`}
         >
           Browse Matches
         </button>
         <button
           onClick={() => setTab('create')}
-          className={`flex-1 p-4 font-bold transition-colors ${tab === 'create' ? 'bg-amber-400 text-slate-900' : 'text-slate-400 hover:bg-slate-800'}`}
+          className={`flex-1 p-4 font-mono text-[10px] uppercase tracking-widest transition-colors ${tab === 'create' ? 'text-[var(--hot)]' : 'text-slate-500 hover:text-white'}`}
         >
           Create Match
         </button>
@@ -96,33 +96,33 @@ export default function VersusModeSetup({ onLobbyJoined }: Props) {
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                 maxLength={6}
-                className="flex-1 px-4 py-2 bg-slate-900 border border-slate-700 text-slate-100 font-mono focus:border-amber-400 focus:outline-none"
+                className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-800 text-white font-mono text-sm focus:border-[var(--hot)] focus:outline-none rounded"
               />
               <button
                 onClick={() => handleJoinLobby(joinCode)}
                 disabled={joinCode.length !== 6}
-                className="px-6 py-2 bg-amber-400 text-slate-900 font-bold disabled:opacity-50"
+                className="px-6 py-3 text-[var(--hot)] font-mono text-[10px] uppercase tracking-widest hover:bg-[var(--hot)]/10 transition-colors disabled:opacity-50 border border-transparent rounded"
               >
                 Join
               </button>
             </div>
             
             <div>
-              <h3 className="text-lg font-bold text-slate-200 mb-3">Public Lobbies</h3>
+              <h3 className="text-[10px] font-mono uppercase tracking-widest text-[var(--hot)] mb-3">Public Lobbies</h3>
               {lobbies.length === 0 ? (
-                <p className="text-slate-400 text-sm">No public lobbies found. Be the first to create one!</p>
+                <p className="text-slate-500 text-[10px] font-mono uppercase tracking-widest">No public lobbies found. Be the first to create one!</p>
               ) : (
                 <div className="space-y-2">
                   {lobbies.map(l => (
-                    <div key={l.id} className="flex items-center justify-between p-3 bg-slate-900 border border-slate-700">
+                    <div key={l.id} className="flex items-center justify-between p-3 bg-slate-900/50 border border-slate-800 rounded">
                       <div>
-                        <div className="font-bold text-amber-400">{l.hostName}'s Lobby</div>
-                        <div className="text-xs text-slate-400">Mode: {l.mode} • Players: {l.currentPlayers}/{l.maxPlayers}</div>
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--hot)]">{l.hostName}'s Lobby</div>
+                        <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500 mt-1">Mode: {l.mode} • Players: {l.currentPlayers}/{l.maxPlayers}</div>
                       </div>
                       <button
                         onClick={() => handleJoinLobby(l.id)}
                         disabled={l.currentPlayers >= l.maxPlayers}
-                        className="px-4 py-1.5 bg-slate-800 text-slate-200 text-sm font-bold hover:bg-slate-700 transition-colors disabled:opacity-50"
+                        className="px-4 py-2 bg-slate-800 text-white font-mono text-[10px] uppercase tracking-widest hover:bg-slate-700 transition-colors disabled:opacity-50 rounded"
                       >
                         {l.currentPlayers >= l.maxPlayers ? 'Full' : 'Join'}
                       </button>
@@ -135,8 +135,8 @@ export default function VersusModeSetup({ onLobbyJoined }: Props) {
         ) : (
           <div className="space-y-6">
             <div>
-              <label className="text-sm text-slate-400 mb-2 block">Game Mode</label>
-              <select value={mode} onChange={e => setMode(e.target.value)} className="w-full px-4 py-2 bg-slate-900 border border-slate-700 text-slate-100 focus:border-amber-400 focus:outline-none">
+              <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2 block">Game Mode</label>
+              <select value={mode} onChange={e => setMode(e.target.value)} className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 text-white font-mono text-sm focus:border-[var(--hot)] focus:outline-none rounded">
                 <option value="words">Words</option>
                 <option value="random">Random Sentences</option>
               </select>
@@ -144,19 +144,19 @@ export default function VersusModeSetup({ onLobbyJoined }: Props) {
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-slate-400 mb-2 block">Max Players</label>
-                <input type="number" min={2} max={100} value={maxPlayers} onChange={e => setMaxPlayers(parseInt(e.target.value) || 2)} className="w-full px-4 py-2 bg-slate-900 border border-slate-700 text-slate-100 focus:border-amber-400 focus:outline-none" />
+                <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2 block">Max Players</label>
+                <input type="number" min={2} max={100} value={maxPlayers} onChange={e => setMaxPlayers(parseInt(e.target.value) || 2)} className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 text-white font-mono text-sm focus:border-[var(--hot)] focus:outline-none rounded" />
               </div>
               <div>
-                <label className="text-sm text-slate-400 mb-2 block">Privacy</label>
-                <select value={isPublic ? 'public' : 'private'} onChange={e => setIsPublic(e.target.value === 'public')} className="w-full px-4 py-2 bg-slate-900 border border-slate-700 text-slate-100 focus:border-amber-400 focus:outline-none">
+                <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2 block">Privacy</label>
+                <select value={isPublic ? 'public' : 'private'} onChange={e => setIsPublic(e.target.value === 'public')} className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 text-white font-mono text-sm focus:border-[var(--hot)] focus:outline-none rounded">
                   <option value="public">Public</option>
                   <option value="private">Private</option>
                 </select>
               </div>
             </div>
             
-            <button onClick={handleCreateLobby} className="w-full py-3 bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 font-bold text-lg hover:scale-[1.02] transition-transform">
+            <button onClick={handleCreateLobby} className="w-full py-5 border border-[var(--hot)] text-[var(--hot)] bg-[var(--hot)]/10 font-mono text-[10px] uppercase tracking-widest hover:bg-[var(--hot)] hover:text-black transition-colors rounded">
               Create Match
             </button>
           </div>

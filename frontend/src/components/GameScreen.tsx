@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState, useCallback, useLayoutEffect } fr
 import { filterWords } from '@/lib/words';
 import type { RowKey } from '@/lib/words';
 import type { GameConfig } from './SetupScreen';
+import LiveKeyboard, { getKeyLabel } from './LiveKeyboard';
+import VirtualKeyboardConnector from './VirtualKeyboardConnector';
 
 export interface TypedWord {
   word: string;
@@ -44,22 +46,45 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   const completedRef = useRef<TypedWord[]>([]);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
 
   // Caret positioning refs & state
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const [caretLeft, setCaretLeft] = useState<number>(0);
+  const [caretLeft, setCaretLeft] = useState(0);
+  const [caretTop, setCaretTop] = useState(0);
+
+  useEffect(() => {
+    if (letterRefs.current[typed.length]) {
+      const el = document.getElementById('current-word');
+      if (!el) return;
+      if (typed.length < currentWord.length) {
+        setCaretLeft(el.offsetLeft);
+        setCaretTop(el.offsetTop + el.offsetHeight / 2);
+      }
+    } else if (typed.length > 0 && letterRefs.current[typed.length - 1]) {
+      const el = letterRefs.current[typed.length - 1];
+      if (!el) return;
+      setCaretLeft(el.offsetLeft + el.offsetWidth);
+      setCaretTop(el.offsetTop + el.offsetHeight / 2);
+    } else {
+      setCaretLeft(0);
+      setCaretTop(0);
+    }
+  }, [typed, currentWord]);
 
   const updateCaretPosition = useCallback(() => {
     if (typed.length === 0) {
       const firstEl = letterRefs.current[0];
       if (firstEl) {
         setCaretLeft(firstEl.offsetLeft);
+        setCaretTop(firstEl.offsetTop + firstEl.offsetHeight / 2);
       }
     } else {
       const targetIndex = Math.min(typed.length - 1, currentWord.length - 1);
       const targetEl = letterRefs.current[targetIndex];
       if (targetEl) {
         setCaretLeft(targetEl.offsetLeft + targetEl.offsetWidth);
+        setCaretTop(targetEl.offsetTop + targetEl.offsetHeight / 2);
       }
     }
   }, [typed, currentWord]);
@@ -153,6 +178,10 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   }, [typed, currentWord, submitWord]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Visual keyboard capture
+    const key = getKeyLabel(e);
+    setActiveKeys(prev => new Set(prev).add(key));
+
     if (e.key === 'Backspace' && typed === '') {
       e.preventDefault();
     }
@@ -166,66 +195,75 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
     }
   };
 
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const key = getKeyLabel(e);
+    setActiveKeys(prev => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-[#0f1117] text-slate-100 flex flex-col items-center px-4 py-8">
+    <div className="h-full min-h-0 w-full bg-[#0f1117] text-slate-100 flex flex-col overflow-hidden">
       {/* Top bar */}
       {!hideHeader && (
-        <div className="w-full max-w-4xl flex items-center justify-between mb-8">
-          <button
-            onClick={onQuit}
-            className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            Quit
-          </button>
-          <div className="flex items-center gap-2 text-2xl font-bold tabular-nums">
-            <span className={timeLeft <= 5 ? 'text-rose-400' : 'text-slate-100'}>{timeLeft}s</span>
+        <header className="w-full flex-none px-4 sm:px-8 py-[clamp(8px,2vh,24px)] flex items-center justify-between">
+          <div className="w-full max-w-7xl mx-auto flex items-center justify-between">
+            <button
+              onClick={onQuit}
+              className="text-sm font-mono text-slate-400 hover:text-[var(--hot)] transition-colors uppercase tracking-widest"
+            >
+              &larr; Quit
+            </button>
+            <div className="flex items-center gap-2 text-[clamp(18px,2vw,24px)] font-bold tabular-nums">
+              <span className={timeLeft <= 5 ? 'text-rose-400' : 'text-[var(--hot)]'}>{timeLeft}s</span>
+            </div>
           </div>
-        </div>
+        </header>
       )}
 
       {/* Centered single word */}
-      <div className="flex-1 flex flex-col items-center justify-center w-full">
+      <main className="flex-1 min-h-0 w-full flex flex-col items-center justify-center overflow-hidden">
         <div
-          className={`relative flex items-center text-6xl sm:text-7xl font-mono tracking-wide select-none transition-colors duration-150 py-2 px-1 ${
+          className={`relative w-full max-w-7xl mx-auto text-center font-mono tracking-wide select-none transition-colors duration-150 px-4 py-[clamp(10px,4vh,40px)] ${
             flash === 'correct'
               ? 'text-emerald-400'
               : flash === 'wrong'
               ? 'text-rose-400'
               : 'text-slate-100'
           }`}
+          style={{ whiteSpace: 'pre-wrap', fontSize: 'clamp(32px, min(8vw, 12vh), 120px)', lineHeight: 1.2 }}
         >
           {/* Smooth Fluid Caret Bar */}
           <span
-            className="absolute top-1/2 -translate-y-1/2 w-[3.5px] h-[75%] bg-gradient-to-b from-amber-300 via-amber-400 to-orange-500 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.85)] pointer-events-none transition-all duration-150 ease-out animate-cursor-blink"
+            className="absolute -translate-y-1/2 w-[3px] h-[1em] bg-[var(--hot)] rounded-full pointer-events-none transition-all duration-150 ease-out animate-cursor-blink exclude-theme"
             style={{
               left: `${caretLeft}px`,
+              top: `${caretTop}px`,
             }}
           />
 
           {currentWord.split('').map((ch, ci) => {
-            let cls = 'text-slate-500';
+            let cls = 'text-slate-500 exclude-theme';
             if (ci < typed.length) {
               cls = typed[ci] === ch ? 'text-amber-300 theme-text-override' : 'text-rose-400 underline exclude-theme';
             } else if (ci === typed.length) {
-              cls = 'text-slate-100 theme-text-override';
+              cls = 'text-slate-100 exclude-theme';
             }
             return (
               <span
                 key={ci}
                 ref={(el) => { letterRefs.current[ci] = el; }}
-                className={`inline-block transition-colors ${cls}`}
+                className={`transition-colors leading-loose ${cls}`}
               >
-                {ch === ' ' ? '\u00A0' : ch}
+                {ch}
               </span>
             );
           })}
         </div>
 
-        <div className="mt-10 flex items-center gap-2 text-sm text-slate-500">
-          
-          {started ? 'Type the word. It advances automatically.' : 'Start typing to begin the timer.'}
-        </div>
-      </div>
+      </main>
 
       {/* Hidden input captures keystrokes */}
       <input
@@ -234,6 +272,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
         value={typed}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
+        onKeyUp={handleKeyUp}
         onCompositionEnd={(e) => setTyped(e.currentTarget.value)}
         autoComplete="off"
         autoCorrect="off"
@@ -243,11 +282,20 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
         aria-label="Typing input"
       />
 
+      {/* Live Keyboard */}
+      <footer className="w-full flex-none px-4 pb-[clamp(10px,3vh,32px)] pt-[clamp(8px,2vh,24px)] flex flex-col items-center justify-end min-h-0">
+        <div className="w-full max-w-5xl mx-auto" style={{ transform: 'scale(clamp(0.5, min(100vw / 1200, 100vh / 800), 1))', transformOrigin: 'bottom center' }}>
+          <LiveKeyboard activeKeys={activeKeys} />
+        </div>
+      </footer>
+
       {/* Click anywhere to refocus */}
       <div
         className="fixed inset-0 -z-10"
         onClick={() => inputRef.current?.focus()}
       />
+      {/* Virtual Keyboard Overlay */}
+      {/* Handled globally by App.tsx, GameScreen listens to virtual_keydown */}
     </div>
   );
 }

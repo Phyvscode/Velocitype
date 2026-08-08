@@ -359,8 +359,16 @@ export const applyTextColor = (color: ThemeColor, persist: boolean = true) => {
   // Safely target text elements and interactive elements without breaking structural block backgrounds like div or body
   const textSelectors = `h1, h2, h3, h4, h5, h6, p, span:not(.exclude-theme), a, label, li, code, strong, em, b, i, button:not(.exclude-theme), input:not(.exclude-theme), select:not(.exclude-theme), textarea:not(.exclude-theme), td, th`;
 
-  // Extracted color for SVG icon strokes
-  const fallbackHex = color.value.match(/#[0-9a-fA-F]{6}/)?.[0] ?? '#f59e0b';
+  // Extracted color for SVG icon strokes and theme variables
+  const hexes = color.value.match(/#[0-9a-fA-F]{6}/g) || ['#f59e0b'];
+  const primaryHex = hexes[0];
+  const secondaryHex = hexes.length > 1 ? hexes[1] : primaryHex;
+  
+  root.style.setProperty('--hot', primaryHex);
+  root.style.setProperty('--ember', secondaryHex);
+  root.style.setProperty('--hot-soft', primaryHex + '33'); // 20% opacity hex
+  
+  const fallbackHex = primaryHex;
 
   if (color.isGradient) {
     currentStyleTag.innerHTML = `
@@ -403,7 +411,65 @@ export function initializeActiveColor(): void {
   }
 }
 
-// --- FALLBACK STUBS FOR DELETED WHITE TEXT LOGIC ---
-export const applyUiTextColor = (color: ThemeColor, persist: boolean = true) => {};
-export function initializeActiveUiTextColor(): void {}
-export function getStoredUiTextColor(): ThemeColor | null { return null; }
+const BG_COLOR_STORAGE_KEY = 'velocitype_bg_color_theme';
+
+export function getStoredBgColor(): ThemeColor | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(BG_COLOR_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+
+export function saveStoredBgColor(color: ThemeColor): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(BG_COLOR_STORAGE_KEY, JSON.stringify(color));
+  } catch {}
+}
+
+let currentBgStyleTag: HTMLStyleElement | null = null;
+
+export const applyBgColor = (color: ThemeColor, persist: boolean = true) => {
+  if (typeof document === 'undefined') return;
+
+  if (!currentBgStyleTag) {
+    currentBgStyleTag = document.getElementById('velocitype-dynamic-bg-color') as HTMLStyleElement;
+    if (!currentBgStyleTag) {
+      currentBgStyleTag = document.createElement('style');
+      currentBgStyleTag.id = 'velocitype-dynamic-bg-color';
+      document.head.appendChild(currentBgStyleTag);
+    }
+  }
+
+  const root = document.documentElement;
+  
+  if (color.isGradient) {
+    currentBgStyleTag.innerHTML = `
+      :root, html, body, #root, .bg-background {
+        background: ${color.value} !important;
+        background-attachment: fixed !important;
+      }
+    `;
+  } else {
+    currentBgStyleTag.innerHTML = `
+      :root, html, body, #root, .bg-background {
+        background: ${color.value} !important;
+      }
+    `;
+  }
+
+  if (persist) {
+    saveStoredBgColor(color);
+  }
+
+  window.dispatchEvent(new Event('storage'));
+};
+
+export function initializeActiveBgColor(): void {
+  const stored = getStoredBgColor();
+  if (stored) {
+    applyBgColor(stored, false);
+  }
+}

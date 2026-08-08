@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 
 import type { RowKey } from '@/lib/words';
 import { filterWords } from '@/lib/words';
 import { useAuth } from '@/contexts/AuthContext';
 import { parseFile, extractSentences, type ParsedDocument } from '@/lib/fileParser';
 import { generateSentences } from '@/lib/quotes';
+import LiveKeyboard, { getKeyLabel } from './LiveKeyboard';
 import VersusModeSetup from './VersusModeSetup';
+import { ProfileOrb } from './ProfileOrb';
+import VirtualKeyboardConnector from './VirtualKeyboardConnector';
 
 export interface GameConfig {
   rows: RowKey[];
@@ -13,6 +16,7 @@ export interface GameConfig {
   minLen: number;
   maxLen: number;
   customSentences?: string[];
+  useVirtualKeyboard?: boolean;
 }
 
 interface Props {
@@ -40,6 +44,47 @@ const PRESET_DURATIONS: { label: string; value: number }[] = [
   { label: '10 min', value: 600 },
 ];
 
+const AnimatedBorderButton = ({ onClick, children }: { onClick: () => void, children: React.ReactNode }) => (
+  <button onClick={onClick} className="relative text-[var(--hot)] px-3 py-1.5 group transition-colors hover:text-white">
+    {children}
+    <span className="exclude-theme absolute left-0 bottom-0 w-full h-[2px] bg-[var(--hot)] scale-x-0 group-hover:scale-x-100 transition-transform origin-center duration-300 ease-out shadow-[0_0_8px_var(--color-hot-soft)]"></span>
+    <span className="exclude-theme absolute left-0 top-0 w-full h-[2px] bg-[var(--hot)] scale-x-0 group-hover:scale-x-100 transition-transform origin-center duration-300 ease-out shadow-[0_0_8px_var(--color-hot-soft)]"></span>
+    <span className="exclude-theme absolute left-0 top-0 w-[2px] h-full bg-[var(--hot)] scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300 ease-out shadow-[0_0_8px_var(--color-hot-soft)]"></span>
+    <span className="exclude-theme absolute right-0 top-0 w-[2px] h-full bg-[var(--hot)] scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300 ease-out shadow-[0_0_8px_var(--color-hot-soft)]"></span>
+  </button>
+);
+
+const PortalButton = ({ active, onClick, letter, label, title }: { active: boolean, onClick: () => void, letter: string, label: string, title: string }) => (
+  <div className="flex flex-col items-center gap-6 relative group" style={{ perspective: '1500px' }}>
+    <button 
+      onClick={onClick}
+      style={{ transformStyle: 'preserve-3d' }}
+      className={`w-[clamp(14rem,30vw,22rem)] h-[clamp(14rem,30vw,22rem)] rounded-full border flex items-center justify-center transition-all duration-700 ease-in-out group-hover:-translate-y-[10%] group-hover:[transform:rotateX(75deg)] group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 ${active ? 'border-[var(--hot)] bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]' : 'border-slate-800 bg-slate-900/50 text-slate-400'}`}
+      title={title}
+    >
+      {/* Letter: always visible, unaffected by hover */}
+      <span className="text-[clamp(5rem,12vw,10rem)] font-display uppercase leading-none">
+        {letter}
+      </span>
+
+      {/* Portal Spin Outline */}
+      <div className="absolute inset-0 rounded-full border-[8px] border-transparent transition-all duration-700 opacity-0 group-hover:opacity-100 group-hover:animate-[portal-spin_8s_linear_infinite] group-hover:border-[var(--hot)] group-hover:border-dashed group-hover:shadow-[0_0_40px_var(--color-hot-soft),inset_0_0_40px_var(--color-hot-soft)]"></div>
+
+      {/* Falling Beams / Rings */}
+      <div className="absolute inset-0 rounded-full border-[8px] border-[var(--hot)] transition-opacity duration-500 opacity-0 group-hover:animate-[portal-beam_2s_infinite_linear]" style={{ animationDelay: '0s' }}></div>
+      <div className="absolute inset-0 rounded-full border-[8px] border-[var(--hot)] transition-opacity duration-500 opacity-0 group-hover:animate-[portal-beam_2s_infinite_linear]" style={{ animationDelay: '0.66s' }}></div>
+      <div className="absolute inset-0 rounded-full border-[8px] border-[var(--hot)] transition-opacity duration-500 opacity-0 group-hover:animate-[portal-beam_2s_infinite_linear]" style={{ animationDelay: '1.33s' }}></div>
+    </button>
+
+    {/* 3D Hologram Label — sits ABOVE the circle, outside the button, rises up on hover */}
+    <span 
+      className="absolute left-1/2 top-0 -translate-x-1/2 text-4xl sm:text-5xl font-display uppercase tracking-widest text-[var(--hot)] whitespace-nowrap opacity-0 translate-y-4 group-hover:opacity-100 group-hover:-translate-y-4 transition-all duration-700 ease-out pointer-events-none z-50 drop-shadow-[0_0_15px_var(--color-hot-soft)]"
+    >
+      {label}
+    </span>
+  </div>
+);
+
 export default function SetupScreen({
   onStart,
   onOpenLibrary,
@@ -50,6 +95,148 @@ export default function SetupScreen({
   onOpenUiColor,
   onLobbyJoined,
 }: Props) {
+  const [typedText, setTypedText] = useState('');
+  const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
+  const [isHoveringKeyboard, setIsHoveringKeyboard] = useState(false);
+  const keyboardRef = useRef<HTMLDivElement>(null);
+  const textContainerRef = useRef<HTMLDivElement>(null);
+  const previousTextRef = useRef('');
+
+  const [isRandomSentencesLive, setIsRandomSentencesLive] = useState(false);
+  const [liveTargetSentence, setLiveTargetSentence] = useState('');
+  const [liveWpm, setLiveWpm] = useState<number | null>(null);
+  const [liveStartTime, setLiveStartTime] = useState<number | null>(null);
+
+  const [useVirtualKeyboard, setUseVirtualKeyboard] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('velocitype_ai_webcam') === 'true';
+    return false;
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') localStorage.setItem('velocitype_ai_webcam', String(useVirtualKeyboard));
+  }, [useVirtualKeyboard]);
+
+  useLayoutEffect(() => {
+    if (textContainerRef.current && !isRandomSentencesLive) {
+      if (textContainerRef.current.scrollHeight > textContainerRef.current.clientHeight + 10) {
+        setTypedText(previousTextRef.current);
+      } else {
+        previousTextRef.current = typedText;
+      }
+    }
+  }, [typedText, isRandomSentencesLive]);
+
+  useLayoutEffect(() => {
+    if (textContainerRef.current && isRandomSentencesLive && liveTargetSentence) {
+      const container = textContainerRef.current;
+      if (container.scrollHeight > container.clientHeight + 10) {
+        const ratio = (container.clientHeight) / container.scrollHeight;
+        const targetChars = Math.floor(liveTargetSentence.length * ratio * 0.95);
+        let truncated = liveTargetSentence.slice(0, targetChars);
+        const lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > 0) {
+          truncated = truncated.slice(0, lastSpace);
+        }
+        if (truncated && truncated !== liveTargetSentence) {
+          setLiveTargetSentence(truncated);
+        }
+      }
+    }
+  }, [liveTargetSentence, isRandomSentencesLive]);
+
+  useEffect(() => {
+    if (isRandomSentencesLive && !liveTargetSentence) {
+      generateSentences('', ['home', 'top', 'bottom'], 5, 12, 25).then(res => {
+        if (res && res.length > 0) {
+          const target = res.join(' ').toLowerCase().replace(/[.]/g, '');
+          setLiveTargetSentence(target);
+          setLiveStartTime(null);
+        }
+      });
+    }
+  }, [isRandomSentencesLive, liveTargetSentence]);
+
+  useEffect(() => {
+    if (isRandomSentencesLive && typedText.length === 1 && !liveStartTime) {
+      setLiveStartTime(Date.now());
+      setLiveWpm(null);
+    }
+  }, [typedText, isRandomSentencesLive, liveStartTime]);
+
+  useEffect(() => {
+    if (isRandomSentencesLive && liveTargetSentence && typedText.length >= liveTargetSentence.length) {
+      if (liveStartTime) {
+        const timeMinutes = (Date.now() - liveStartTime) / 60000;
+        const words = liveTargetSentence.length / 5;
+        setLiveWpm(Math.round(words / timeMinutes));
+      }
+      setLiveTargetSentence('');
+      setTypedText('');
+      setLiveStartTime(null);
+    }
+  }, [typedText, liveTargetSentence, isRandomSentencesLive, liveStartTime]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isHoveringKeyboard) return;
+      e.preventDefault();
+      const key = getKeyLabel(e);
+      setActiveKeys(prev => new Set(prev).add(key));
+      
+      if (e.key === 'Backspace') {
+        setTypedText(prev => prev.slice(0, -1));
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        if (!isRandomSentencesLive) setTypedText(prev => prev + '\n');
+      } else if (e.key.length === 1) {
+        setTypedText(prev => {
+          if (isRandomSentencesLive && prev.length >= liveTargetSentence.length) return prev;
+          return prev + e.key;
+        });
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const key = getKeyLabel(e);
+      setActiveKeys(prev => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [isHoveringKeyboard, useVirtualKeyboard, isRandomSentencesLive, liveTargetSentence]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!keyboardRef.current) return;
+    const rect = keyboardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    const rotateX = ((y - centerY) / centerY) * -12;
+    const rotateY = ((x - centerX) / centerX) * 12;
+    
+    keyboardRef.current.style.transition = 'transform 0.1s ease-out';
+    keyboardRef.current.style.transform = `translateZ(30px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.012)`;
+  };
+
+  const handleMouseLeave = () => {
+    if (!keyboardRef.current) return;
+    keyboardRef.current.style.transition = 'transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s ease, background-color 0.45s ease';
+    keyboardRef.current.style.transform = ''; 
+  };
+
   const { user, stats, logout } = useAuth();
   const [rows, setRows] = useState<RowKey[]>(['home']);
   const [durationWords, setDurationWords] = useState<string>('30');
@@ -63,16 +250,18 @@ export default function SetupScreen({
   const [durationSentences, setDurationSentences] = useState<string>('30');
   const [showCustomSentences, setShowCustomSentences] = useState<boolean>(false);
   const durSentences = Math.max(1, Math.min(3600, parseInt(durationSentences, 10) || 0));
-  const [minLen, setMinLen] = useState<number>(3);
-  const [maxLen, setMaxLen] = useState<number>(8);
+  const [minLen, setMinLen] = useState<number | string>(2);
+  const [maxLen, setMaxLen] = useState<number | string>(8);
   const [error, setError] = useState<string>('');
   const [activeMode, setActiveMode] = useState<string | null>(null);
+  const [sentenceTheme, setSentenceTheme] = useState<string>('');
 
   const [parsedDoc, setParsedDoc] = useState<ParsedDocument | null>(null);
-  const [startPage, setStartPage] = useState<number>(1);
-  const [endPage, setEndPage] = useState<number>(1);
+  const [startPage, setStartPage] = useState<number | string>(1);
+  const [endPage, setEndPage] = useState<number | string>(1);
   const [fileError, setFileError] = useState<string>('');
   const [isParsing, setIsParsing] = useState<boolean>(false);
+  const [fileName, setFileName] = useState<string>('');
 
   const [isLoadingQuotes, setIsLoadingQuotes] = useState<boolean>(false);
   const [quoteError, setQuoteError] = useState<string>('');
@@ -81,8 +270,46 @@ export default function SetupScreen({
     if (typeof window !== 'undefined') return localStorage.getItem('gemini_api_key') || '';
     return '';
   });
-  const [minWordsSentences, setMinWordsSentences] = useState<number>(5);
-  const [maxWordsSentences, setMaxWordsSentences] = useState<number>(12);
+  const [minWordsSentences, setMinWordsSentences] = useState<number | string>(5);
+  const [maxWordsSentences, setMaxWordsSentences] = useState<number | string>(12);
+
+  useEffect(() => {
+    if (user) {
+      const stored = localStorage.getItem(`velocitype_settings_${user.id}`);
+      if (stored) {
+        try {
+          const s = JSON.parse(stored);
+          if (s.minLen) setMinLen(s.minLen);
+          if (s.maxLen) setMaxLen(s.maxLen);
+          if (s.minWordsSentences) setMinWordsSentences(s.minWordsSentences);
+          if (s.maxWordsSentences) setMaxWordsSentences(s.maxWordsSentences);
+        } catch(e) {}
+      }
+    } else {
+      setMinLen(2);
+      setMaxLen(8);
+      setMinWordsSentences(5);
+      setMaxWordsSentences(12);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      const parsedMinL = parseInt(String(minLen), 10);
+      const parsedMaxL = parseInt(String(maxLen), 10);
+      const parsedMinW = parseInt(String(minWordsSentences), 10);
+      const parsedMaxW = parseInt(String(maxWordsSentences), 10);
+      
+      if (!isNaN(parsedMinL) && !isNaN(parsedMaxL) && !isNaN(parsedMinW) && !isNaN(parsedMaxW)) {
+        localStorage.setItem(`velocitype_settings_${user.id}`, JSON.stringify({
+          minLen: parsedMinL,
+          maxLen: parsedMaxL,
+          minWordsSentences: parsedMinW,
+          maxWordsSentences: parsedMaxW
+        }));
+      }
+    }
+  }, [user, minLen, maxLen, minWordsSentences, maxWordsSentences]);
 
   const handleApiKeyChange = (val: string) => {
     setApiKey(val);
@@ -92,6 +319,7 @@ export default function SetupScreen({
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setFileName(file.name);
     setIsParsing(true);
     setFileError('');
     try {
@@ -112,22 +340,37 @@ export default function SetupScreen({
       setFileError('Please upload a file first.');
       return;
     }
-    const sentences = extractSentences(parsedDoc.pages, startPage, endPage, parsedDoc.isTextFile);
-    if (sentences.length === 0) {
-      setFileError('No sentences found in the selected range.');
+    const sPage = Math.max(1, parseInt(String(startPage), 10) || 1);
+    const ePage = Math.max(sPage, parseInt(String(endPage), 10) || 1);
+    const textArray = extractSentences(parsedDoc.pages, sPage, ePage, parsedDoc.isTextFile);
+    if (textArray.length === 0) {
+      setFileError('No text found in selected pages.');
       return;
     }
-    onStart({ rows, duration: durFile, minLen, maxLen, customSentences: sentences });
+    onStart({
+      mode: 'file',
+      customSentences: textArray,
+      duration: durFile,
+      useVirtualKeyboard
+    } as any);
   };
 
   const handleStartRandomSentences = async () => {
     setIsLoadingQuotes(true);
     setQuoteError('');
     try {
-      const sentences = await generateSentences(apiKey, rows, minWordsSentences, maxWordsSentences, 20);
-      onStart({ rows, duration: durSentences, minLen, maxLen, customSentences: sentences });
+      const minW = Math.max(2, Math.min(100, parseInt(String(minWordsSentences), 10) || 5));
+      const maxW = Math.max(minW, Math.min(100, parseInt(String(maxWordsSentences), 10) || 12));
+      
+      const genSentences = await generateSentences(apiKey, rows, minW, maxW, 20, sentenceTheme);
+      onStart({
+        mode: 'random-sentences',
+        customSentences: genSentences,
+        duration: durSentences,
+        useVirtualKeyboard
+      } as any);
     } catch (err: any) {
-      setQuoteError('Failed to load random sentences.');
+      setQuoteError(err.message || 'Failed to generate sentences');
     } finally {
       setIsLoadingQuotes(false);
     }
@@ -143,13 +386,10 @@ export default function SetupScreen({
   ) => {
     const isPresetValue = PRESET_DURATIONS.some((d) => d.value === durationVal);
     return (
-      <section className="bg-slate-800/40 p-6 border border-slate-700/50">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="w-7 h-7 rounded-full bg-amber-400 text-slate-900 font-bold text-sm flex items-center justify-center">{stepNumber}</span>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-             Pick a time limit
-          </h2>
-        </div>
+      <section className="pt-2">
+        <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">
+          {stepNumber}. Pick a time limit
+        </h2>
         <div className="space-y-3">
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             {PRESET_DURATIONS.map((d) => {
@@ -164,7 +404,7 @@ export default function SetupScreen({
                   }}
                   className={`px-3 py-2.5 text-sm font-semibold transition-all ${
                     active
-                      ? 'bg-amber-400/20 text-amber-300 border border-amber-400/50'
+                      ? 'bg-[var(--hot)]/20 text-[var(--hot)] border border-[var(--hot)]/50'
                       : 'bg-slate-900/40 text-slate-400 border border-slate-700/50 hover:bg-slate-700/60'
                   }`}
                 >
@@ -178,7 +418,7 @@ export default function SetupScreen({
             onClick={() => { setError(''); setShowCustom(true); }}
             className={`w-full px-3 py-2.5 text-sm font-semibold text-center transition-all ${
               showCustom || !isPresetValue
-                ? 'bg-amber-400/20 text-amber-300 border border-amber-400/50'
+                ? 'bg-[var(--hot)]/20 text-[var(--hot)] border border-[var(--hot)]/50'
                 : 'bg-slate-900/40 text-slate-400 border border-slate-700/50 hover:bg-slate-700/60'
             }`}
           >
@@ -191,10 +431,9 @@ export default function SetupScreen({
                 type="number"
                 min={1}
                 max={3600}
-                autoFocus
                 value={durationInput}
                 onChange={(e) => { setError(''); setDurationInput(e.target.value); }}
-                className="w-28 px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 focus:border-amber-400 focus:outline-none text-lg font-semibold text-center text-slate-100"
+                className="w-28 px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 focus:border-[var(--hot)] focus:outline-none text-lg font-semibold text-center text-white"
               />
               <span className="text-slate-400">seconds</span>
             </div>
@@ -211,508 +450,530 @@ export default function SetupScreen({
     );
   };
 
-  const canStart = rows.length > 0 && minLen <= maxLen && durWords > 0;
-
   const handleStart = () => {
     if (rows.length === 0) {
       setError('Select at least one key row.');
       return;
     }
-    if (minLen > maxLen) {
-      setError('Minimum length cannot exceed maximum length.');
-      return;
+    const minL = Math.max(2, Math.min(45, parseInt(String(minLen), 10) || 3));
+    const maxL = Math.max(minL, Math.min(45, parseInt(String(maxLen), 10) || 8));
+    
+    if (activeMode === 'words') {
+      onStart({
+        mode: 'words',
+        rows,
+        duration: durWords,
+        minLen: minL,
+        maxLen: maxL,
+        useVirtualKeyboard
+      } as any);
     }
-    const pool = filterWords(rows, minLen, maxLen);
-    if (pool.length === 0) {
-      setError('No words match these filters. Try wider length or more rows.');
-      return;
-    }
-    onStart({ rows, duration: durWords, minLen, maxLen });
   };
 
   return (
-    <div className="min-h-screen bg-[#0f1117] text-slate-100 flex flex-col items-center px-4 py-10">
+    <div className="min-h-screen bg-transparent text-slate-100 flex flex-col items-center overflow-x-hidden">
       {/* Header */}
-      <header className="w-full max-w-4xl flex flex-col sm:flex-row items-center justify-between gap-4 mb-10">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
-            
-          </div>
+      <header className="w-full flex items-center justify-center px-8 py-8 border-b border-slate-800/0">
+        <div className="flex items-center gap-10">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Velocitype</h1>
-            <p className="text-sm text-slate-400">Train your fingers. Learn words.</p>
+            <h1 className="text-7xl font-display tracking-widest text-white uppercase">Veloci<span className="text-[var(--hot)]">type</span></h1>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          <button
-            onClick={onOpenFont}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-800/80 hover:bg-slate-700 transition-colors text-sm font-medium border border-slate-700/50"
-            title="Choose Google Font"
-          >
-            
-            Fonts
-          </button>
-
-          {/* New Colors Button */}
-          <button
-            onClick={onOpenColor}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-800/80 hover:bg-slate-700 transition-colors text-sm font-medium border border-slate-700/50"
-            title="Choose Text Color"
-          >
-            
-            Colors
-          </button>
-          <button
-            onClick={onOpenLeaderboard}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-800/80 hover:bg-slate-700 transition-colors text-sm font-medium border border-slate-700/50"
-          >
-            
-            Rankings
-          </button>
-          <button
-            onClick={onOpenLibrary}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-800/80 hover:bg-slate-700 transition-colors text-sm font-medium border border-slate-700/50"
-          >
-            
-            Library
-          </button>
-
-          {user ? (
-            <div className="flex items-center gap-2 bg-slate-800/90 pl-3 pr-2 py-1.5 border border-slate-700/60 text-sm">
-              <div className="flex items-center gap-2">
-                
-                <span className="font-semibold">{user.username}</span>
-                {stats?.bestWpm ? (
-                  <span className="text-xs px-2 py-0.5 bg-amber-400/20 text-amber-300 font-mono">
-                    {stats.bestWpm} WPM
-                  </span>
-                ) : null}
-              </div>
-              <button
-                onClick={logout}
-                title="Sign Out"
-                className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
-              >
-                
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={onOpenAuth}
-              className="flex items-center gap-2 px-4 py-2 bg-amber-400 text-slate-950 font-bold hover:bg-amber-300 transition-colors text-sm shadow-md"
-            >
-              
-              Sign In
-            </button>
-          )}
         </div>
       </header>
 
-      <div className="w-full max-w-3xl space-y-8">
-        {(!activeMode || activeMode === 'words') && (
-          <>
-            <button 
-              onClick={() => setActiveMode(activeMode === 'words' ? null : 'words')}
-          className={`w-full p-6 border transition-all text-left group ${
-            activeMode === 'words' 
-              ? 'bg-amber-400/5 border-amber-400/50' 
-              : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold flex items-center gap-3 text-slate-100">
-              <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${
-                activeMode === 'words' ? 'bg-amber-400 text-slate-900' : 'bg-slate-700 text-slate-300 group-hover:bg-amber-400/20 group-hover:text-amber-400'
-              }`}>
-                W
-              </span>
-              Words
-            </h2>
-            <span className={`text-sm font-medium transition-colors ${
-              activeMode === 'words' ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-300'
-            }`}>
-              {activeMode === 'words' ? 'Close settings' : 'Configure & Start'}
-            </span>
-          </div>
-        </button>
-
-        {activeMode === 'words' && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-300">
-            {/* Step 1: Key rows */}
-            <section className="bg-slate-800/40 p-6 border border-slate-700/50">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="w-7 h-7 rounded-full bg-amber-400 text-slate-900 font-bold text-sm flex items-center justify-center">1</span>
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-               Choose your key rows
-            </h2>
-          </div>
-          <div className="grid sm:grid-cols-3 gap-3">
-            {ROW_LABELS.map((r) => {
-              const active = rows.includes(r.key);
-              return (
-                <button
-                  key={r.key}
-                  onClick={() => toggleRow(r.key)}
-                  className={`text-left p-4 border transition-all ${
-                    active
-                      ? 'border-amber-400 bg-amber-400/10 shadow-lg shadow-amber-500/10'
-                      : 'border-slate-700 bg-slate-900/40 hover:border-slate-600'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold">{r.label}</span>
-                    <span
-                      className={`w-5 h-5 border-2 flex items-center justify-center transition-colors ${
-                        active ? 'border-amber-400 bg-amber-400' : 'border-slate-600'
-                      }`}
-                    >
-                      {active && <span className="w-2 h-2 bg-slate-900" />}
-                    </span>
-                  </div>
-                  <code className="text-xs text-slate-400 tracking-wider">{r.keys}</code>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
-
-        {/* Step 3: Word length */}
-        <section className="bg-slate-800/40 p-6 border border-slate-700/50">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="w-7 h-7 rounded-full bg-amber-400 text-slate-900 font-bold text-sm flex items-center justify-center">3</span>
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-               Set word length
-            </h2>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-6">
-            <div>
-              <label className="text-sm text-slate-400 mb-2 block">Minimum letters</label>
-              <input
-                type="number"
-                min={2}
-                max={45}
-                value={minLen}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  setMinLen(Number.isNaN(val) ? 2 : Math.max(2, Math.min(45, val)));
-                }}
-                className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 focus:border-amber-400 focus:outline-none text-lg font-semibold text-center text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-slate-400 mb-2 block">Maximum letters</label>
-              <input
-                type="number"
-                min={2}
-                max={45}
-                value={maxLen}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  setMaxLen(Number.isNaN(val) ? 2 : Math.max(2, Math.min(45, val)));
-                }}
-                className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 focus:border-amber-400 focus:outline-none text-lg font-semibold text-center text-slate-100"
-              />
-            </div>
-          </div>
-        </section>
-
-        {error && (
-          <div className="text-center text-rose-400 text-sm font-medium">{error}</div>
-        )}
-
-        {/* Play button */}
-        <div className="flex justify-center">
+      <div className="fixed top-8 right-8 z-50 flex flex-col items-end gap-3">
+        <div className="flex items-start gap-4">
+          <ProfileOrb onOpenAuth={onOpenAuth} />
+        </div>
+        <div className="flex items-center gap-3 mr-2">
+          <span className="text-[10px] font-mono text-[var(--hot)] uppercase tracking-widest">AI Webcam Input:</span>
           <button
-            onClick={handleStart}
-            disabled={!canStart}
-            className={`flex items-center gap-3 px-10 py-4 font-bold text-lg transition-all ${
-              canStart
-                ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 hover:scale-105'
-                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-            }`}
+            onClick={() => {
+              const newVal = !useVirtualKeyboard;
+              setUseVirtualKeyboard(newVal);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('velocitype_ai_webcam', String(newVal));
+                window.dispatchEvent(new Event('ai_webcam_toggled'));
+              }
+            }}
+            className={`text-[10px] font-mono font-bold uppercase transition-colors hover:text-white ${useVirtualKeyboard ? 'text-emerald-500' : 'text-[var(--hot)]'}`}
           >
-            
-            Start Typing
+            {useVirtualKeyboard ? 'ON' : 'OFF'}
           </button>
         </div>
-            </div>
-          )}
-          </>
-        )}
+      </div>
 
-        {/* File Mode Toggle */}
-        {(!activeMode || activeMode === 'file') && (
-          <>
-            <button 
+      {/* Main Hero */}
+      {!activeMode && (
+      <main className="w-full px-8 pt-[clamp(2vh,4vh,10rem)] pb-4 flex flex-col items-start justify-center">
+        
+        {/* Training Modes */}
+        <div className="flex w-full flex-col justify-start items-start">
+          <div className="flex items-start justify-start gap-[clamp(1rem,3vw,2.5rem)] flex-wrap w-full">
+            
+            <PortalButton
+              active={activeMode === 'words'}
+              onClick={() => setActiveMode(activeMode === 'words' ? null : 'words')}
+              letter="W"
+              label="Words"
+              title="Words: Timed drills across 10k common words. 15s, 30s or 60s."
+            />
+            
+            <PortalButton
+              active={activeMode === 'file'}
               onClick={() => setActiveMode(activeMode === 'file' ? null : 'file')}
-          className={`w-full p-6 border transition-all text-left group mt-4 ${
-            activeMode === 'file' 
-              ? 'bg-amber-400/5 border-amber-400/50' 
-              : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold flex items-center gap-3 text-slate-100">
-              <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${
-                activeMode === 'file' ? 'bg-amber-400 text-slate-900' : 'bg-slate-700 text-slate-300 group-hover:bg-amber-400/20 group-hover:text-amber-400'
-              }`}>
-                F
-              </span>
-              Sentences from file
-            </h2>
-            <span className={`text-sm font-medium transition-colors ${
-              activeMode === 'file' ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-300'
-            }`}>
-              {activeMode === 'file' ? 'Close settings' : 'Configure & Start'}
-            </span>
-          </div>
-        </button>
-
-        {activeMode === 'file' && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-300 mt-8">
-            <section className="bg-slate-800/40 p-6 border border-slate-700/50">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-7 h-7 rounded-full bg-amber-400 text-slate-900 font-bold text-sm flex items-center justify-center">1</span>
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                   Upload Document
-                </h2>
-              </div>
-              <input
-                type="file"
-                accept=".txt,.pdf,.docx,.pptx"
-                onChange={handleFileUpload}
-                className="w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-400 file:text-slate-900 hover:file:bg-amber-300 transition-colors"
-              />
-              {isParsing && <p className="text-amber-400 mt-3 text-sm">Parsing file...</p>}
-              {parsedDoc && !isParsing && (
-                <p className="text-emerald-400 mt-3 text-sm">✓ File parsed successfully ({parsedDoc.pages.length} pages found)</p>
-              )}
-            </section>
-
-            <section className={`bg-slate-800/40 p-6 border border-slate-700/50 transition-opacity ${parsedDoc?.isTextFile ? 'opacity-50 pointer-events-none' : ''}`}>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-7 h-7 rounded-full bg-amber-400 text-slate-900 font-bold text-sm flex items-center justify-center">2</span>
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                   Select Page Range
-                </h2>
-              </div>
-              <p className="text-sm text-slate-400 mb-4">
-                {parsedDoc?.isTextFile ? "Page selection is disabled for TXT files. The entire file will be used." : "Choose which pages to extract sentences from."}
-              </p>
-              <div className="grid sm:grid-cols-2 gap-6">
-                <div>
-                  <label className="text-sm text-slate-400 mb-2 block">Starting Page</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={parsedDoc ? parsedDoc.pages.length : 1}
-                    value={startPage}
-                    onChange={(e) => setStartPage(parseInt(e.target.value) || 1)}
-                    disabled={!parsedDoc || parsedDoc.isTextFile}
-                    className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 focus:border-amber-400 focus:outline-none text-lg font-semibold text-center text-slate-100 disabled:opacity-50"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-slate-400 mb-2 block">Ending Page</label>
-                  <input
-                    type="number"
-                    min={startPage}
-                    max={parsedDoc ? parsedDoc.pages.length : 1}
-                    value={endPage}
-                    onChange={(e) => setEndPage(parseInt(e.target.value) || 1)}
-                    disabled={!parsedDoc || parsedDoc.isTextFile}
-                    className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 focus:border-amber-400 focus:outline-none text-lg font-semibold text-center text-slate-100 disabled:opacity-50"
-                  />
-                </div>
-              </div>
-              <p className="text-sm text-amber-400/80 italic mt-2">
-                Note: Page limits act as bounds. The text extracted may be large depending on page content.
-              </p>
-            </section>
-
-            {renderDurationSelector(3, durationFile, setDurationFile, showCustomFile, setShowCustomFile, durFile)}
-
-            {fileError && (
-              <div className="text-center text-rose-400 text-sm font-medium">{fileError}</div>
-            )}
-
-            <div className="flex justify-center">
-              <button
-                onClick={handleStartFile}
-                disabled={!parsedDoc || isParsing}
-                className={`flex items-center gap-3 px-10 py-4 font-bold text-lg transition-all ${
-                  parsedDoc && !isParsing
-                    ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 hover:scale-105'
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                }`}
-              >
-                Start Typing
-              </button>
-            </div>
-            </div>
-          )}
-          </>
-        )}
-
-        {/* Random Sentences Toggle */}
-        {(!activeMode || activeMode === 'random-sentences') && (
-          <>
-            <button 
+              letter="F"
+              label="File"
+              title="Sentences From File: Drop a .txt and train on your own corpus, line by line."
+            />
+            
+            <PortalButton
+              active={activeMode === 'random-sentences'}
               onClick={() => setActiveMode(activeMode === 'random-sentences' ? null : 'random-sentences')}
-          className={`w-full p-6 border transition-all text-left group mt-4 ${
-            activeMode === 'random-sentences' 
-              ? 'bg-amber-400/5 border-amber-400/50' 
-              : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold flex items-center gap-3 text-slate-100">
-              <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${
-                activeMode === 'random-sentences' ? 'bg-amber-400 text-slate-900' : 'bg-slate-700 text-slate-300 group-hover:bg-amber-400/20 group-hover:text-amber-400'
-              }`}>
-                R
-              </span>
-              Random Sentences
-            </h2>
-            <span className={`text-sm font-medium transition-colors ${
-              activeMode === 'random-sentences' ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-300'
-            }`}>
-              {activeMode === 'random-sentences' ? 'Close settings' : 'Configure & Start'}
-            </span>
+              letter="S"
+              label="Sentences"
+              title="Random Sentences: Punctuation, numbers and casing toggled exactly how you like."
+            />
+            
+            <PortalButton
+              active={activeMode === 'versus'}
+              onClick={() => setActiveMode(activeMode === 'versus' ? null : 'versus')}
+              letter="V"
+              label="Versus"
+              title="Versus: Race up to eight opponents live, with a shared word stream."
+            />
+
+            <PortalButton
+              active={false}
+              onClick={onOpenLibrary}
+              letter="L"
+              label="Library"
+              title="Library: Manage and select your imported texts."
+            />
+
+            <PortalButton
+              active={activeMode === 'graph'}
+              onClick={() => setActiveMode(activeMode === 'graph' ? null : 'graph')}
+              letter="G"
+              label="Graph"
+              title="Graph: View your typing statistics."
+            />
+
+            <PortalButton
+              active={activeMode === 'customization'}
+              onClick={() => setActiveMode(activeMode === 'customization' ? null : 'customization')}
+              letter="C"
+              label="Customization"
+              title="Customization: Configure Fonts, Colors, and Backgrounds."
+            />
+
           </div>
-        </button>
+        </div>
+      </main>
+      )}
 
-        {activeMode === 'random-sentences' && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-300 mt-8">
-            <section className="bg-slate-800/40 p-6 border border-slate-700/50">
-              <h3 className="text-xl font-bold mb-4 text-amber-400">Sentence Configuration</h3>
-              <p className="text-slate-300 mb-6 text-sm">
-                Provide a Gemini API Key to generate custom sentences via AI. If left blank, we will generate sentences using a Markov Chain trained on English quotes.
-              </p>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="text-sm text-slate-400 mb-2 block">Gemini API Key (Optional)</label>
-                  <input
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => handleApiKeyChange(e.target.value)}
-                    placeholder="AIzaSy..."
-                    className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 focus:border-amber-400 focus:outline-none text-lg font-mono text-slate-100"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="text-sm text-slate-400 mb-2 block">Min Words</label>
-                    <input
-                      type="number"
-                      min={2}
-                      max={maxWordsSentences}
-                      value={minWordsSentences}
-                      onChange={(e) => setMinWordsSentences(parseInt(e.target.value) || 2)}
-                      className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 focus:border-amber-400 focus:outline-none text-lg font-semibold text-center text-slate-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-slate-400 mb-2 block">Max Words</label>
-                    <input
-                      type="number"
-                      min={minWordsSentences}
-                      max={100}
-                      value={maxWordsSentences}
-                      onChange={(e) => setMaxWordsSentences(parseInt(e.target.value) || 12)}
-                      className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 focus:border-amber-400 focus:outline-none text-lg font-semibold text-center text-slate-100"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm text-slate-400 mb-2 block">Allowed Rows (Both AI & Markov Mode)</label>
-                  <div className="flex gap-4">
-                    {(['top', 'home', 'bottom'] as RowKey[]).map((r) => (
-                      <button
-                        key={r}
-                        onClick={() => toggleRow(r)}
-                        className={`flex-1 py-3 text-lg font-bold capitalize transition-colors ${
-                          rows.includes(r)
-                            ? 'bg-amber-400 text-slate-900'
-                            : 'bg-slate-900/50 text-slate-500 hover:bg-slate-800'
-                        }`}
-                      >
-                        {r}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {renderDurationSelector(2, durationSentences, setDurationSentences, showCustomSentences, setShowCustomSentences, durSentences)}
-
-            {quoteError && (
-              <div className="text-center text-rose-400 text-sm font-medium">{quoteError}</div>
-            )}
-
-            <div className="flex justify-center">
-              <button
-                onClick={handleStartRandomSentences}
-                disabled={isLoadingQuotes}
-                className={`flex items-center gap-3 px-10 py-4 font-bold text-lg transition-all ${
-                  !isLoadingQuotes
-                    ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 hover:scale-105'
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                }`}
-              >
-                {isLoadingQuotes ? 'Loading Quotes...' : 'Start Typing'}
-              </button>
+      {/* Live Keyboard */}
+      {!activeMode && (
+      <section className="w-full px-8 pt-[clamp(7rem,15vh,20rem)] pb-[clamp(3vh,5vh,6rem)]">
+        <div className="flex flex-col lg:flex-row gap-[clamp(1rem,4vh,4rem)] items-center">
+          <div className="flex-1 scene flex flex-col justify-center w-full">
+            <div 
+              ref={keyboardRef}
+              onMouseEnter={() => setIsHoveringKeyboard(true)}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={(e) => { setIsHoveringKeyboard(false); handleMouseLeave(); }}
+              className="max-w-7xl w-full mx-auto lg:ml-[5vw]"
+            >
+              {/* Keyboard Layout */}
+              <LiveKeyboard activeKeys={activeKeys} />
             </div>
           </div>
-        )}
-          </>
-        )}
-
-        {/* Versus Toggle */}
-        {(!activeMode || activeMode === 'versus') && (
-          <>
-            <button 
-              onClick={() => setActiveMode(activeMode === 'versus' ? null : 'versus')}
-              className={`w-full p-6 border transition-all text-left group mt-4 ${
-                activeMode === 'versus' 
-                  ? 'bg-amber-400/5 border-amber-400/50' 
-                  : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold flex items-center gap-3 text-slate-100">
-                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${
-                    activeMode === 'versus' ? 'bg-amber-400 text-slate-900' : 'bg-slate-700 text-slate-300 group-hover:bg-amber-400/20 group-hover:text-amber-400'
-                  }`}>
-                    V
-                  </span>
-                  Versus (Multiplayer)
-                </h2>
-                <span className={`text-sm font-medium transition-colors ${
-                  activeMode === 'versus' ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-300'
-                }`}>
-                  {activeMode === 'versus' ? 'Close settings' : 'Configure & Play'}
-                </span>
+          
+          {/* Stats Card */}
+          <div className="flex flex-col items-start lg:items-end w-full lg:w-auto">
+            <div className="w-full lg:w-[1200px] h-[520px]">
+              <div className="border border-slate-800 rounded-xl p-[clamp(1rem,2vh,2.5rem)] bg-slate-900/20 backdrop-blur w-full h-full flex flex-col justify-start text-left overflow-hidden relative">
+                <div ref={textContainerRef} className="font-mono text-2xl sm:text-3xl text-[var(--hot)] leading-[1.6] break-words whitespace-pre-wrap w-full h-full overflow-hidden text-ellipsis relative">
+                  {!isHoveringKeyboard && !isRandomSentencesLive ? (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="text-slate-600">Hover here to try the keyboard...</span>
+                    </div>
+                  ) : (
+                    <>
+                      {isRandomSentencesLive && liveTargetSentence ? (
+                        <>
+                        {liveTargetSentence.split('').map((char, i) => {
+                          let colorClass = 'text-slate-600 exclude-theme';
+                          if (i < typedText.length) {
+                            colorClass = typedText[i] === char ? 'text-[var(--hot)] theme-text-override' : 'text-rose-400 underline exclude-theme';
+                          } else if (i === typedText.length) {
+                            colorClass = 'text-slate-100 exclude-theme';
+                          }
+                          return (
+                            <span key={i} className={`relative ${colorClass}`}>
+                              {i === typedText.length && (
+                                 <span className="absolute -left-[1px] top-0 bottom-0 w-[3px] bg-[var(--hot)] animate-cursor-blink z-10"></span>
+                              )}
+                              {char}
+                            </span>
+                          );
+                        })}
+                        {typedText.length === liveTargetSentence.length && (
+                          <span className="border-r-[3px] border-[var(--hot)] animate-cursor-blink ml-[1px] inline-block h-8 -mb-1"></span>
+                        )}
+                        </>
+                      ) : (
+                        <>
+                          {typedText}
+                          <span className="border-r-[3px] border-[var(--hot)] animate-cursor-blink ml-0.5 inline-block h-8 -mb-1"></span>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
+            </div>
+            
+            <div className="w-full mt-4 flex items-center justify-between ml-2">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isRandomSentencesLive ? 'bg-[var(--hot)] border-[var(--hot)]' : 'border-slate-600 bg-slate-900 group-hover:border-slate-400'}`}>
+                  {isRandomSentencesLive && <span className="text-black text-xs font-bold leading-none">✓</span>}
+                </div>
+                <input 
+                  type="checkbox" 
+                  className="hidden"
+                  checked={isRandomSentencesLive}
+                  onChange={(e) => {
+                    setIsRandomSentencesLive(e.target.checked);
+                    if (e.target.checked) {
+                      setTypedText('');
+                      setLiveWpm(null);
+                      setLiveStartTime(null);
+                    }
+                  }}
+                />
+                <span className="font-mono text-xs uppercase tracking-widest text-slate-400 group-hover:text-white transition-colors">
+                  Random Sentences
+                </span>
+              </label>
+
+              <div className="flex items-center gap-4 mr-2">
+                {liveWpm !== null && (
+                  <div className="text-[var(--hot)] font-display text-2xl tracking-widest flex items-center gap-2">
+                    {liveWpm} <span className="font-mono text-sm text-slate-500 uppercase">WPM</span>
+                  </div>
+                )}
+                {isRandomSentencesLive && (
+                  <button 
+                    onClick={() => {
+                      setTypedText('');
+                      setLiveWpm(null);
+                      setLiveStartTime(null);
+                      setLiveTargetSentence('');
+                    }}
+                    className="w-8 h-8 rounded border border-slate-800 bg-slate-900/50 flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all cursor-pointer shadow-sm"
+                    title="Refresh Sentences"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        {useVirtualKeyboard && <VirtualKeyboardConnector />}
+      </section>
+      )}
+
+      {/* Configuration View */}
+      {activeMode && (
+      <section className="w-full px-8 py-[clamp(3vh,5vh,6rem)] flex-1 flex flex-col">
+          <div className="w-full max-w-4xl mx-auto animate-in fade-in slide-in-from-top-4 duration-500 mb-20">
+            <button onClick={() => setActiveMode(null)} className="mb-8 flex items-center gap-2 text-slate-400 hover:text-[var(--hot)] transition-colors font-mono text-sm uppercase tracking-widest group">
+              <span className="transition-transform group-hover:-translate-x-1">←</span> Back to Modes
             </button>
+            <div className="w-full border border-[var(--hot)] rounded-lg p-[clamp(1rem,2vh,2.5rem)] bg-slate-900/20 backdrop-blur shadow-[0_0_30px_var(--color-hot-soft)]">
+            <h3 className="text-2xl font-display tracking-widest text-white uppercase mb-8 border-b border-slate-800/50 pb-4">
+              Configure {activeMode === 'words' ? 'Words' : activeMode === 'file' ? 'File Upload' : activeMode === 'random-sentences' ? 'Sentences' : activeMode === 'customization' ? 'Customization' : 'Versus'}
+            </h3>
+            
+            {activeMode === 'customization' && (
+              <div className="flex items-center justify-center gap-16 py-12">
+                <button onClick={onOpenFont} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Fonts</button>
+                <button onClick={onOpenColor} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Colors</button>
+                <button onClick={onOpenUiColor} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Background</button>
+              </div>
+            )}
+            
+            {activeMode === 'words' && (
+              <div className="space-y-10">
+                <section>
+                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">1. Choose your key rows</h2>
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    {ROW_LABELS.map((r) => {
+                      const active = rows.includes(r.key);
+                      return (
+                        <button key={r.key} onClick={() => toggleRow(r.key)} className={`text-left p-6 border transition-all rounded ${active ? 'border-[var(--hot)] bg-[var(--hot)]/10' : 'border-slate-800 bg-slate-900/40 hover:border-slate-600'}`}>
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="font-semibold text-white tracking-wide">{r.label}</span>
+                            <span className={`w-4 h-4 border-2 rounded-sm flex items-center justify-center transition-colors ${active ? 'border-[var(--hot)] bg-[var(--hot)]' : 'border-slate-600'}`}></span>
+                          </div>
+                          <code className="text-[10px] text-slate-500 tracking-widest">{r.keys}</code>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+                {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
+                <section>
+                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">3. Set word length</h2>
+                  <div className="grid sm:grid-cols-2 gap-[clamp(0.5rem,1.5vh,1.5rem)]">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Min Letters</label>
+                      <input 
+                        type="text" 
+                        inputMode="numeric"
+                        value={minLen} 
+                        onChange={(e) => setMinLen(e.target.value.replace(/[^0-9-]/g, ''))} 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            let v = parseInt(String(minLen), 10);
+                            if (isNaN(v)) v = 2;
+                            let currentMax = parseInt(String(maxLen), 10) || 15;
+                            v = Math.max(2, Math.min(45, Math.min(currentMax, v)));
+                            setMinLen(v);
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        onBlur={() => {
+                          let v = parseInt(String(minLen), 10);
+                          if (isNaN(v)) v = 2;
+                          let currentMax = parseInt(String(maxLen), 10) || 15;
+                          v = Math.max(2, Math.min(45, Math.min(currentMax, v)));
+                          setMinLen(v);
+                        }}
+                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)]" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Max Letters</label>
+                      <input 
+                        type="text" 
+                        inputMode="numeric"
+                        value={maxLen} 
+                        onChange={(e) => setMaxLen(e.target.value.replace(/[^0-9-]/g, ''))} 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            let v = parseInt(String(maxLen), 10);
+                            if (isNaN(v)) v = 15;
+                            let currentMin = parseInt(String(minLen), 10) || 2;
+                            v = Math.max(2, Math.min(45, Math.max(currentMin, v)));
+                            setMaxLen(v);
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        onBlur={() => {
+                          let v = parseInt(String(maxLen), 10);
+                          if (isNaN(v)) v = 15;
+                          let currentMin = parseInt(String(minLen), 10) || 2;
+                          v = Math.max(2, Math.min(45, Math.max(currentMin, v)));
+                          setMaxLen(v);
+                        }}
+                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)]" 
+                      />
+                    </div>
+                  </div>
+                </section>
+                {error && <div className="text-[var(--hot)] text-sm font-mono tracking-widest">{error}</div>}
+                <div className="pt-6">
+                  <button onClick={handleStart} className="px-12 py-5 font-mono text-[10px] uppercase tracking-widest transition-all rounded border bg-[var(--hot)]/10 text-[var(--hot)] border-[var(--hot)] hover:bg-[var(--hot)] hover:text-black shadow-[0_0_20px_var(--color-hot-soft)]">Start Typing</button>
+                </div>
+              </div>
+            )}
+
+            {activeMode === 'file' && (
+              <div className="space-y-10">
+                <section>
+                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">1. Upload Document</h2>
+                  <div className="flex items-center">
+                    <label className="cursor-pointer px-6 py-3 rounded border border-[var(--hot)] text-[10px] uppercase tracking-widest bg-[var(--hot)]/10 text-[var(--hot)] hover:bg-[var(--hot)] hover:text-black transition-colors font-mono mr-4">
+                      Choose File
+                      <input type="file" accept=".txt,.pdf,.docx,.pptx" onChange={handleFileUpload} className="hidden" />
+                    </label>
+                    <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest max-w-[200px] truncate">
+                      {fileName || 'No file chosen'}
+                    </span>
+                  </div>
+                  {isParsing && <p className="text-[var(--hot)] mt-3 text-xs font-mono uppercase tracking-widest">Parsing file...</p>}
+                  {parsedDoc && !isParsing && <p className="text-emerald-400 mt-3 text-xs font-mono uppercase tracking-widest">✓ File parsed ({parsedDoc.pages.length} pages)</p>}
+                </section>
+                <section className={`transition-opacity ${parsedDoc?.isTextFile ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">2. Select Page Range</h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Start Page</label>
+                      <input 
+                        type="text" 
+                        inputMode="numeric"
+                        value={(!parsedDoc || parsedDoc.isTextFile) ? 'None' : startPage} 
+                        onChange={(e) => setStartPage(e.target.value.replace(/[^0-9-]/g, ''))} 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            let v = parseInt(String(startPage), 10);
+                            if (isNaN(v)) v = 1;
+                            const maxP = parsedDoc ? parsedDoc.pages.length : 1;
+                            let currentEnd = parseInt(String(endPage), 10) || 1;
+                            v = Math.max(1, Math.min(maxP, Math.min(currentEnd, v)));
+                            setStartPage(v);
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        onBlur={() => {
+                          let v = parseInt(String(startPage), 10);
+                          if (isNaN(v)) v = 1;
+                          const maxP = parsedDoc ? parsedDoc.pages.length : 1;
+                          let currentEnd = parseInt(String(endPage), 10) || 1;
+                          v = Math.max(1, Math.min(maxP, Math.min(currentEnd, v)));
+                          setStartPage(v);
+                        }}
+                        disabled={!parsedDoc || parsedDoc.isTextFile} 
+                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)] disabled:opacity-50 disabled:cursor-not-allowed" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">End Page</label>
+                      <input 
+                        type="text" 
+                        inputMode="numeric"
+                        value={(!parsedDoc || parsedDoc.isTextFile) ? 'None' : endPage} 
+                        onChange={(e) => setEndPage(e.target.value.replace(/[^0-9-]/g, ''))} 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            let v = parseInt(String(endPage), 10);
+                            if (isNaN(v)) v = 1;
+                            const maxP = parsedDoc ? parsedDoc.pages.length : 1;
+                            let currentStart = parseInt(String(startPage), 10) || 1;
+                            v = Math.max(1, Math.min(maxP, Math.max(currentStart, v)));
+                            setEndPage(v);
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        onBlur={() => {
+                          let v = parseInt(String(endPage), 10);
+                          if (isNaN(v)) v = 1;
+                          const maxP = parsedDoc ? parsedDoc.pages.length : 1;
+                          let currentStart = parseInt(String(startPage), 10) || 1;
+                          v = Math.max(1, Math.min(maxP, Math.max(currentStart, v)));
+                          setEndPage(v);
+                        }}
+                        disabled={!parsedDoc || parsedDoc.isTextFile} 
+                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)] disabled:opacity-50 disabled:cursor-not-allowed" 
+                      />
+                    </div>
+                  </div>
+                </section>
+                {renderDurationSelector(3, durationFile, setDurationFile, showCustomFile, setShowCustomFile, durFile)}
+                {fileError && <div className="text-rose-400 text-sm font-mono tracking-widest">{fileError}</div>}
+                <div className="pt-6">
+                  <button onClick={handleStartFile} disabled={!parsedDoc || isParsing} className={`px-12 py-5 font-mono text-[10px] uppercase tracking-widest transition-all rounded border ${parsedDoc && !isParsing ? 'bg-[var(--hot)]/10 text-[var(--hot)] border-[var(--hot)] hover:bg-[var(--hot)] hover:text-black shadow-[0_0_20px_var(--color-hot-soft)]' : 'bg-slate-900 text-slate-600 border-slate-800 cursor-not-allowed'}`}>Start Typing</button>
+                </div>
+              </div>
+            )}
+
+            {activeMode === 'random-sentences' && (
+              <div className="space-y-10">
+                <section>
+                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">1. Sentence Configuration</h2>
+                  <div className="space-y-6">
+                    <div className="grid sm:grid-cols-2 gap-[clamp(0.5rem,1.5vh,1.5rem)]">
+                      <div>
+                        <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2 block">Gemini API Key (Optional)</label>
+                        <input type="password" value={apiKey} onChange={(e) => handleApiKeyChange(e.target.value)} placeholder="AIzaSy..." className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)]" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2 block">Topic / Theme (Requires Key)</label>
+                        <input type="text" value={sentenceTheme} onChange={(e) => setSentenceTheme(e.target.value)} disabled={!apiKey} placeholder={apiKey ? "e.g., rick and morty" : ""} className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)] disabled:opacity-50 disabled:cursor-not-allowed" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Min Words/Sent.</label>
+                          <input 
+                            type="text" 
+                            inputMode="numeric"
+                            value={minWordsSentences} 
+                            onChange={(e) => setMinWordsSentences(e.target.value.replace(/[^0-9-]/g, ''))} 
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                let v = parseInt(String(minWordsSentences), 10);
+                                if (isNaN(v)) v = 2;
+                                let currentMax = parseInt(String(maxWordsSentences), 10) || 12;
+                                v = Math.max(2, Math.min(100, Math.min(currentMax, v)));
+                                setMinWordsSentences(v);
+                                e.currentTarget.blur();
+                              }
+                            }}
+                            onBlur={() => {
+                              let v = parseInt(String(minWordsSentences), 10);
+                              if (isNaN(v)) v = 2;
+                              let currentMax = parseInt(String(maxWordsSentences), 10) || 12;
+                              v = Math.max(2, Math.min(100, Math.min(currentMax, v)));
+                              setMinWordsSentences(v);
+                            }}
+                            className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)]" 
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Max Words/Sent.</label>
+                          <input 
+                            type="text" 
+                            inputMode="numeric"
+                            value={maxWordsSentences} 
+                            onChange={(e) => setMaxWordsSentences(e.target.value.replace(/[^0-9-]/g, ''))} 
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                let v = parseInt(String(maxWordsSentences), 10);
+                                if (isNaN(v)) v = 12;
+                                let currentMin = parseInt(String(minWordsSentences), 10) || 2;
+                                v = Math.max(2, Math.min(100, Math.max(currentMin, v)));
+                                setMaxWordsSentences(v);
+                                e.currentTarget.blur();
+                              }
+                            }}
+                            onBlur={() => {
+                              let v = parseInt(String(maxWordsSentences), 10);
+                              if (isNaN(v)) v = 12;
+                              let currentMin = parseInt(String(minWordsSentences), 10) || 2;
+                              v = Math.max(2, Math.min(100, Math.max(currentMin, v)));
+                              setMaxWordsSentences(v);
+                            }}
+                            className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)]" 
+                          />
+                        </div>
+                    </div>
+                  </div>
+                </section>
+                {renderDurationSelector(2, durationSentences, setDurationSentences, showCustomSentences, setShowCustomSentences, durSentences)}
+                {quoteError && <div className="text-rose-400 text-sm font-mono tracking-widest">{quoteError}</div>}
+                <div className="pt-6">
+                  <button onClick={handleStartRandomSentences} disabled={isLoadingQuotes} className={`px-12 py-5 font-mono text-[10px] uppercase tracking-widest transition-all rounded border ${!isLoadingQuotes ? 'bg-[var(--hot)]/10 text-[var(--hot)] border-[var(--hot)] hover:bg-[var(--hot)] hover:text-black shadow-[0_0_20px_var(--color-hot-soft)]' : 'bg-slate-900 text-slate-600 border-slate-800 cursor-not-allowed'}`}>
+                    {isLoadingQuotes ? 'Loading Quotes...' : 'Start Typing'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {activeMode === 'versus' && (
-              <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-300 mt-8">
-                <VersusModeSetup 
-                  onLobbyJoined={onLobbyJoined}
-                />
+              <div className="pt-4">
+                <VersusModeSetup onLobbyJoined={onLobbyJoined} />
               </div>
             )}
-          </>
-        )}
-      </div>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

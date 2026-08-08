@@ -15,10 +15,11 @@ export async function generateSentences(
   rows: RowKey[],
   minWords: number,
   maxWords: number,
-  count: number = 20
+  count: number = 20,
+  theme?: string
 ): Promise<string[]> {
   if (apiKey && apiKey.trim().length > 0) {
-    return generateWithGemini(apiKey.trim(), rows, minWords, maxWords, count);
+    return generateWithGemini(apiKey.trim(), rows, minWords, maxWords, count, theme);
   }
 
   if (rows.length > 0) {
@@ -29,12 +30,16 @@ export async function generateSentences(
 }
 
 // 1. GEMINI LLM
-async function generateWithGemini(apiKey: string, rows: RowKey[], minWords: number, maxWords: number, count: number): Promise<string[]> {
+async function generateWithGemini(apiKey: string, rows: RowKey[], minWords: number, maxWords: number, count: number, theme?: string): Promise<string[]> {
   const rowRestriction = rows.length > 0 
     ? `ONLY use words that can be spelled using the letters from these rows: ${rows.join(', ')}.`
     : '';
 
-  const prompt = `Generate ${count} random English sentences. Keep each sentence exactly between ${minWords} and ${maxWords} words long. Use common vocabulary. ${rowRestriction} Output ONLY a valid JSON array of strings, with no markdown formatting.`;
+  const themeRestriction = theme && theme.trim().length > 0
+    ? `The sentences MUST be heavily themed around or directly about: "${theme}".`
+    : '';
+
+  const prompt = `Generate ${count} random English sentences. Keep each sentence exactly between ${minWords} and ${maxWords} words long. Use common vocabulary. ${rowRestriction} ${themeRestriction} Output ONLY a valid JSON array of strings, with no markdown formatting.`;
 
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
@@ -125,11 +130,11 @@ async function generateRandomDictionarySentences(rows: RowKey[], minWords: numbe
   
   const sentences: string[] = [];
   for (let i = 0; i < count; i++) {
-    const targetLength = Math.floor(Math.random() * (maxWords - minWords + 1)) + minWords;
+    const targetLength = Math.max(3, Math.min(15, Math.floor(Math.random() * (maxWords - minWords + 1)) + minWords));
     let sentence = '';
     for (let j = 0; j < targetLength; j++) {
       let w = 'fallback';
-      if (pool.length > 0) {
+      if (pool && pool.length > 0) {
         w = pool[Math.floor(Math.random() * pool.length)];
       }
       if (j === 0) sentence += w.charAt(0).toUpperCase() + w.slice(1);
@@ -137,6 +142,10 @@ async function generateRandomDictionarySentences(rows: RowKey[], minWords: numbe
     }
     sentence += '.';
     sentences.push(sentence);
+  }
+  
+  if (sentences.length === 0) {
+    return ["This is a guaranteed fallback sentence.", "Please check your network or api key.", "The fallback engine is running safely."];
   }
   return sentences;
 }

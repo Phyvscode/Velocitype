@@ -112,8 +112,8 @@ export default function ResultsScreen({ typed, duration, rows, onPlayAgain, onHo
   const selectedState = selected ? states[selected] : undefined;
 
   return (
-    <div className="min-h-screen bg-[#0f1117] text-slate-100 px-4 py-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="h-[100dvh] w-full bg-[#0f1117] text-slate-100 p-4 sm:p-8 flex flex-col overflow-hidden">
+      <div className="max-w-5xl w-full mx-auto flex-1 min-h-0 flex flex-col">
         {/* Header / stats */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
@@ -123,7 +123,7 @@ export default function ResultsScreen({ typed, duration, rows, onPlayAgain, onHo
           <div className="flex gap-3">
             <button
               onClick={onPlayAgain}
-              className="flex items-center gap-2 px-5 py-2.5 bg-amber-400 text-slate-900 font-semibold hover:bg-amber-300 transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 bg-[var(--hot)] text-slate-900 font-semibold hover:opacity-90 transition-opacity"
             >
                Play again
             </button>
@@ -137,20 +137,20 @@ export default function ResultsScreen({ typed, duration, rows, onPlayAgain, onHo
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8 flex-none">
           <StatCard label="Words typed" value={String(typed.length)} />
           <StatCard label="Correct" value={String(correctCount)} />
           <StatCard label="Accuracy" value={`${accuracy}%`} />
           <StatCard label="WPM" value={String(wpm)} highlight />
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="flex-1 min-h-0 grid lg:grid-cols-2 gap-4 lg:gap-6 pb-4">
           {/* Word list */}
-          <div className="bg-slate-800/40 p-5 border border-slate-700/50">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-2">
+          <div className="bg-slate-800/40 p-4 sm:p-5 border border-slate-700/50 flex flex-col min-h-0">
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3 flex-none flex items-center gap-2">
                All words ({typed.length})
             </h2>
-            <div className="flex flex-wrap gap-2 max-h-[420px] overflow-y-auto pr-1">
+            <div className="flex-1 overflow-y-auto pr-1 flex flex-wrap gap-2 content-start custom-scrollbar">
               {typed.map((t, i) => {
                 const w = t.word;
                 const isSel = selected === w;
@@ -160,7 +160,7 @@ export default function ResultsScreen({ typed, duration, rows, onPlayAgain, onHo
                     onClick={() => handleSelect(w)}
                     className={`px-3 py-1.5 font-mono text-sm transition-all flex items-center gap-1.5 ${
                       isSel
-                        ? 'bg-amber-400 text-slate-900'
+                        ? 'bg-[var(--hot)] text-slate-900'
                         : 'bg-slate-900/50 hover:bg-slate-700/60 text-slate-200'
                     }`}
                   >
@@ -172,9 +172,9 @@ export default function ResultsScreen({ typed, duration, rows, onPlayAgain, onHo
           </div>
 
           {/* Meaning panel */}
-          <div className="bg-slate-800/40 p-6 border border-slate-700/50">
+          <div className="bg-slate-800/40 p-4 sm:p-6 border border-slate-700/50 flex flex-col min-h-0">
             {selected ? (
-              <div>
+              <div className="flex flex-col h-full min-h-0">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-2xl font-bold font-mono capitalize">{selected}</h3>
                   <button
@@ -199,14 +199,14 @@ export default function ResultsScreen({ typed, duration, rows, onPlayAgain, onHo
                 </div>
 
                 {selectedState?.loading ? (
-                  <div className="flex items-center gap-2 text-slate-400">
+                  <div className="flex items-center gap-2 text-slate-400 flex-none">
                      Looking up definition
                   </div>
                 ) : selectedState?.meanings && selectedState.meanings.length > 0 ? (
-                  <div className="space-y-3">
-                    {selectedState.meanings.slice(0, 4).map((m, i) => (
-                      <div key={i} className="border-l-2 border-amber-400/40 pl-3">
-                        <span className="text-xs uppercase tracking-wide text-amber-400 font-semibold">{m.partOfSpeech}</span>
+                  <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                    {selectedState.meanings.map((m, i) => (
+                      <div key={i} className="border-l-2 border-[var(--hot)]/40 pl-3">
+                        <span className="text-xs uppercase tracking-wide text-[var(--hot)] font-semibold">{m.partOfSpeech}</span>
                         <p className="text-slate-200">{m.definition}</p>
                         {m.example && (
                           <p className="text-slate-400 text-sm italic mt-1">"{m.example}"</p>
@@ -230,9 +230,9 @@ export default function ResultsScreen({ typed, duration, rows, onPlayAgain, onHo
 
 function StatCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="bg-slate-800/40 p-4 border border-slate-700/50 text-center">
-      <div className={`text-3xl font-bold ${highlight ? 'text-orange-400' : 'text-amber-400'}`}>{value}</div>
-      <div className="text-xs text-slate-400 uppercase tracking-wide mt-1">{label}</div>
+    <div className="bg-slate-800/40 p-2 sm:p-4 border border-slate-700/50 text-center flex flex-col justify-center">
+      <div className={`text-2xl sm:text-3xl font-bold ${highlight ? 'text-[var(--hot)]' : 'text-slate-100'}`}>{value}</div>
+      <div className="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wide mt-1">{label}</div>
     </div>
   );
 }
