@@ -122,7 +122,16 @@ const PortalButton = ({ active, onClick, letter, label, title, borderStyle }: { 
       <PortalBorderOverlay borderStyle={borderStyle} />
     </button>
 
-
+    {/* Hologram Label — rises up above for Original Portal, drops down below for custom borders */}
+    <span 
+      className={`absolute left-1/2 -translate-x-1/2 text-xl sm:text-2xl font-display uppercase tracking-widest text-[var(--hot)] whitespace-nowrap opacity-0 transition-all duration-700 ease-out pointer-events-none z-50 drop-shadow-[0_0_15px_var(--color-hot-soft)] ${
+        borderStyle === 'b0' 
+          ? 'top-0 translate-y-4 group-hover:-translate-y-4' 
+          : '-bottom-10 -translate-y-4 group-hover:translate-y-8'
+      } group-hover:opacity-100`}
+    >
+      {label}
+    </span>
   </div>
   );
 };
