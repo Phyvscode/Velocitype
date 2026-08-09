@@ -111,7 +111,6 @@ const PortalButton = ({ active, onClick, letter, label, title, borderStyle }: { 
       onMouseLeave={handleMouseLeave}
       style={{ transformStyle: 'preserve-3d' }}
       className={`portal-stage w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] rounded-full flex items-center justify-center transition-all duration-700 ease-in-out ${borderStyle === 'b0' ? 'group-hover:-translate-y-[10%] group-hover:[transform:rotateX(75deg)] border' : ''} group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 ${active ? `${borderStyle === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]` : `${borderStyle === 'b0' ? 'border-slate-800 ' : ''}bg-slate-900/50 text-slate-400`}`}
-      title={title}
     >
       {/* Letter: always visible, unaffected by hover */}
       <span className="text-[clamp(2rem,3.5vw,4rem)] font-display uppercase leading-none">
