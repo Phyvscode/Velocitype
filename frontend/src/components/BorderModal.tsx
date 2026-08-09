@@ -107,25 +107,26 @@ export default function BorderModal({ isOpen, onClose }: BorderModalProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6" style={{ perspective: '1500px' }}>
+          <div className="flex flex-wrap justify-center gap-[clamp(1.5rem,3vw,3rem)]" style={{ perspective: '1500px' }}>
             {BORDER_STYLES.map(style => (
-              <button
-                key={style.id}
-                onClick={() => handleSelect(style.id)}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                style={{ transformStyle: 'preserve-3d' }}
-                className={`relative w-full aspect-square rounded-full flex flex-col items-center justify-center transition-all duration-700 ease-in-out portal-stage group ${style.id === 'b0' ? 'hover:-translate-y-2 hover:[transform:rotateX(75deg)] border' : ''} ${
-                  selected === style.id
-                    ? `${style.id === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 text-white shadow-[0_0_20px_var(--color-hot-soft)]`
-                    : `${style.id === 'b0' ? 'border-slate-800 ' : ''}bg-slate-900/50 text-slate-400 hover:text-slate-200`
-                }`}
-              >
-                <div className="text-xs sm:text-sm font-display tracking-widest uppercase text-center leading-tight relative z-10 px-2 transition-all duration-700 group-hover:opacity-0">
+              <div key={style.id} className="flex flex-col items-center gap-4 group">
+                <button
+                  onClick={() => handleSelect(style.id)}
+                  onMouseMove={handleMouseMove}
+                  onMouseLeave={handleMouseLeave}
+                  style={{ transformStyle: 'preserve-3d' }}
+                  className={`relative w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] rounded-full flex flex-col items-center justify-center transition-all duration-700 ease-in-out portal-stage ${style.id === 'b0' ? 'hover:-translate-y-2 hover:[transform:rotateX(75deg)] border' : ''} ${
+                    selected === style.id
+                      ? `${style.id === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 text-white shadow-[0_0_20px_var(--color-hot-soft)]`
+                      : `${style.id === 'b0' ? 'border-slate-800 ' : ''}bg-slate-900/50 text-slate-400 hover:text-slate-200`
+                  }`}
+                >
+                  <PortalBorderOverlay borderStyle={style.id} />
+                </button>
+                <div className={`text-xs sm:text-sm font-display tracking-widest uppercase text-center leading-tight transition-colors duration-300 ${selected === style.id ? 'text-[var(--hot)]' : 'text-slate-400 group-hover:text-slate-200'}`}>
                   {style.name}
                 </div>
-                <PortalBorderOverlay borderStyle={style.id} />
-              </button>
+              </div>
             ))}
           </div>
         </div>
