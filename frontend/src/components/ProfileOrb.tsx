@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 
 type Props = {
   onOpenAuth: () => void;
@@ -26,13 +27,22 @@ export function ProfileOrb({ onOpenAuth }: Props) {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const base64 = reader.result as string;
         if (typeof window !== 'undefined') {
           localStorage.setItem('velocitype_local_avatar', base64);
         }
         setLocalAvatar(base64);
         setOpen(false);
+        
+        if (signedIn) {
+          try {
+            await api.updateSettings({ avatarUrl: base64 });
+            // optionally you can refresh the user context to reflect the saved avatar from the server.
+          } catch (err) {
+            console.error('Failed to save avatar to backend:', err);
+          }
+        }
       };
       reader.readAsDataURL(file);
     }

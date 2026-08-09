@@ -365,9 +365,15 @@ export const updateSettings = async (req: AuthRequest, res: Response): Promise<R
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    const { fontFamily, colorTheme } = req.body;
+    const { fontFamily, colorTheme, avatarUrl } = req.body;
     if (fontFamily) user.fontFamily = fontFamily;
     if (colorTheme) user.colorTheme = colorTheme;
+    if (avatarUrl !== undefined) {
+      user.avatarUrl = avatarUrl;
+      if (avatarUrl) {
+        user.profilePictureSource = 'upload';
+      }
+    }
 
     await user.save();
 

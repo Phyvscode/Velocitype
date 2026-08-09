@@ -172,7 +172,7 @@ class ApiClient {
     return this.request<LeaderboardEntry[]>('/results/leaderboard');
   }
 
-  public async updateSettings(settings: { fontFamily?: string, colorTheme?: any }): Promise<any> {
+  public async updateSettings(settings: { fontFamily?: string, colorTheme?: any, avatarUrl?: string }): Promise<any> {
     return this.request('/auth/settings', {
       method: 'PUT',
       body: JSON.stringify(settings),
