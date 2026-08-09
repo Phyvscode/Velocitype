@@ -228,7 +228,7 @@ export default function SetupScreen({
   }, [typedText, isRandomSentencesLive, liveStartTime]);
 
   useEffect(() => {
-    if (isRandomSentencesLive && liveTargetSentence && typedText.length >= liveTargetSentence.length) {
+    if (isRandomSentencesLive && liveTargetSentence && typedText === liveTargetSentence) {
       if (liveStartTime) {
         const timeMinutes = (Date.now() - liveStartTime) / 60000;
         const words = liveTargetSentence.length / 5;
