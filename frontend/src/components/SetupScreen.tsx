@@ -537,7 +537,7 @@ export default function SetupScreen({
   return (
     <div className="min-h-screen bg-transparent text-slate-100 flex flex-col items-center overflow-x-hidden">
       {/* Header */}
-      <header className="w-full flex items-center justify-center px-8 py-8 border-b border-slate-800/0">
+      <header className="w-full flex items-center justify-center px-8 py-4 border-b border-slate-800/0">
         <div className="flex items-center gap-10">
           <div>
             <h1 className="text-7xl font-display tracking-widest text-white uppercase">Veloci<span className="text-[var(--hot)]">type</span></h1>
@@ -573,7 +573,7 @@ export default function SetupScreen({
         
         {/* Training Modes */}
         <div className="flex w-full flex-col justify-center items-center relative">
-          <div className="flex items-center justify-center gap-[clamp(1rem,3vw,2.5rem)] flex-nowrap w-full overflow-x-auto pt-16 pb-32 px-4 -mx-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+          <div className="flex items-center justify-center gap-[clamp(1rem,2vw,2rem)] flex-wrap w-full pt-4 pb-12 px-4 relative z-20">
             
             <PortalButton
               active={activeMode === 'words'}
@@ -645,7 +645,7 @@ export default function SetupScreen({
 
       {/* Live Keyboard */}
       {!activeMode && (
-      <section className="w-full px-8 pt-[clamp(2rem,5vh,8rem)] pb-[clamp(3vh,5vh,6rem)]">
+      <section className="w-full px-8 pt-[clamp(0.5rem,2vh,2rem)] pb-[clamp(1rem,2vh,3rem)]">
         <div className="flex flex-col lg:flex-row gap-[clamp(1rem,4vh,4rem)] items-center">
           <div className="flex-1 scene flex flex-col justify-center w-full">
             <div 
@@ -662,7 +662,7 @@ export default function SetupScreen({
           
           {/* Stats Card */}
           <div className="flex-1 flex flex-col items-center lg:items-start w-full">
-            <div className="w-full max-w-[800px] lg:w-[45vw] h-[520px] min-h-[520px] max-h-[520px] flex-none overflow-hidden">
+            <div className="w-full max-w-[650px] lg:w-[38vw] h-[clamp(300px,40vh,450px)] flex-none overflow-hidden">
               <div className="border border-slate-800 rounded-xl p-[clamp(1rem,2vh,2.5rem)] bg-slate-900/20 backdrop-blur w-full h-full flex flex-col justify-start text-left overflow-hidden relative">
                 <div ref={textContainerRef} className="font-mono text-2xl sm:text-3xl text-[var(--hot)] leading-[1.6] break-words whitespace-pre-wrap w-full h-full overflow-hidden text-ellipsis relative">
                   {!isHoveringKeyboard && !isRandomSentencesLive ? (
