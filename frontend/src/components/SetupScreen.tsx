@@ -119,7 +119,7 @@ const PortalButton = ({ active, onClick, letter, label, title, borderStyle }: { 
     >
       {/* Content wrapper */}
       <div className="relative flex flex-col items-center justify-center leading-none">
-        <span className="absolute bottom-full text-[clamp(1.5rem,2vw,2.5rem)] font-display font-bold leading-none mb-1 [-webkit-text-stroke:1.5px_currentColor]">→</span>
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 text-[clamp(1.5rem,2vw,2.5rem)] font-display font-bold leading-none mb-1 [-webkit-text-stroke:1.5px_currentColor]">→</span>
         <span className="text-[clamp(2rem,3.5vw,4rem)] font-display uppercase leading-none">{letter}</span>
       </div>
 
