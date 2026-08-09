@@ -49,15 +49,15 @@
 /* 4. VIEWFINDER */
 .portal-b4 { position: absolute; inset: -4px; pointer-events: none; }
 .portal-b4 span {
-  position: absolute; width: 40px; height: 40px;
+  position: absolute; width: 25%; height: 25%;
   border-color: var(--color-border);
   transition: border-color .35s ease, width .35s ease, height .35s ease, transform .25s ease-out;
 }
-.portal-b4 .c1 { top: 0; left: 0; border-top: 4px solid; border-left: 4px solid; border-top-left-radius: 24px; }
-.portal-b4 .c2 { top: 0; right: 0; border-top: 4px solid; border-right: 4px solid; border-top-right-radius: 24px; }
-.portal-b4 .c3 { bottom: 0; left: 0; border-bottom: 4px solid; border-left: 4px solid; border-bottom-left-radius: 24px; }
-.portal-b4 .c4 { bottom: 0; right: 0; border-bottom: 4px solid; border-right: 4px solid; border-bottom-right-radius: 24px; }
-.portal-stage:hover .portal-b4 span { border-color: var(--hot); width: 60px; height: 60px; }
+.portal-b4 .c1 { top: 0; left: 0; border-top: 4px solid; border-left: 4px solid; border-top-left-radius: 50%; }
+.portal-b4 .c2 { top: 0; right: 0; border-top: 4px solid; border-right: 4px solid; border-top-right-radius: 50%; }
+.portal-b4 .c3 { bottom: 0; left: 0; border-bottom: 4px solid; border-left: 4px solid; border-bottom-left-radius: 50%; }
+.portal-b4 .c4 { bottom: 0; right: 0; border-bottom: 4px solid; border-right: 4px solid; border-bottom-right-radius: 50%; }
+.portal-stage:hover .portal-b4 span { border-color: var(--hot); width: 35%; height: 35%; }
 .portal-stage:hover .portal-b4 .c1 { transform: translate(calc(var(--mx) * 24px - 12px), calc(var(--my) * 24px - 12px)); }
 .portal-stage:hover .portal-b4 .c2 { transform: translate(calc(var(--mx) * 24px + 12px), calc(var(--my) * 24px - 12px)); }
 .portal-stage:hover .portal-b4 .c3 { transform: translate(calc(var(--mx) * 24px - 12px), calc(var(--my) * 24px + 12px)); }
@@ -127,7 +127,7 @@
 }
 .portal-stage:hover .portal-b11 { border-color: var(--hot); box-shadow: 0 0 50px var(--hot-soft); }
 .portal-b11 .iris {
-  position: absolute; top: 50%; left: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px;
+  position: absolute; top: 25%; left: 25%; width: 50%; height: 50%;
   border-radius: 50%;
   background: var(--hot);
   display: flex; align-items: center; justify-content: center;
@@ -135,20 +135,20 @@
   transition: transform .08s linear;
 }
 .portal-b11 .pupil {
-  width: 46px; height: 54px; border-radius: 50%; background: #ffffff; position: relative;
+  width: 40%; height: 45%; border-radius: 50%; background: #ffffff; position: relative;
   transform: translate(var(--pupil-x, 0px), var(--pupil-y, 0px));
   transition: transform .08s linear;
   animation: liquid-morph 4.2s ease-in-out infinite;
 }
 .portal-b11 .dot { position: absolute; border-radius: 50%; background: #ffffff; }
 .portal-b11 .dot-2 {
-  width: 22px; height: 22px; top: 12px; left: 12px;
+  width: 20%; height: 20%; top: 10%; left: 10%;
   transform: translate(var(--dot2-x, 0px), var(--dot2-y, 0px));
   transition: transform .08s linear;
   animation: liquid-morph 3.4s ease-in-out infinite;
 }
 .portal-b11 .dot-3 {
-  width: 14px; height: 14px; top: 30px; left: 16px;
+  width: 12%; height: 12%; top: 25%; left: 15%;
   transform: translate(var(--dot3-x, 0px), var(--dot3-y, 0px));
   transition: transform .08s linear;
   animation: liquid-morph 2.6s ease-in-out infinite .4s reverse;

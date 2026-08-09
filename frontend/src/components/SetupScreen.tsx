@@ -646,14 +646,14 @@ export default function SetupScreen({
       {/* Live Keyboard */}
       {!activeMode && (
       <section className="w-full px-8 pt-[clamp(0.5rem,2vh,2rem)] pb-[clamp(1rem,2vh,3rem)]">
-        <div className="flex flex-col lg:flex-row gap-[clamp(1rem,4vh,4rem)] items-center">
-          <div className="flex-1 scene flex flex-col justify-center w-full">
+        <div className="flex flex-col lg:flex-row gap-[clamp(1rem,4vh,4rem)] items-center w-full">
+          <div className="scene flex flex-col justify-center flex-none w-full lg:w-[700px] xl:w-[768px]">
             <div 
               ref={keyboardRef}
               onMouseEnter={() => setIsHoveringKeyboard(true)}
               onMouseMove={handleMouseMove}
               onMouseLeave={(e) => { setIsHoveringKeyboard(false); handleMouseLeave(); }}
-              className="max-w-3xl w-full mx-auto lg:ml-auto lg:mr-8"
+              className="w-full mx-auto"
             >
               {/* Keyboard Layout */}
               <LiveKeyboard activeKeys={activeKeys} />
@@ -661,7 +661,7 @@ export default function SetupScreen({
           </div>
           
           {/* Stats Card */}
-          <div className="flex-1 flex flex-col w-full">
+          <div className="flex-1 flex flex-col w-full h-full justify-center">
             <div className="w-full h-[520px] min-h-[520px] max-h-[520px] flex-none overflow-hidden">
               <div className="border border-slate-800 rounded-xl p-[clamp(1rem,2vh,2.5rem)] bg-slate-900/20 backdrop-blur w-full h-full flex flex-col justify-start text-left overflow-hidden relative">
                 <div ref={textContainerRef} className="font-mono text-2xl sm:text-3xl text-[var(--hot)] leading-[1.6] break-words whitespace-pre-wrap w-full h-full overflow-hidden text-ellipsis relative">
