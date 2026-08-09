@@ -210,7 +210,7 @@ export default function SetupScreen({
 
   useEffect(() => {
     if (isRandomSentencesLive && !liveTargetSentence) {
-      generateSentences('', ['home', 'top', 'bottom'], 5, 12, 25).then(res => {
+      generateSentences('', ['home', 'top', 'bottom'], 5, 12, 15).then(res => {
         if (res && res.length > 0) {
           const target = res.join(' ').toLowerCase().replace(/[.]/g, '');
           setLiveTargetSentence(target);
@@ -646,7 +646,7 @@ export default function SetupScreen({
       {/* Live Keyboard */}
       {!activeMode && (
       <section className="w-full px-12 md:px-20 lg:px-32 pt-[clamp(0.5rem,2vh,2rem)] pb-[clamp(1rem,2vh,3rem)]">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 xl:gap-24 items-center w-full">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 xl:gap-24 items-center justify-center w-full">
           <div className="scene flex flex-col justify-center flex-none w-full lg:w-[600px] xl:w-[680px]">
             <div 
               ref={keyboardRef}
@@ -661,7 +661,7 @@ export default function SetupScreen({
           </div>
           
           {/* Stats Card */}
-          <div className="flex-1 flex flex-col w-full h-full justify-center min-w-0">
+          <div className="flex-none flex flex-col w-full lg:w-[560px] lg:min-w-[560px] lg:max-w-[560px] h-full justify-center">
             <div className="w-full h-[340px] min-h-[340px] max-h-[340px] flex-none overflow-hidden">
               <div className="border border-slate-800 rounded-xl p-[clamp(1rem,2vh,2.5rem)] bg-slate-900/20 backdrop-blur w-full h-full flex flex-col justify-start text-left overflow-hidden relative">
                 <div ref={textContainerRef} className="font-mono text-2xl sm:text-3xl text-[var(--hot)] leading-[1.6] break-words whitespace-pre-wrap w-full h-full overflow-hidden text-ellipsis relative">
