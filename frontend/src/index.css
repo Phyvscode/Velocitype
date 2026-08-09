@@ -171,6 +171,10 @@
 }
 
 @layer base {
+  html {
+    font-size: 87.5%; /* Scales down 1rem from 16px to 14px across the entire app */
+  }
+
   * {
     border-color: var(--color-border);
   }
