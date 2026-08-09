@@ -165,18 +165,44 @@ const makeTumbleDrive = () => {
 };
 
 const makeFlipHorizontalDrive = () => {
+  let direction = 1;
+  let nextCheck = 0;
+  let smoothedDir = 1;
+
   return function drive(state: any, elapsed: number, dt: number){
+    const now = performance.now();
+    if (now >= nextCheck) {
+      if (nextCheck !== 0 && Math.random() < 0.80) {
+        direction *= -1;
+      }
+      nextCheck = now + 1000;
+    }
+    smoothedDir += (direction - smoothedDir) * (1 - Math.exp(-dt / 0.3));
+
     const t = elapsed / 1000;
-    const speed = 130 + 90 * Math.sin(t * 0.7);
+    const speed = (130 + 90 * Math.sin(t * 0.7)) * smoothedDir;
     state.ry += speed * dt;
     state.rx = 14 * Math.sin(t * 1.9) + 5 * Math.sin(t * 4.3 + 1);
   };
 };
 
 const makeSpinVerticalDrive = () => {
+  let direction = 1;
+  let nextCheck = 0;
+  let smoothedDir = 1;
+
   return function drive(state: any, elapsed: number, dt: number){
+    const now = performance.now();
+    if (now >= nextCheck) {
+      if (nextCheck !== 0 && Math.random() < 0.80) {
+        direction *= -1;
+      }
+      nextCheck = now + 1000;
+    }
+    smoothedDir += (direction - smoothedDir) * (1 - Math.exp(-dt / 0.3));
+
     const t = elapsed / 1000;
-    const speed = 150 + 100 * Math.sin(t * 0.55 + 1.2);
+    const speed = (150 + 100 * Math.sin(t * 0.55 + 1.2)) * smoothedDir;
     state.rx += speed * dt;
     state.ry = 12 * Math.sin(t * 2.3 + 0.6) + 6 * Math.sin(t * 5.1);
   };
