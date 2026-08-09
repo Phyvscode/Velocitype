@@ -50,7 +50,7 @@ export default function LiveKeyboard({ activeKeys }: LiveKeyboardProps) {
         style={{ transform: 'rotateX(25deg)', transformStyle: 'preserve-3d' }}
       >
         <div 
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(60, minmax(0, 1fr))', gap: '10px' }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(60, minmax(0, 1fr))', gap: 'clamp(2px, 0.6vw, 10px)' }}
         >
           {rows.map((k, i) => {
             const uniqueKey = k.id || k.key;
@@ -60,7 +60,7 @@ export default function LiveKeyboard({ activeKeys }: LiveKeyboardProps) {
               <div 
                 key={`${uniqueKey}-${i}`} 
                 style={{ gridColumn: `span ${k.span} / span ${k.span}` }}
-                className={`h-[4.5rem] rounded-lg flex items-center justify-center font-mono text-[14px] font-bold transition-all duration-100 uppercase select-none ${
+                className={`h-[clamp(2rem,3.5vw,4.5rem)] rounded-lg flex items-center justify-center font-mono text-[clamp(9px,1vw,14px)] font-bold transition-all duration-100 uppercase select-none ${
                   isActive 
                     ? 'bg-[var(--hot)]/20 border border-[var(--hot)] text-[var(--hot)] shadow-[0_0_15px_var(--color-hot-soft)]' 
                     : 'bg-[#161822] border border-slate-700/50 text-slate-500 shadow-sm'
