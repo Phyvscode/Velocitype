@@ -157,6 +157,13 @@ export default function SetupScreen({
   const [liveTargetSentence, setLiveTargetSentence] = useState('');
   const [liveWpm, setLiveWpm] = useState<number | null>(null);
   const [liveStartTime, setLiveStartTime] = useState<number | null>(null);
+  const [highestWpm, setHighestWpm] = useState<number | null>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('velocitype_highest_wpm');
+      return stored ? parseInt(stored, 10) : null;
+    }
+    return null;
+  });
 
   const [useVirtualKeyboard, setUseVirtualKeyboard] = useState<boolean>(() => {
     if (typeof window !== 'undefined') return localStorage.getItem('velocitype_ai_webcam') === 'true';
@@ -232,7 +239,15 @@ export default function SetupScreen({
       if (liveStartTime) {
         const timeMinutes = (Date.now() - liveStartTime) / 60000;
         const words = liveTargetSentence.length / 5;
-        setLiveWpm(Math.round(words / timeMinutes));
+        const currentWpm = Math.round(words / timeMinutes);
+        setLiveWpm(currentWpm);
+        setHighestWpm(prev => {
+          const next = prev ? Math.max(prev, currentWpm) : currentWpm;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('velocitype_highest_wpm', next.toString());
+          }
+          return next;
+        });
       }
       setLiveTargetSentence('');
       setTypedText('');
@@ -720,10 +735,11 @@ export default function SetupScreen({
                   checked={isRandomSentencesLive}
                   onChange={(e) => {
                     setIsRandomSentencesLive(e.target.checked);
-                    if (e.target.checked) {
-                      setTypedText('');
-                      setLiveWpm(null);
-                      setLiveStartTime(null);
+                    setTypedText('');
+                    setLiveWpm(null);
+                    setLiveStartTime(null);
+                    if (!e.target.checked) {
+                      setLiveTargetSentence('');
                     }
                   }}
                 />
@@ -733,6 +749,11 @@ export default function SetupScreen({
               </label>
 
               <div className="flex items-center gap-4 mr-2">
+                {highestWpm !== null && (
+                  <div className="text-slate-500 font-display text-lg tracking-widest flex items-center gap-2 opacity-80">
+                    BEST: <span className="text-[var(--hot)] text-xl">{highestWpm}</span>
+                  </div>
+                )}
                 {liveWpm !== null && (
                   <div className="text-[var(--hot)] font-display text-2xl tracking-widest flex items-center gap-2">
                     {liveWpm} <span className="font-mono text-sm text-slate-500 uppercase">WPM</span>
