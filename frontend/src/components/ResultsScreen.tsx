@@ -36,6 +36,16 @@ export default function ResultsScreen({ typed, duration, rows, onPlayAgain, onHo
   const wpm = minutes > 0 ? Math.round(correctChars / 5 / minutes) : 0;
   const uniqueWords = Array.from(new Set(typed.map((t) => t.word)));
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && wpm > 0) {
+      const stored = localStorage.getItem('velocitype_highest_wpm');
+      const highest = stored ? parseInt(stored, 10) : 0;
+      if (wpm > highest) {
+        localStorage.setItem('velocitype_highest_wpm', wpm.toString());
+      }
+    }
+  }, [wpm]);
+
   // Save result to MongoDB backend via Node.js API
   useEffect(() => {
     if (user && !resultSavedRef.current) {

@@ -59,6 +59,13 @@ export default function MultiplayerGame({ lobbyCode, config, onLeave }: Props) {
 
   const handleUpdate = (progress: number, wpm: number, isFinished: boolean) => {
     if (socket && isConnected) {
+      if (typeof window !== 'undefined' && wpm > 0) {
+        const stored = localStorage.getItem('velocitype_highest_wpm');
+        const highest = stored ? parseInt(stored, 10) : 0;
+        if (wpm > highest) {
+          localStorage.setItem('velocitype_highest_wpm', Math.round(wpm).toString());
+        }
+      }
       socket.emit('updateProgress', { code: lobbyCode, progress, wpm, isFinished });
     }
   };
