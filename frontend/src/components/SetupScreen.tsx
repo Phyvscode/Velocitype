@@ -115,7 +115,7 @@ const PortalButton = ({ active, onClick, letter, label, title, borderStyle }: { 
     >
       {/* Content wrapper */}
       <div className="flex flex-col items-center justify-center leading-none">
-        <span className="text-[clamp(1.5rem,2vw,2.5rem)] font-display font-bold leading-none mb-1">➔</span>
+        <span className="text-[clamp(1.5rem,2vw,2.5rem)] font-display font-bold leading-none mb-1 scale-x-[1.15] origin-center inline-block">➔</span>
         <span className="text-[clamp(2rem,3.5vw,4rem)] font-display uppercase leading-none">{letter}</span>
       </div>
 
