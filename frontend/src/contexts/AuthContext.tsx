@@ -62,6 +62,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     api.logout();
     setUser(null);
     setStats(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('velocitype_local_avatar');
+    }
     // Reset to defaults
     applyGoogleFont('Inter');
     applyTextColor({ name: 'Amber Glow', value: '#fbbf24', isGradient: false }, true);

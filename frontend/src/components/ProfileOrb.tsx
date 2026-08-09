@@ -143,6 +143,7 @@ export function ProfileOrb({ onOpenAuth }: Props) {
             onClick={() => {
               if (signedIn) {
                 logout();
+                setLocalAvatar(null);
               } else {
                 onOpenAuth();
               }
