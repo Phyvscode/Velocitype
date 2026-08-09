@@ -172,7 +172,7 @@ const makeFlipHorizontalDrive = () => {
   return function drive(state: any, elapsed: number, dt: number){
     const now = performance.now();
     if (now >= nextCheck) {
-      if (nextCheck !== 0 && Math.random() < 0.80) {
+      if (nextCheck !== 0 && Math.random() < 0.20) {
         direction *= -1;
       }
       nextCheck = now + 1000;
@@ -194,7 +194,7 @@ const makeSpinVerticalDrive = () => {
   return function drive(state: any, elapsed: number, dt: number){
     const now = performance.now();
     if (now >= nextCheck) {
-      if (nextCheck !== 0 && Math.random() < 0.80) {
+      if (nextCheck !== 0 && Math.random() < 0.20) {
         direction *= -1;
       }
       nextCheck = now + 1000;
