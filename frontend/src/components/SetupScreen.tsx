@@ -653,7 +653,7 @@ export default function SetupScreen({
               onMouseEnter={() => setIsHoveringKeyboard(true)}
               onMouseMove={handleMouseMove}
               onMouseLeave={(e) => { setIsHoveringKeyboard(false); handleMouseLeave(); }}
-              className="max-w-7xl w-full mx-auto lg:ml-[5vw]"
+              className="max-w-3xl w-full mx-auto lg:ml-auto lg:mr-8"
             >
               {/* Keyboard Layout */}
               <LiveKeyboard activeKeys={activeKeys} />
@@ -661,8 +661,8 @@ export default function SetupScreen({
           </div>
           
           {/* Stats Card */}
-          <div className="flex flex-col items-start lg:items-end w-full lg:w-auto flex-none">
-            <div className="w-full lg:w-[1200px] h-[520px] min-h-[520px] max-h-[520px] flex-none overflow-hidden">
+          <div className="flex-1 flex flex-col items-center lg:items-start w-full">
+            <div className="w-full max-w-[800px] lg:w-[45vw] h-[520px] min-h-[520px] max-h-[520px] flex-none overflow-hidden">
               <div className="border border-slate-800 rounded-xl p-[clamp(1rem,2vh,2.5rem)] bg-slate-900/20 backdrop-blur w-full h-full flex flex-col justify-start text-left overflow-hidden relative">
                 <div ref={textContainerRef} className="font-mono text-2xl sm:text-3xl text-[var(--hot)] leading-[1.6] break-words whitespace-pre-wrap w-full h-full overflow-hidden text-ellipsis relative">
                   {!isHoveringKeyboard && !isRandomSentencesLive ? (
