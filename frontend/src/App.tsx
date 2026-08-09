@@ -9,6 +9,7 @@ import LeaderboardModal from '@/components/LeaderboardModal';
 import FontModal from '@/components/FontModal';
 import ColorModal from '@/components/ColorModal';
 import BgColorModal from '@/components/BgColorModal';
+import BorderModal from '@/components/BorderModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { initializeActiveFont } from '@/lib/fonts';
 import { initializeActiveColor, initializeActiveBgColor } from '@/lib/colors';
@@ -31,6 +32,7 @@ function App() {
   const [isFontModalOpen, setIsFontModalOpen] = useState<boolean>(false);
   const [isColorModalOpen, setIsColorModalOpen] = useState<boolean>(false);
   const [isUiColorModalOpen, setIsUiColorModalOpen] = useState<boolean>(false);
+  const [isBorderModalOpen, setIsBorderModalOpen] = useState<boolean>(false);
   const [dictReady, setDictReady] = useState<boolean>(false);
 
   // Load the full word dictionary (thousands of real words) before any
@@ -120,6 +122,7 @@ function App() {
           onOpenFont={() => setIsFontModalOpen(true)}
           onOpenColor={() => setIsColorModalOpen(true)} 
           onOpenUiColor={() => setIsUiColorModalOpen(true)}
+          onOpenBorder={() => setIsBorderModalOpen(true)}
           onLobbyJoined={(code) => {
             setLobbyCode(code);
             setScreen('lobby');
@@ -176,6 +179,7 @@ function App() {
       <FontModal isOpen={isFontModalOpen} onClose={() => setIsFontModalOpen(false)} />
       <ColorModal isOpen={isColorModalOpen} onClose={() => setIsColorModalOpen(false)} />
       <BgColorModal isOpen={isUiColorModalOpen} onClose={() => setIsUiColorModalOpen(false)} />
+      <BorderModal isOpen={isBorderModalOpen} onClose={() => setIsBorderModalOpen(false)} />
       {useVirtualKeyboard && <VirtualKeyboardConnector />}
     </div>
   );

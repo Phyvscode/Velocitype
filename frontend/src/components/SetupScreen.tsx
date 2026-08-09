@@ -9,6 +9,8 @@ import LiveKeyboard, { getKeyLabel } from './LiveKeyboard';
 import VersusModeSetup from './VersusModeSetup';
 import { ProfileOrb } from './ProfileOrb';
 import VirtualKeyboardConnector from './VirtualKeyboardConnector';
+import BorderModal from './BorderModal';
+import PortalBorderOverlay from './PortalBorderOverlay';
 
 export interface GameConfig {
   rows: RowKey[];
@@ -27,6 +29,7 @@ interface Props {
   onOpenFont: () => void;
   onOpenColor: () => void;
   onOpenUiColor: () => void;
+  onOpenBorder: () => void;
   onLobbyJoined: (code: string) => void;
 }
 
@@ -54,12 +57,60 @@ const AnimatedBorderButton = ({ onClick, children }: { onClick: () => void, chil
   </button>
 );
 
-const PortalButton = ({ active, onClick, letter, label, title }: { active: boolean, onClick: () => void, letter: string, label: string, title: string }) => (
+const PortalButton = ({ active, onClick, letter, label, title, borderStyle }: { active: boolean, onClick: () => void, letter: string, label: string, title: string, borderStyle: string }) => {
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const stage = e.currentTarget;
+    const rect = stage.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+
+    const mx = Math.max(-1, Math.min(1, dx / (rect.width / 2)));
+    const my = Math.max(-1, Math.min(1, dy / (rect.height / 2)));
+    const dist = Math.min(1, Math.hypot(dx, dy) / (rect.width / 2));
+    const angle = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360;
+
+    stage.style.setProperty('--mx', mx.toFixed(3));
+    stage.style.setProperty('--my', my.toFixed(3));
+    stage.style.setProperty('--dist', dist.toFixed(3));
+    stage.style.setProperty('--angle', angle.toFixed(1));
+
+    const radar = stage.querySelector('#radar');
+    if (radar) {
+      const ticks = radar.querySelectorAll('i');
+      ticks.forEach(t => {
+        const tAngle = parseFloat(t.getAttribute('data-angle') || '0');
+        let diff = Math.abs(angle - tAngle) % 360;
+        diff = diff > 180 ? 360 - diff : diff;
+        t.classList.toggle('lit', diff < 10);
+        t.classList.toggle('near', diff >= 10 && diff < 28);
+      });
+    }
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const stage = e.currentTarget;
+    stage.classList.add('leaving');
+    stage.style.setProperty('--mx', '0');
+    stage.style.setProperty('--my', '0');
+    stage.style.setProperty('--dist', '0');
+    const radar = stage.querySelector('#radar');
+    if (radar) {
+      const ticks = radar.querySelectorAll('i');
+      ticks.forEach(t => { t.classList.remove('lit'); t.classList.remove('near'); });
+    }
+    setTimeout(() => stage.classList.remove('leaving'), 650);
+  };
+
+  return (
   <div className="flex flex-col items-center gap-6 relative group" style={{ perspective: '1500px' }}>
     <button 
       onClick={onClick}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       style={{ transformStyle: 'preserve-3d' }}
-      className={`w-[clamp(14rem,30vw,22rem)] h-[clamp(14rem,30vw,22rem)] rounded-full border flex items-center justify-center transition-all duration-700 ease-in-out group-hover:-translate-y-[10%] group-hover:[transform:rotateX(75deg)] group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 ${active ? 'border-[var(--hot)] bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]' : 'border-slate-800 bg-slate-900/50 text-slate-400'}`}
+      className={`portal-stage w-[clamp(14rem,30vw,22rem)] h-[clamp(14rem,30vw,22rem)] rounded-full flex items-center justify-center transition-all duration-700 ease-in-out ${borderStyle === 'b0' ? 'group-hover:-translate-y-[10%] group-hover:[transform:rotateX(75deg)] border' : ''} group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 ${active ? `${borderStyle === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]` : `${borderStyle === 'b0' ? 'border-slate-800 ' : ''}bg-slate-900/50 text-slate-400`}`}
       title={title}
     >
       {/* Letter: always visible, unaffected by hover */}
@@ -67,23 +118,22 @@ const PortalButton = ({ active, onClick, letter, label, title }: { active: boole
         {letter}
       </span>
 
-      {/* Portal Spin Outline */}
-      <div className="absolute inset-0 rounded-full border-[8px] border-transparent transition-all duration-700 opacity-0 group-hover:opacity-100 group-hover:animate-[portal-spin_8s_linear_infinite] group-hover:border-[var(--hot)] group-hover:border-dashed group-hover:shadow-[0_0_40px_var(--color-hot-soft),inset_0_0_40px_var(--color-hot-soft)]"></div>
-
-      {/* Falling Beams / Rings */}
-      <div className="absolute inset-0 rounded-full border-[8px] border-[var(--hot)] transition-opacity duration-500 opacity-0 group-hover:animate-[portal-beam_2s_infinite_linear]" style={{ animationDelay: '0s' }}></div>
-      <div className="absolute inset-0 rounded-full border-[8px] border-[var(--hot)] transition-opacity duration-500 opacity-0 group-hover:animate-[portal-beam_2s_infinite_linear]" style={{ animationDelay: '0.66s' }}></div>
-      <div className="absolute inset-0 rounded-full border-[8px] border-[var(--hot)] transition-opacity duration-500 opacity-0 group-hover:animate-[portal-beam_2s_infinite_linear]" style={{ animationDelay: '1.33s' }}></div>
+      <PortalBorderOverlay borderStyle={borderStyle} />
     </button>
 
-    {/* 3D Hologram Label — sits ABOVE the circle, outside the button, rises up on hover */}
+    {/* Hologram Label — rises up above for Original Portal, drops down below for custom borders */}
     <span 
-      className="absolute left-1/2 top-0 -translate-x-1/2 text-4xl sm:text-5xl font-display uppercase tracking-widest text-[var(--hot)] whitespace-nowrap opacity-0 translate-y-4 group-hover:opacity-100 group-hover:-translate-y-4 transition-all duration-700 ease-out pointer-events-none z-50 drop-shadow-[0_0_15px_var(--color-hot-soft)]"
+      className={`absolute left-1/2 -translate-x-1/2 text-4xl sm:text-5xl font-display uppercase tracking-widest text-[var(--hot)] whitespace-nowrap opacity-0 transition-all duration-700 ease-out pointer-events-none z-50 drop-shadow-[0_0_15px_var(--color-hot-soft)] ${
+        borderStyle === 'b0' 
+          ? 'top-0 translate-y-4 group-hover:-translate-y-4' 
+          : '-bottom-10 -translate-y-4 group-hover:translate-y-8'
+      } group-hover:opacity-100`}
     >
       {label}
     </span>
   </div>
-);
+  );
+};
 
 export default function SetupScreen({
   onStart,
@@ -93,6 +143,7 @@ export default function SetupScreen({
   onOpenFont,
   onOpenColor,
   onOpenUiColor,
+  onOpenBorder,
   onLobbyJoined,
 }: Props) {
   const [typedText, setTypedText] = useState('');
@@ -111,6 +162,19 @@ export default function SetupScreen({
     if (typeof window !== 'undefined') return localStorage.getItem('velocitype_ai_webcam') === 'true';
     return false;
   });
+
+  const [borderStyle, setBorderStyle] = useState<string>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('velocitype_portal_border') || 'b0';
+    return 'b0';
+  });
+
+  useEffect(() => {
+    const handleStorage = () => {
+      setBorderStyle(localStorage.getItem('velocitype_portal_border') || 'b0');
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') localStorage.setItem('velocitype_ai_webcam', String(useVirtualKeyboard));
@@ -505,11 +569,11 @@ export default function SetupScreen({
 
       {/* Main Hero */}
       {!activeMode && (
-      <main className="w-full px-8 pt-[clamp(2vh,4vh,10rem)] pb-4 flex flex-col items-start justify-center">
+      <main className="w-full px-8 pt-0 pb-4 flex flex-col items-center justify-center">
         
         {/* Training Modes */}
-        <div className="flex w-full flex-col justify-start items-start">
-          <div className="flex items-start justify-start gap-[clamp(1rem,3vw,2.5rem)] flex-wrap w-full">
+        <div className="flex w-full flex-col justify-center items-center relative">
+          <div className="flex items-center justify-center gap-[clamp(1rem,3vw,2.5rem)] flex-nowrap w-full overflow-x-auto pt-16 pb-32 px-4 -mx-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
             
             <PortalButton
               active={activeMode === 'words'}
@@ -517,6 +581,7 @@ export default function SetupScreen({
               letter="W"
               label="Words"
               title="Words: Timed drills across 10k common words. 15s, 30s or 60s."
+              borderStyle={borderStyle}
             />
             
             <PortalButton
@@ -525,6 +590,7 @@ export default function SetupScreen({
               letter="F"
               label="File"
               title="Sentences From File: Drop a .txt and train on your own corpus, line by line."
+              borderStyle={borderStyle}
             />
             
             <PortalButton
@@ -533,6 +599,7 @@ export default function SetupScreen({
               letter="S"
               label="Sentences"
               title="Random Sentences: Punctuation, numbers and casing toggled exactly how you like."
+              borderStyle={borderStyle}
             />
             
             <PortalButton
@@ -541,6 +608,7 @@ export default function SetupScreen({
               letter="V"
               label="Versus"
               title="Versus: Race up to eight opponents live, with a shared word stream."
+              borderStyle={borderStyle}
             />
 
             <PortalButton
@@ -549,6 +617,7 @@ export default function SetupScreen({
               letter="L"
               label="Library"
               title="Library: Manage and select your imported texts."
+              borderStyle={borderStyle}
             />
 
             <PortalButton
@@ -557,6 +626,7 @@ export default function SetupScreen({
               letter="G"
               label="Graph"
               title="Graph: View your typing statistics."
+              borderStyle={borderStyle}
             />
 
             <PortalButton
@@ -565,6 +635,7 @@ export default function SetupScreen({
               letter="C"
               label="Customization"
               title="Customization: Configure Fonts, Colors, and Backgrounds."
+              borderStyle={borderStyle}
             />
 
           </div>
@@ -574,7 +645,7 @@ export default function SetupScreen({
 
       {/* Live Keyboard */}
       {!activeMode && (
-      <section className="w-full px-8 pt-[clamp(7rem,15vh,20rem)] pb-[clamp(3vh,5vh,6rem)]">
+      <section className="w-full px-8 pt-[clamp(2rem,5vh,8rem)] pb-[clamp(3vh,5vh,6rem)]">
         <div className="flex flex-col lg:flex-row gap-[clamp(1rem,4vh,4rem)] items-center">
           <div className="flex-1 scene flex flex-col justify-center w-full">
             <div 
@@ -590,8 +661,8 @@ export default function SetupScreen({
           </div>
           
           {/* Stats Card */}
-          <div className="flex flex-col items-start lg:items-end w-full lg:w-auto">
-            <div className="w-full lg:w-[1200px] h-[520px]">
+          <div className="flex flex-col items-start lg:items-end w-full lg:w-auto flex-none">
+            <div className="w-full lg:w-[1200px] h-[520px] min-h-[520px] max-h-[520px] flex-none overflow-hidden">
               <div className="border border-slate-800 rounded-xl p-[clamp(1rem,2vh,2.5rem)] bg-slate-900/20 backdrop-blur w-full h-full flex flex-col justify-start text-left overflow-hidden relative">
                 <div ref={textContainerRef} className="font-mono text-2xl sm:text-3xl text-[var(--hot)] leading-[1.6] break-words whitespace-pre-wrap w-full h-full overflow-hidden text-ellipsis relative">
                   {!isHoveringKeyboard && !isRandomSentencesLive ? (
@@ -612,20 +683,20 @@ export default function SetupScreen({
                           return (
                             <span key={i} className={`relative ${colorClass}`}>
                               {i === typedText.length && (
-                                 <span className="absolute -left-[1px] top-0 bottom-0 w-[3px] bg-[var(--hot)] animate-cursor-blink z-10"></span>
+                                 <span className="absolute -left-[1px] top-0 bottom-0 w-[3px] bg-[var(--hot)] animate-caret z-10"></span>
                               )}
                               {char}
                             </span>
                           );
                         })}
                         {typedText.length === liveTargetSentence.length && (
-                          <span className="border-r-[3px] border-[var(--hot)] animate-cursor-blink ml-[1px] inline-block h-8 -mb-1"></span>
+                          <span className="border-r-[3px] border-[var(--hot)] animate-caret ml-[1px] inline-block h-8 -mb-1"></span>
                         )}
                         </>
                       ) : (
                         <>
                           {typedText}
-                          <span className="border-r-[3px] border-[var(--hot)] animate-cursor-blink ml-0.5 inline-block h-8 -mb-1"></span>
+                          <span className="border-r-[3px] border-[var(--hot)] animate-caret ml-0.5 inline-block h-8 -mb-1"></span>
                         </>
                       )}
                     </>
@@ -634,10 +705,14 @@ export default function SetupScreen({
               </div>
             </div>
             
-            <div className="w-full mt-4 flex items-center justify-between ml-2">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isRandomSentencesLive ? 'bg-[var(--hot)] border-[var(--hot)]' : 'border-slate-600 bg-slate-900 group-hover:border-slate-400'}`}>
-                  {isRandomSentencesLive && <span className="text-black text-xs font-bold leading-none">✓</span>}
+            <div className="w-full mt-4 flex items-center justify-between ml-2 min-h-[2rem]">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <div className="w-5 h-5 min-w-[1.25rem] min-h-[1.25rem] max-w-[1.25rem] max-h-[1.25rem] flex-none rounded border border-slate-600 bg-transparent flex items-center justify-center overflow-hidden box-border">
+                  {isRandomSentencesLive && (
+                    <svg viewBox="0 0 14 14" className="w-3.5 h-3.5 text-[var(--hot)] fill-current flex-none mt-[1px]">
+                      <path d="M5.5 10.5L2 7l1.4-1.4 2.1 2.1 5.1-5.1L12 4l-6.5 6.5z"/>
+                    </svg>
+                  )}
                 </div>
                 <input 
                   type="checkbox" 
@@ -652,7 +727,7 @@ export default function SetupScreen({
                     }
                   }}
                 />
-                <span className="font-mono text-xs uppercase tracking-widest text-slate-400 group-hover:text-white transition-colors">
+                <span className="font-mono text-xs uppercase tracking-widest text-[var(--hot)]">
                   Random Sentences
                 </span>
               </label>
@@ -704,6 +779,7 @@ export default function SetupScreen({
                 <button onClick={onOpenFont} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Fonts</button>
                 <button onClick={onOpenColor} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Colors</button>
                 <button onClick={onOpenUiColor} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Background</button>
+                <button onClick={onOpenBorder} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Border</button>
               </div>
             )}
             

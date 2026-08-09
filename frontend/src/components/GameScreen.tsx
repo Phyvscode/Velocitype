@@ -237,7 +237,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
         >
           {/* Smooth Fluid Caret Bar */}
           <span
-            className="absolute -translate-y-1/2 w-[3px] h-[1em] bg-[var(--hot)] rounded-full pointer-events-none transition-all duration-150 ease-out animate-cursor-blink exclude-theme"
+            className="absolute -translate-y-1/2 w-[3px] h-[1em] bg-[var(--hot)] rounded-full pointer-events-none transition-all duration-150 ease-out animate-caret exclude-theme"
             style={{
               left: `${caretLeft}px`,
               top: `${caretTop}px`,
@@ -283,8 +283,8 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       />
 
       {/* Live Keyboard */}
-      <footer className="w-full flex-none px-4 pb-[clamp(10px,3vh,32px)] pt-[clamp(8px,2vh,24px)] flex flex-col items-center justify-end min-h-0">
-        <div className="w-full max-w-5xl mx-auto" style={{ transform: 'scale(clamp(0.5, min(100vw / 1200, 100vh / 800), 1))', transformOrigin: 'bottom center' }}>
+      <footer className="w-full flex-none px-4 pb-8 pt-4 flex flex-col items-center justify-end min-h-0">
+        <div className="w-full max-w-[800px] mx-auto perspective-[1200px]">
           <LiveKeyboard activeKeys={activeKeys} />
         </div>
       </footer>
