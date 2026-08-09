@@ -110,11 +110,11 @@ const PortalButton = ({ active, onClick, letter, label, title, borderStyle }: { 
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       style={{ transformStyle: 'preserve-3d' }}
-      className={`portal-stage w-[clamp(14rem,30vw,22rem)] h-[clamp(14rem,30vw,22rem)] rounded-full flex items-center justify-center transition-all duration-700 ease-in-out ${borderStyle === 'b0' ? 'group-hover:-translate-y-[10%] group-hover:[transform:rotateX(75deg)] border' : ''} group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 ${active ? `${borderStyle === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]` : `${borderStyle === 'b0' ? 'border-slate-800 ' : ''}bg-slate-900/50 text-slate-400`}`}
+      className={`portal-stage w-[clamp(8rem,12vw,14rem)] h-[clamp(8rem,12vw,14rem)] rounded-full flex items-center justify-center transition-all duration-700 ease-in-out ${borderStyle === 'b0' ? 'group-hover:-translate-y-[10%] group-hover:[transform:rotateX(75deg)] border' : ''} group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 ${active ? `${borderStyle === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]` : `${borderStyle === 'b0' ? 'border-slate-800 ' : ''}bg-slate-900/50 text-slate-400`}`}
       title={title}
     >
       {/* Letter: always visible, unaffected by hover */}
-      <span className="text-[clamp(5rem,12vw,10rem)] font-display uppercase leading-none">
+      <span className="text-[clamp(3rem,5vw,6rem)] font-display uppercase leading-none">
         {letter}
       </span>
 
@@ -123,7 +123,7 @@ const PortalButton = ({ active, onClick, letter, label, title, borderStyle }: { 
 
     {/* Hologram Label — rises up above for Original Portal, drops down below for custom borders */}
     <span 
-      className={`absolute left-1/2 -translate-x-1/2 text-4xl sm:text-5xl font-display uppercase tracking-widest text-[var(--hot)] whitespace-nowrap opacity-0 transition-all duration-700 ease-out pointer-events-none z-50 drop-shadow-[0_0_15px_var(--color-hot-soft)] ${
+      className={`absolute left-1/2 -translate-x-1/2 text-2xl sm:text-3xl font-display uppercase tracking-widest text-[var(--hot)] whitespace-nowrap opacity-0 transition-all duration-700 ease-out pointer-events-none z-50 drop-shadow-[0_0_15px_var(--color-hot-soft)] ${
         borderStyle === 'b0' 
           ? 'top-0 translate-y-4 group-hover:-translate-y-4' 
           : '-bottom-10 -translate-y-4 group-hover:translate-y-8'
