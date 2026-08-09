@@ -56,6 +56,7 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
           fontFamily: user.fontFamily,
           colorTheme: user.colorTheme,
           elo: user.elo,
+          portalBorder: user.portalBorder,
         },
       });
     } else {
@@ -91,6 +92,7 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
           colorTheme: user.colorTheme,
           elo: user.elo,
           avatarUrl: user.avatarUrl,
+          portalBorder: user.portalBorder,
         },
       });
     } else {
@@ -166,6 +168,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<Response>
         colorTheme: user.colorTheme,
         elo: user.elo,
         avatarUrl: user.avatarUrl,
+        portalBorder: user.portalBorder,
       },
     });
   } catch (error: any) {
@@ -198,6 +201,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<Response> 
         colorTheme: user.colorTheme,
         elo: user.elo,
         avatarUrl: user.avatarUrl,
+        portalBorder: user.portalBorder,
       },
       stats: {
         testCount,
@@ -365,9 +369,10 @@ export const updateSettings = async (req: AuthRequest, res: Response): Promise<R
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    const { fontFamily, colorTheme, avatarUrl } = req.body;
+    const { fontFamily, colorTheme, avatarUrl, portalBorder } = req.body;
     if (fontFamily) user.fontFamily = fontFamily;
     if (colorTheme) user.colorTheme = colorTheme;
+    if (portalBorder) user.portalBorder = portalBorder;
     if (avatarUrl !== undefined) {
       user.avatarUrl = avatarUrl;
       if (avatarUrl) {

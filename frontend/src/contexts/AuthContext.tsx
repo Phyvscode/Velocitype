@@ -29,6 +29,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setStats(res.stats);
       if (res.user.fontFamily) applyGoogleFont(res.user.fontFamily);
       if (res.user.colorTheme) applyTextColor(res.user.colorTheme, true);
+      if (res.user.portalBorder && typeof window !== 'undefined') {
+        localStorage.setItem('velocitype_portal_border', res.user.portalBorder);
+        window.dispatchEvent(new Event('storage'));
+      }
     } catch {
       setUser(null);
       setStats(null);
@@ -64,6 +68,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setStats(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('velocitype_local_avatar');
+      localStorage.removeItem('velocitype_portal_border');
+      window.dispatchEvent(new Event('storage'));
     }
     // Reset to defaults
     applyGoogleFont('Inter');

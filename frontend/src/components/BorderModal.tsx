@@ -1,5 +1,7 @@
 import React from 'react';
 import PortalBorderOverlay from '@/components/PortalBorderOverlay';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 
 export const BORDER_STYLES = [
   { id: 'b0', name: 'Original Portal' },
@@ -21,6 +23,8 @@ interface BorderModalProps {
 }
 
 export default function BorderModal({ isOpen, onClose }: BorderModalProps) {
+  const { user } = useAuth();
+  
   const [selected, setSelected] = React.useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('velocitype_portal_border') || 'b0';
@@ -28,11 +32,19 @@ export default function BorderModal({ isOpen, onClose }: BorderModalProps) {
     return 'b0';
   });
 
-  const handleSelect = (id: string) => {
+  const handleSelect = async (id: string) => {
     setSelected(id);
     if (typeof window !== 'undefined') {
       localStorage.setItem('velocitype_portal_border', id);
       window.dispatchEvent(new Event('storage'));
+    }
+    
+    if (user) {
+      try {
+        await api.updateSettings({ portalBorder: id });
+      } catch (err) {
+        console.error('Failed to save portal border to backend:', err);
+      }
     }
   };
 

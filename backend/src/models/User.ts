@@ -14,6 +14,7 @@ export interface IUser extends Document {
   elo: number;
   avatarUrl?: string;
   profilePictureSource?: 'google' | 'upload';
+  portalBorder?: string;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
@@ -66,6 +67,10 @@ const userSchema = new Schema<IUser>(
     profilePictureSource: {
       type: String,
       enum: ['google', 'upload'],
+    },
+    portalBorder: {
+      type: String,
+      default: 'b0',
     }
   },
   {
