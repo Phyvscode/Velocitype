@@ -213,7 +213,7 @@
 
 @keyframes portal-beam {
   0% { transform: translateZ(0px) scale(1); opacity: 1; box-shadow: 0 0 20px 2px var(--hot); }
-  100% { transform: translateZ(-350px) scale(0.4); opacity: 0; box-shadow: 0 0 0 0 var(--hot); }
+  100% { transform: translateZ(-150px) scale(0.4); opacity: 0; box-shadow: 0 0 0 0 var(--hot); }
 }
 
 @keyframes rise {
