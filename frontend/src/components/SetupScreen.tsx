@@ -114,8 +114,8 @@ const PortalButton = ({ active, onClick, letter, label, title, borderStyle }: { 
       className={`portal-stage w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] rounded-full flex items-center justify-center transition-all duration-700 ease-in-out ${borderStyle === 'b0' ? 'group-hover:-translate-y-[10%] group-hover:[transform:rotateX(75deg)] border' : ''} group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 ${active ? `${borderStyle === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]` : `${borderStyle === 'b0' ? 'border-[var(--hot)]/40 ' : ''}bg-slate-900/50 text-slate-400`}`}
     >
       {/* Content wrapper */}
-      <div className="relative flex flex-col items-center justify-center leading-none">
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 text-[clamp(1.5rem,2vw,2.5rem)] font-display font-bold leading-none mb-1">➔</span>
+      <div className="flex flex-col items-center justify-center leading-none">
+        <span className="text-[clamp(1.5rem,2vw,2.5rem)] font-display font-bold leading-none mb-1">➔</span>
         <span className="text-[clamp(2rem,3.5vw,4rem)] font-display uppercase leading-none">{letter}</span>
       </div>
 
