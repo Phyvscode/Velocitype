@@ -677,7 +677,7 @@ export default function SetupScreen({
           {/* Stats Card */}
           <div className="flex-none flex flex-col w-full lg:w-[560px] lg:min-w-[560px] lg:max-w-[560px] h-full justify-center">
             <div className="w-full h-[340px] min-h-[340px] max-h-[340px] flex-none overflow-hidden">
-              <div className="border border-[var(--hot)]/40 rounded-xl p-[clamp(1rem,2vh,2.5rem)] bg-slate-900/20 backdrop-blur w-full h-full flex flex-col justify-start text-left overflow-hidden relative">
+              <div className="border border-[var(--hot)]/40 rounded-xl p-[clamp(1rem,2vh,2.5rem)] bg-transparent w-full h-full flex flex-col justify-start text-left overflow-hidden relative">
                 <div ref={textContainerRef} className="font-mono text-2xl sm:text-3xl text-[var(--hot)] leading-[1.6] break-words whitespace-pre-wrap w-full h-full overflow-hidden text-ellipsis relative">
                   {!isHoveringKeyboard && !isRandomSentencesLive ? (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -721,7 +721,7 @@ export default function SetupScreen({
             
             <div className="w-full mt-4 flex items-center justify-between ml-2 min-h-[2rem]">
               <label className="flex items-center gap-2 cursor-pointer">
-                <div className="w-5 h-5 min-w-[1.25rem] min-h-[1.25rem] max-w-[1.25rem] max-h-[1.25rem] flex-none rounded border border-slate-600 bg-transparent flex items-center justify-center overflow-hidden box-border">
+                <div className="w-5 h-5 min-w-[1.25rem] min-h-[1.25rem] max-w-[1.25rem] max-h-[1.25rem] flex-none rounded border border-[var(--hot)]/40 bg-transparent flex items-center justify-center overflow-hidden box-border">
                   {isRandomSentencesLive && (
                     <svg viewBox="0 0 14 14" className="w-3.5 h-3.5 text-[var(--hot)] fill-current flex-none mt-[1px]">
                       <path d="M5.5 10.5L2 7l1.4-1.4 2.1 2.1 5.1-5.1L12 4l-6.5 6.5z"/>
