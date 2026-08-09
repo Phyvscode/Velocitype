@@ -110,7 +110,7 @@ const PortalButton = ({ active, onClick, letter, label, title, borderStyle }: { 
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       style={{ transformStyle: 'preserve-3d' }}
-      className={`portal-stage w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] rounded-full flex items-center justify-center transition-all duration-700 ease-in-out ${borderStyle === 'b0' ? 'group-hover:-translate-y-[10%] group-hover:[transform:rotateX(75deg)] border' : ''} group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 ${active ? `${borderStyle === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]` : `${borderStyle === 'b0' ? 'border-slate-800 ' : ''}bg-slate-900/50 text-slate-400`}`}
+      className={`portal-stage w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] rounded-full flex items-center justify-center transition-all duration-700 ease-in-out ${borderStyle === 'b0' ? 'group-hover:-translate-y-[10%] group-hover:[transform:rotateX(75deg)] border' : ''} group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 ${active ? `${borderStyle === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]` : `${borderStyle === 'b0' ? 'border-[var(--hot)]/40 ' : ''}bg-slate-900/50 text-slate-400`}`}
     >
       {/* Letter: always visible, unaffected by hover */}
       <span className="text-[clamp(2rem,3.5vw,4rem)] font-display uppercase leading-none">
@@ -677,7 +677,7 @@ export default function SetupScreen({
           {/* Stats Card */}
           <div className="flex-none flex flex-col w-full lg:w-[560px] lg:min-w-[560px] lg:max-w-[560px] h-full justify-center">
             <div className="w-full h-[340px] min-h-[340px] max-h-[340px] flex-none overflow-hidden">
-              <div className="border border-slate-800 rounded-xl p-[clamp(1rem,2vh,2.5rem)] bg-slate-900/20 backdrop-blur w-full h-full flex flex-col justify-start text-left overflow-hidden relative">
+              <div className="border border-[var(--hot)]/40 rounded-xl p-[clamp(1rem,2vh,2.5rem)] bg-slate-900/20 backdrop-blur w-full h-full flex flex-col justify-start text-left overflow-hidden relative">
                 <div ref={textContainerRef} className="font-mono text-2xl sm:text-3xl text-[var(--hot)] leading-[1.6] break-words whitespace-pre-wrap w-full h-full overflow-hidden text-ellipsis relative">
                   {!isHoveringKeyboard && !isRandomSentencesLive ? (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

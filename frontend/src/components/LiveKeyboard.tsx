@@ -46,7 +46,7 @@ export default function LiveKeyboard({ activeKeys }: LiveKeyboardProps) {
   return (
     <div className="w-full max-w-7xl mx-auto" style={{ perspective: '1200px' }}>
       <div 
-        className="w-full bg-[#0a0a0f] border border-slate-800/60 rounded-2xl p-6 transition-all duration-300 hover:[box-shadow:var(--glow-hot)]"
+        className="w-full bg-[#0a0a0f] border border-[var(--hot)]/40 rounded-2xl p-6 transition-all duration-300 hover:[box-shadow:var(--glow-hot)]"
         style={{ transform: 'rotateX(25deg)', transformStyle: 'preserve-3d' }}
       >
         <div 

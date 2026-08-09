@@ -5,6 +5,7 @@
   --my: 0;
   --angle: 0;
   --dist: 0;
+  --color-border: color-mix(in srgb, var(--hot) 40%, transparent);
 }
 .portal-stage.leaving * {
   transition-duration: .6s !important;
