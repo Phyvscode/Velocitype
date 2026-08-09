@@ -33,7 +33,8 @@ export default function VirtualKeyboardConnector({ onKeyDetected, isActive = tru
           videoRef.current.srcObject = stream;
         }
 
-        const ws = new WebSocket('ws://localhost:8765');
+        const wsUrl = import.meta.env.VITE_AI_WS_URL || 'ws://localhost:8765';
+        const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
         ws.onopen = () => {

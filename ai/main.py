@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import base64
 import numpy as np
 import cv2
@@ -45,8 +46,9 @@ async def handle_connection(websocket):
         print("Client disconnected")
 
 async def main():
-    print("Starting Virtual Keyboard AI WebSocket server on ws://localhost:8765")
-    async with websockets.serve(handle_connection, "localhost", 8765):
+    port = int(os.environ.get("PORT", 8765))
+    print(f"Starting Virtual Keyboard AI WebSocket server on ws://0.0.0.0:{port}")
+    async with websockets.serve(handle_connection, "0.0.0.0", port):
         await asyncio.Future()  # run forever
 
 if __name__ == "__main__":
