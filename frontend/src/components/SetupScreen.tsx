@@ -646,7 +646,7 @@ export default function SetupScreen({
       {/* Live Keyboard */}
       {!activeMode && (
       <section className="w-full px-12 md:px-20 lg:px-32 pt-[clamp(0.5rem,2vh,2rem)] pb-[clamp(1rem,2vh,3rem)]">
-        <div className="flex flex-col lg:flex-row gap-[clamp(1rem,4vh,4rem)] items-center w-full">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 xl:gap-24 items-center w-full">
           <div className="scene flex flex-col justify-center flex-none w-full lg:w-[600px] xl:w-[680px]">
             <div 
               ref={keyboardRef}
