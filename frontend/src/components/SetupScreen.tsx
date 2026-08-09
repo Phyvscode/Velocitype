@@ -661,7 +661,7 @@ export default function SetupScreen({
           </div>
           
           {/* Stats Card */}
-          <div className="flex-1 flex flex-col w-full h-full justify-center">
+          <div className="flex-1 flex flex-col w-full h-full justify-center min-w-0">
             <div className="w-full h-[340px] min-h-[340px] max-h-[340px] flex-none overflow-hidden">
               <div className="border border-slate-800 rounded-xl p-[clamp(1rem,2vh,2.5rem)] bg-slate-900/20 backdrop-blur w-full h-full flex flex-col justify-start text-left overflow-hidden relative">
                 <div ref={textContainerRef} className="font-mono text-2xl sm:text-3xl text-[var(--hot)] leading-[1.6] break-words whitespace-pre-wrap w-full h-full overflow-hidden text-ellipsis relative">
@@ -690,13 +690,13 @@ export default function SetupScreen({
                           );
                         })}
                         {typedText.length === liveTargetSentence.length && (
-                          <span className="border-r-[3px] border-[var(--hot)] animate-caret ml-[1px] inline-block h-8 -mb-1"></span>
+                          <span className="border-r-[3px] border-[var(--hot)] animate-caret ml-[1px] inline-block h-[1.2em] align-middle -mb-1"></span>
                         )}
                         </>
                       ) : (
                         <>
                           {typedText}
-                          <span className="border-r-[3px] border-[var(--hot)] animate-caret ml-0.5 inline-block h-8 -mb-1"></span>
+                          <span className="border-r-[3px] border-[var(--hot)] animate-caret ml-0.5 inline-block h-[1.2em] align-middle -mb-1"></span>
                         </>
                       )}
                     </>
