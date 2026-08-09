@@ -662,7 +662,7 @@ export default function SetupScreen({
           
           {/* Stats Card */}
           <div className="flex-1 flex flex-col items-center lg:items-start w-full">
-            <div className="w-full max-w-[600px] lg:w-[35vw] h-[520px] min-h-[520px] max-h-[520px] flex-none overflow-hidden">
+            <div className="w-full max-w-[700px] lg:w-[42vw] h-[520px] min-h-[520px] max-h-[520px] flex-none overflow-hidden">
               <div className="border border-slate-800 rounded-xl p-[clamp(1rem,2vh,2.5rem)] bg-slate-900/20 backdrop-blur w-full h-full flex flex-col justify-start text-left overflow-hidden relative">
                 <div ref={textContainerRef} className="font-mono text-2xl sm:text-3xl text-[var(--hot)] leading-[1.6] break-words whitespace-pre-wrap w-full h-full overflow-hidden text-ellipsis relative">
                   {!isHoveringKeyboard && !isRandomSentencesLive ? (
