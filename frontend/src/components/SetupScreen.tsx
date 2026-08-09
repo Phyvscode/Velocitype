@@ -105,6 +105,11 @@ const PortalButton = ({ active, onClick, letter, label, title, borderStyle }: { 
 
   return (
   <div className="flex flex-col items-center gap-6 relative group" style={{ perspective: '1500px' }}>
+    <div className={`absolute -top-8 left-1/2 -translate-x-1/2 transition-all duration-300 ease-out flex flex-col items-center text-[var(--hot)] drop-shadow-[0_0_8px_var(--color-hot-soft)] z-20 ${active ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+      <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current animate-bounce">
+        <path d="M7 10l5 5 5-5z"/>
+      </svg>
+    </div>
     <button 
       onClick={onClick}
       onMouseMove={handleMouseMove}
