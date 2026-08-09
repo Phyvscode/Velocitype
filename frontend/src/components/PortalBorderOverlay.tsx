@@ -39,15 +39,7 @@ export default function PortalBorderOverlay({ borderStyle }: Props) {
       return <div className="portal-b5 absolute inset-0 pointer-events-none"></div>;
     case 'b7':
       return <div className="portal-b7 absolute inset-0 rounded-full pointer-events-none"></div>;
-    case 'b8':
-      return (
-        <div className="portal-b8-wrap absolute inset-0 pointer-events-none">
-          <svg viewBox="0 0 130 130">
-            <circle cx="65" cy="65" r="60"></circle>
-            <circle className="draw" cx="65" cy="65" r="60"></circle>
-          </svg>
-        </div>
-      );
+
     case 'b9':
       return (
         <div className="portal-b9 absolute inset-0 pointer-events-none">

@@ -10,7 +10,6 @@ export const BORDER_STYLES = [
   { id: 'b4', name: 'Viewfinder' },
   { id: 'b5', name: 'Liquid Blob' },
   { id: 'b7', name: 'Pulse Glow' },
-  { id: 'b8', name: 'Circuit Draw' },
   { id: 'b9', name: 'Sketch Layers' },
   { id: 'b11', name: 'Watching Eye' },
   { id: 'b12', name: 'Tumble Spin' },
