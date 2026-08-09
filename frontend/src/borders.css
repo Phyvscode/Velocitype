@@ -185,34 +185,54 @@
 .portal-b11 .lash.l2 { right: 14px; transform: rotate(-9deg); }
 .portal-b11 .lash.l3 { right: 6px;  transform: rotate(12deg); }
 
-/* 12. CONVERGING LINES */
-.portal-b12 { position: absolute; inset: -12px; pointer-events: none; }
-.portal-b12 .line { position: absolute; background: var(--color-border); transition: background .3s ease, transform .4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .3s ease; }
-.portal-b12 .line.top { top: 0; left: 0; right: 0; height: 4px; transform: scaleX(0); transform-origin: center; border-radius: 4px; }
-.portal-b12 .line.bottom { bottom: 0; left: 0; right: 0; height: 4px; transform: scaleX(0); transform-origin: center; border-radius: 4px; }
-.portal-b12 .line.left { top: 0; bottom: 0; left: 0; width: 4px; transform: scaleY(0); transform-origin: center; border-radius: 4px; }
-.portal-b12 .line.right { top: 0; bottom: 0; right: 0; width: 4px; transform: scaleY(0); transform-origin: center; border-radius: 4px; }
-
-.portal-stage:hover .portal-b12 .line { background: var(--hot); box-shadow: 0 0 15px var(--hot-soft); }
-.portal-stage:hover .portal-b12 .line.top, 
-.portal-stage:hover .portal-b12 .line.bottom { transform: scaleX(1); }
-.portal-stage:hover .portal-b12 .line.left, 
-.portal-stage:hover .portal-b12 .line.right { transform: scaleY(1); }
-
-/* 13. CONVERGING CIRCLE */
-.portal-b13 { transition: transform .4s ease-out; }
-.portal-b13 circle { fill: none; stroke-width: 4; stroke-linecap: round; }
-.portal-b13 .base-ring { stroke: var(--color-border); }
-.portal-b13 .draw-ring { 
-  stroke: var(--hot); 
-  /* r=60 => C=376.9911. C/4 = 94.2477 */
-  stroke-dasharray: 0 94.2477;
-  stroke-dashoffset: 0;
-  transition: stroke-dasharray .4s cubic-bezier(0.16, 1, 0.3, 1), stroke-dashoffset .4s cubic-bezier(0.16, 1, 0.3, 1), filter .3s ease;
-  filter: drop-shadow(0 0 0px var(--hot-soft));
+/* 12. TUMBLE (varied radius) */
+.portal-b12 .ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  transition: border-color .4s ease, opacity .4s ease;
+  transform: rotateX(0deg) rotateY(0deg);
 }
-.portal-stage:hover .portal-b13 .draw-ring { 
-  stroke-dasharray: 94.2477 0;
-  stroke-dashoffset: -47.1238;
-  filter: drop-shadow(0 0 15px var(--hot-soft)); 
+.portal-b12 .ring-1 { inset: 0px; }
+.portal-b12 .ring-2 { inset: 12px; opacity: 0; }
+.portal-b12 .ring-3 { inset: -12px; opacity: 0; }
+.portal-stage:hover .portal-b12 .ring { border-color: var(--hot); }
+.portal-stage:hover .portal-b12 .ring-2,
+.portal-stage:hover .portal-b12 .ring-3 { opacity: .85; }
+
+/* 13. TUMBLE TRIO (same radius) */
+.portal-b13 .tring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  transition: border-color .4s ease, opacity .4s ease;
+  transform: rotateX(0deg) rotateY(0deg);
 }
+.portal-b13 .tr-1 { opacity: 1; }
+.portal-b13 .tr-2, .portal-b13 .tr-3 { opacity: 0; }
+.portal-stage:hover .portal-b13 .tring { border-color: var(--hot); }
+.portal-stage:hover .portal-b13 .tr-2,
+.portal-stage:hover .portal-b13 .tr-3 { opacity: .85; }
+
+/* 14. FLIP HORIZONTAL */
+.portal-b14 .fring {
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  transition: border-color .4s ease;
+  transform: rotateX(0deg) rotateY(0deg);
+}
+.portal-stage:hover .portal-b14 .fring { border-color: var(--hot); }
+
+/* 15. SPIN VERTICAL */
+.portal-b15 .sring {
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  transition: border-color .4s ease;
+  transform: rotateX(0deg) rotateY(0deg);
+}
+.portal-stage:hover .portal-b15 .sring { border-color: var(--hot); }

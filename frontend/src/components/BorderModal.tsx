@@ -13,8 +13,10 @@ export const BORDER_STYLES = [
   { id: 'b8', name: 'Circuit Draw' },
   { id: 'b9', name: 'Sketch Layers' },
   { id: 'b11', name: 'Watching Eye' },
-  { id: 'b12', name: 'Converging Lines' },
-  { id: 'b13', name: 'Converging Circle' },
+  { id: 'b12', name: 'Tumble Spin' },
+  { id: 'b13', name: 'Tumble Trio' },
+  { id: 'b14', name: 'Flip Horizontal' },
+  { id: 'b15', name: 'Spin Vertical' },
 ];
 
 interface BorderModalProps {
