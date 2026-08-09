@@ -24,8 +24,8 @@ from torch.utils.data import Dataset, DataLoader, random_split
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from config.keyboard_layout import Finger, all_keys_for_finger  # noqa: E402
-from ai.models.key_predictor import KeyPredictor, KEY_TO_IDX, NUM_KEYS, key_mask_for_finger  # noqa: E402
-from ai.services.feature_extractor import F_DIM  # noqa: E402
+from models.key_predictor import KeyPredictor, KEY_TO_IDX, NUM_KEYS, key_mask_for_finger  # noqa: E402
+from services.feature_extractor import F_DIM  # noqa: E402
 
 DATASET_ROOT = Path(__file__).resolve().parents[2] / "ai" / "dataset"
 CHECKPOINT_DIR = Path(__file__).resolve().parents[2] / "ai" / "models" / "checkpoints"

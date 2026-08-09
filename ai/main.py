@@ -5,7 +5,7 @@ import base64
 import numpy as np
 import cv2
 import websockets
-from ai.services.prediction_service import PredictionService
+from services.prediction_service import PredictionService
 
 async def handle_connection(websocket):
     print("Client connected to Virtual Keyboard AI")

@@ -43,7 +43,7 @@ from .feature_extractor import (  # noqa: E402
     CalibrationReference, build_calibration, calibration_error, is_posture_correct,
     most_active_finger, extract_features, F_DIM,
 )
-from ai.models.key_predictor import KeyPredictor, key_mask_for_finger, KEY_TO_IDX, IDX_TO_KEY  # noqa: E402
+from models.key_predictor import KeyPredictor, key_mask_for_finger, KEY_TO_IDX, IDX_TO_KEY  # noqa: E402
 
 MOVE_EPS = 0.045          # displacement (norm image units) that counts as "left home row"
 PRESS_VELOCITY_EPS = 0.9  # matches FingerState.is_pressing threshold
