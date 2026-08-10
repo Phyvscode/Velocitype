@@ -6,20 +6,7 @@ interface Props {
   timeLeft: number;
 }
 
-const HOURS = [
-  { label: '12', val: 30 },
-  { label: '1', val: 40 },
-  { label: '2', val: 50 },
-  { label: '3', val: 60 },
-  { label: '4', val: 120 },
-  { label: '5', val: 180 },
-  { label: '6', val: 240 },
-  { label: '7', val: 300 },
-  { label: '8', val: 360 },
-  { label: '9', val: 420 },
-  { label: '10', val: 480 },
-  { label: '11', val: 600 },
-];
+import { getAngleFromDuration, HOURS } from './ClockTimeSelector';
 
 export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -31,8 +18,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
   const [streaming, setStreaming] = useState(false);
   const [playing, setPlaying] = useState(false);
   
-  const initialIndex = Math.max(0, HOURS.findIndex(h => h.val === durationVal));
-  const minuteAngle = initialIndex * 30;
+  const minuteAngle = getAngleFromDuration(durationVal);
 
   useEffect(() => {
     // Start animation shortly after view transition begins

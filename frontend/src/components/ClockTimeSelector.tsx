@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');
 
 interface Props {
@@ -6,7 +6,7 @@ interface Props {
   setDurationInput: (val: string) => void;
 }
 
-const HOURS = [
+export const HOURS = [
   { label: '12', val: 30 },
   { label: '1', val: 40 },
   { label: '2', val: 50 },
@@ -21,85 +21,39 @@ const HOURS = [
   { label: '11', val: 600 },
 ];
 
+export function getAngleFromDuration(dur: number) {
+  if (dur <= HOURS[0].val) return 0;
+  if (dur >= HOURS[HOURS.length - 1].val) return (HOURS.length - 1) * 30;
+  
+  for (let i = 0; i < HOURS.length - 1; i++) {
+    if (dur >= HOURS[i].val && dur <= HOURS[i + 1].val) {
+      const range = HOURS[i + 1].val - HOURS[i].val;
+      const pct = (dur - HOURS[i].val) / range;
+      return (i * 30) + (pct * 30);
+    }
+  }
+  return 0;
+}
+
 export default function ClockTimeSelector({ durationVal, setDurationInput }: Props) {
   const topClockRef = useRef<HTMLDivElement>(null);
   const minuteHandRef = useRef<HTMLDivElement>(null);
-  const [dragging, setDragging] = useState(false);
   
-  // Find initial angle based on durationVal
-  const initialIndex = Math.max(0, HOURS.findIndex(h => h.val === durationVal));
-  const [minuteAngle, setMinuteAngle] = useState(initialIndex * 30);
-  const minuteAngleRef = useRef(initialIndex * 30);
-
-  const applyAngle = (el: HTMLElement | null, angle: number) => {
-    if (el) {
-      el.style.transform = `translate(-50%,-100%) rotate(${angle}deg)`;
-    }
-  };
+  const minuteAngle = getAngleFromDuration(durationVal);
 
   useEffect(() => {
-    applyAngle(minuteHandRef.current, minuteAngle);
+    if (minuteHandRef.current) {
+      minuteHandRef.current.style.transform = `translate(-50%,-100%) rotate(${minuteAngle}deg)`;
+    }
   }, [minuteAngle]);
 
-  const angleFromEvent = (clientX: number, clientY: number) => {
-    if (!topClockRef.current) return 0;
-    const rect = topClockRef.current.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dx = clientX - cx;
-    const dy = clientY - cy;
-    let deg = Math.atan2(dx, -dy) * 180 / Math.PI;
-    if (deg < 0) deg += 360;
-    return deg;
-  };
-
-  const handleStartDrag = (e: React.MouseEvent | React.TouchEvent) => {
-    setDragging(true);
-  };
-
-  useEffect(() => {
-    const handleMove = (e: MouseEvent | TouchEvent) => {
-      if (!dragging) return;
-      const point = 'touches' in e ? e.touches[0] : (e as MouseEvent);
-      const raw = angleFromEvent(point.clientX, point.clientY);
-      let snapped = Math.round(raw / 30) * 30;
-      if (snapped >= 360) snapped = 0;
-      setMinuteAngle(snapped);
-      minuteAngleRef.current = snapped;
-      applyAngle(minuteHandRef.current, snapped);
-    };
-
-    const handleEnd = () => {
-      if (dragging) {
-        setDragging(false);
-        const snapped = minuteAngleRef.current;
-        const index = Math.round(snapped / 30) % 12;
-        setDurationInput(String(HOURS[index].val));
-      }
-    };
-
-    if (dragging) {
-      window.addEventListener('mousemove', handleMove);
-      window.addEventListener('mouseup', handleEnd);
-      window.addEventListener('touchmove', handleMove, { passive: false });
-      window.addEventListener('touchend', handleEnd);
-    }
-    return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleEnd);
-      window.removeEventListener('touchmove', handleMove);
-      window.removeEventListener('touchend', handleEnd);
-    };
-  }, [dragging, setDurationInput]);
-
   return (
-    <div className="w-full flex flex-col items-center justify-center my-4 overflow-hidden pt-12 pb-4">
+    <div className="w-full flex flex-row items-center justify-center my-4 overflow-hidden pt-4 pb-4 gap-12">
       <style>{`
         .hg-scene {
           position: relative;
           width: 300px;
           height: 300px;
-          margin: 0 auto;
         }
 
         .hg-clock {
@@ -121,7 +75,6 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
           position: absolute;
           inset: 0;
         }
-
 
         .hg-face {
           position: absolute;
@@ -179,15 +132,14 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
           background: var(--hot);
           border-radius: 4px;
           z-index: 4;
-          cursor: grab;
           width: 5px;
           height: 92px;
           transform: translate(-50%,-100%) rotate(0deg);
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .hg-minute-hand.dragging { cursor: grabbing; }
       `}</style>
 
-      <div className="hg-scene" style={{ viewTransitionName: 'hourglass-clock' }}>
+      <div className="flex-shrink-0 hg-scene" style={{ viewTransitionName: 'hourglass-clock' }}>
         <div className="hg-clock" ref={topClockRef}>
           <div className="hg-face-content">
             <div className="hg-face"></div>
@@ -202,14 +154,35 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
               ))}
             </div>
             <div
-              className={cn("hg-minute-hand", dragging && "dragging")}
+              className="hg-minute-hand"
               ref={minuteHandRef}
-              onMouseDown={handleStartDrag}
-              onTouchStart={handleStartDrag}
             ></div>
             <div className="hg-pivot"></div>
           </div>
         </div>
+      </div>
+      
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-mono text-slate-500 uppercase tracking-widest">
+          Time Limit (seconds)
+        </label>
+        <div className="relative group">
+          <input 
+            type="number"
+            min="10"
+            max="3600"
+            value={durationVal || ''}
+            onChange={(e) => setDurationInput(e.target.value)}
+            className="w-48 bg-[#0c0a1f] border-2 border-[var(--hot)] rounded-xl py-3 px-4 text-[var(--hot)] font-mono text-2xl font-bold focus:outline-none focus:ring-4 focus:ring-[var(--hot)]/20 transition-all text-center"
+            placeholder="60"
+          />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--hot)]/50 font-mono text-xl font-bold pointer-events-none">
+            s
+          </div>
+        </div>
+        <p className="text-xs text-slate-500 mt-2 max-w-[12rem] text-center">
+          Type a custom time limit in seconds.
+        </p>
       </div>
     </div>
   );
