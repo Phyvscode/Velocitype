@@ -176,12 +176,12 @@
   --glow-hot: 0 0 24px color-mix(in srgb, var(--hot) 45%, transparent);
   --shadow-panel: 0 20px 50px -20px oklch(0 0 0 / 0.9);
 
-  /* 3D Key styles */
-  --key-cap: oklch(0.68 0.13 55);
-  --key-cap-top: oklch(0.75 0.1 60);
-  --key-side: oklch(0.48 0.13 55);
-  --key-text: oklch(0.92 0.03 60);
-  --key-glow: oklch(0.75 0.08 55 / 0.4);
+  /* 3D Key styles - dynamic based on user theme */
+  --key-cap: color-mix(in srgb, var(--hot) 80%, black 20%);
+  --key-cap-top: color-mix(in srgb, var(--hot) 90%, white 10%);
+  --key-side: color-mix(in srgb, var(--hot) 60%, black 40%);
+  --key-text: var(--foreground);
+  --key-glow: color-mix(in srgb, var(--hot) 40%, transparent);
 }
 
 @layer base {
