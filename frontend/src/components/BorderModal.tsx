@@ -126,8 +126,8 @@ export default function BorderModal({ isOpen, onClose }: BorderModalProps) {
               <div key={style.id} className="flex flex-col items-center gap-4 group">
                 <button
                   onClick={() => handleSelect(style.id)}
-                  onMouseMove={handleMouseMove}
-                  onMouseLeave={handleMouseLeave}
+                  onMouseMove={style.id !== 'b16' ? handleMouseMove : undefined}
+                  onMouseLeave={style.id !== 'b16' ? handleMouseLeave : undefined}
                   style={{ transformStyle: 'preserve-3d' }}
                   className={
                     style.id === 'b16'
@@ -139,9 +139,6 @@ export default function BorderModal({ isOpen, onClose }: BorderModalProps) {
                         }`
                   }
                 >
-                  {style.id === 'b16' && (
-                    <span className="text-4xl font-bold font-mono tracking-wide">W</span>
-                  )}
                   <PortalBorderOverlay borderStyle={style.id} />
                 </button>
                 <div className={`text-xs sm:text-sm font-display tracking-widest uppercase text-center leading-tight transition-colors duration-300 ${selected === style.id ? 'text-[var(--hot)]' : 'text-slate-400 group-hover:text-slate-200'}`}>
