@@ -218,8 +218,6 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
               &larr; Quit
             </button>
             <div className="flex items-center gap-4 text-[clamp(18px,2vw,24px)] font-bold tabular-nums">
-              <HourglassAnimation durationVal={config.duration} timeLeft={timeLeft} />
-              <span className={timeLeft <= 5 ? 'text-rose-400' : 'text-[var(--hot)]'}>{timeLeft}s</span>
             </div>
           </div>
         </header>
@@ -284,10 +282,13 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
         aria-label="Typing input"
       />
 
-      {/* Live Keyboard */}
-      <footer className="w-full flex-none px-4 pb-8 pt-4 flex flex-col items-center justify-end min-h-0">
-        <div className="w-full max-w-[800px] mx-auto perspective-[1200px]">
+      <footer className="w-full flex-none px-4 pb-8 pt-4 flex items-center justify-center min-h-0 gap-8 lg:gap-16">
+        <div className="w-full max-w-[800px] perspective-[1200px]">
           <LiveKeyboard activeKeys={activeKeys} />
+        </div>
+        <div className="flex flex-col items-center gap-2 flex-none translate-y-[-20px]">
+          <HourglassAnimation durationVal={config.duration} timeLeft={timeLeft} />
+          <span className={`text-2xl font-bold tabular-nums font-mono tracking-widest ${timeLeft <= 5 ? 'text-rose-400' : 'text-[var(--hot)]'}`}>{timeLeft}s</span>
         </div>
       </footer>
 
