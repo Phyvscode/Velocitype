@@ -10,6 +10,7 @@ import VersusModeSetup from './VersusModeSetup';
 import { ProfileOrb } from './ProfileOrb';
 import VirtualKeyboardConnector from './VirtualKeyboardConnector';
 import BorderModal from './BorderModal';
+import ClockTimeSelector from './ClockTimeSelector';
 import PortalBorderOverlay from './PortalBorderOverlay';
 
 export interface GameConfig {
@@ -468,60 +469,16 @@ export default function SetupScreen({
     setShowCustom: (v: boolean) => void,
     durationVal: number
   ) => {
-    const isPresetValue = PRESET_DURATIONS.some((d) => d.value === durationVal);
     return (
       <section className="pt-2">
         <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">
           {stepNumber}. Pick a time limit
         </h2>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            {PRESET_DURATIONS.map((d) => {
-              const active = !showCustom && durationVal === d.value;
-              return (
-                <button
-                  key={d.value}
-                  onClick={() => {
-                    setError('');
-                    setShowCustom(false);
-                    setDurationInput(String(d.value));
-                  }}
-                  className={`px-3 py-2.5 text-sm font-semibold transition-all ${
-                    active
-                      ? 'bg-[var(--hot)]/20 text-[var(--hot)] border border-[var(--hot)]/50'
-                      : 'bg-slate-900/40 text-slate-400 border border-slate-700/50 hover:bg-slate-700/60'
-                  }`}
-                >
-                  {d.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            onClick={() => { setError(''); setShowCustom(true); }}
-            className={`w-full px-3 py-2.5 text-sm font-semibold text-center transition-all ${
-              showCustom || !isPresetValue
-                ? 'bg-[var(--hot)]/20 text-[var(--hot)] border border-[var(--hot)]/50'
-                : 'bg-slate-900/40 text-slate-400 border border-slate-700/50 hover:bg-slate-700/60'
-            }`}
-          >
-            Custom
-          </button>
-
-          {(showCustom || !isPresetValue) && (
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min={1}
-                max={3600}
-                value={durationInput}
-                onChange={(e) => { setError(''); setDurationInput(e.target.value); }}
-                className="w-28 px-3 py-2.5 bg-slate-900/50 border border-slate-700/50 focus:border-[var(--hot)] focus:outline-none text-lg font-semibold text-center text-white"
-              />
-              <span className="text-slate-400">seconds</span>
-            </div>
-          )}
+        <div className="w-full flex items-center justify-center">
+          <ClockTimeSelector 
+            durationVal={durationVal} 
+            setDurationInput={setDurationInput} 
+          />
         </div>
       </section>
     );
