@@ -131,7 +131,7 @@ export default function BorderModal({ isOpen, onClose }: BorderModalProps) {
                   style={{ transformStyle: 'preserve-3d' }}
                   className={
                     style.id === 'b16'
-                      ? `portal-stage relative inline-flex flex-col w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] items-center justify-center rounded-2xl border-2 border-[var(--hot)] font-semibold tracking-wide text-[var(--key-text)] key-gradient transform-gpu transition-all duration-150 ease-out z-10 ${selected === style.id ? 'translate-y-3 key-3d-pressed shadow-none' : 'key-3d hover:translate-y-3 hover:key-3d-pressed active:translate-y-4 active:scale-[0.98]'}`
+                      ? `portal-stage relative inline-flex flex-col w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] items-center justify-center rounded-2xl border-2 border-[var(--hot)] bg-[var(--key-cap)] font-semibold tracking-wide text-[var(--key-text)] key-gradient transform-gpu transition-all duration-150 ease-out z-10 ${selected === style.id ? 'translate-y-3 key-3d-pressed shadow-none' : 'key-3d hover:translate-y-3 hover:key-3d-pressed active:translate-y-4 active:scale-[0.98]'}`
                       : `relative w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] rounded-full flex flex-col items-center justify-center transition-all duration-700 ease-in-out portal-stage ${style.id === 'b0' ? 'hover:-translate-y-2 hover:[transform:rotateX(75deg)] border' : ''} ${
                           selected === style.id
                             ? `${style.id === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 text-white shadow-[0_0_20px_var(--color-hot-soft)]`
@@ -139,6 +139,9 @@ export default function BorderModal({ isOpen, onClose }: BorderModalProps) {
                         }`
                   }
                 >
+                  {style.id === 'b16' && (
+                    <span className="text-4xl font-bold font-mono tracking-wide">W</span>
+                  )}
                   <PortalBorderOverlay borderStyle={style.id} />
                 </button>
                 <div className={`text-xs sm:text-sm font-display tracking-widest uppercase text-center leading-tight transition-colors duration-300 ${selected === style.id ? 'text-[var(--hot)]' : 'text-slate-400 group-hover:text-slate-200'}`}>

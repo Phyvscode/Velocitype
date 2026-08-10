@@ -113,7 +113,7 @@ const PortalButton = ({ active, onClick, letter, label, title, borderStyle }: { 
       style={{ transformStyle: 'preserve-3d' }}
       className={
         borderStyle === 'b16'
-          ? `portal-stage relative inline-flex flex-col w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] items-center justify-center rounded-2xl border-2 border-[var(--hot)] font-semibold tracking-wide text-[var(--key-text)] key-gradient transform-gpu transition-all duration-150 ease-out z-10 ${active ? 'translate-y-3 key-3d-pressed shadow-none' : 'key-3d hover:translate-y-3 hover:key-3d-pressed active:translate-y-4 active:scale-[0.98]'}`
+          ? `portal-stage relative inline-flex flex-col w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] items-center justify-center rounded-2xl border-2 border-[var(--hot)] bg-[var(--key-cap)] font-semibold tracking-wide text-[var(--key-text)] key-gradient transform-gpu transition-all duration-150 ease-out z-10 ${active ? 'translate-y-3 key-3d-pressed shadow-none' : 'key-3d hover:translate-y-3 hover:key-3d-pressed active:translate-y-4 active:scale-[0.98]'}`
           : `portal-stage w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] rounded-full flex items-center justify-center transition-all duration-700 ease-in-out ${borderStyle === 'b0' ? 'group-hover:-translate-y-[10%] group-hover:[transform:rotateX(75deg)] border' : ''} group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 ${active ? `${borderStyle === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]` : `${borderStyle === 'b0' ? 'border-[var(--hot)]/40 ' : ''}bg-slate-900/50 text-slate-400`}`
       }
     >
@@ -756,8 +756,8 @@ export default function SetupScreen({
 
               <div className="flex items-center gap-4 mr-2">
                 {highestWpm !== null && (
-                  <div className="text-slate-500 font-display text-lg tracking-widest flex items-baseline gap-1 opacity-80">
-                    BEST: <span className="text-[var(--hot)] text-xl ml-1">{highestWpm}</span> <span className="font-mono text-[0.65rem] uppercase tracking-widest">WPM</span>
+                  <div className="text-[var(--hot)] font-display text-lg tracking-widest flex items-baseline gap-1 opacity-80">
+                    BEST: <span className="text-xl ml-1">{highestWpm}</span> <span className="font-mono text-[0.65rem] uppercase tracking-widest">WPM</span>
                   </div>
                 )}
                 {liveWpm !== null && (
