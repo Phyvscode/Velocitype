@@ -79,7 +79,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
   }, []);
 
   return (
-    <div className="w-[92px] h-[128px] relative flex items-center justify-center" style={{ viewTransitionName: 'hourglass-clock' }}>
+    <div className="w-[161px] h-[224px] relative flex items-center justify-center" style={{ viewTransitionName: 'hourglass-clock' }}>
       <style>{`
         .hg-anim-scene {
           position: absolute;
@@ -87,7 +87,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
           top: 50%;
           width: 460px;
           height: 640px;
-          transform: translate(-50%, -50%) scale(0.2);
+          transform: translate(-50%, -50%) scale(0.35);
           pointer-events: none;
         }
 

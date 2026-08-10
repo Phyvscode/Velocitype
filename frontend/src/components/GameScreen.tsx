@@ -282,7 +282,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
         aria-label="Typing input"
       />
 
-      <footer className="w-full flex-none px-4 pb-8 pt-4 flex items-center justify-center min-h-0 gap-8 lg:gap-16">
+      <footer className="w-full max-w-7xl mx-auto flex-none px-4 sm:px-12 pb-8 pt-4 flex items-center justify-between min-h-0">
         <div className="w-full max-w-[800px] perspective-[1200px]">
           <LiveKeyboard activeKeys={activeKeys} />
         </div>
