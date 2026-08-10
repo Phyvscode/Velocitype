@@ -674,6 +674,7 @@ export default function SetupScreen({
               onMouseMove={handleMouseMove}
               onMouseLeave={(e) => { setIsHoveringKeyboard(false); handleMouseLeave(); }}
               className="w-full mx-auto"
+              style={{ transformStyle: 'preserve-3d' }}
             >
               {/* Keyboard Layout */}
               <LiveKeyboard activeKeys={activeKeys} />

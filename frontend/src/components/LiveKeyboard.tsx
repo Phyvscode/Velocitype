@@ -122,7 +122,7 @@ function Key({ def, active }: { def: KeyDef; active: boolean }) {
 
 export default function LiveKeyboard({ activeKeys }: LiveKeyboardProps) {
   return (
-    <div className="w-full max-w-7xl mx-auto" style={{ perspective: "1200px" }}>
+    <div className="w-full max-w-7xl mx-auto" style={{ transformStyle: "preserve-3d" }}>
       <div
         className="w-full rounded-2xl border border-[var(--hot)]/40 bg-transparent p-6 transition-transform duration-500 ease-out"
         style={{
