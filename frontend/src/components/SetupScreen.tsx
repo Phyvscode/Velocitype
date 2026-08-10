@@ -796,7 +796,7 @@ export default function SetupScreen({
             <button onClick={() => setActiveMode(null)} className="mb-8 flex items-center gap-2 text-slate-400 hover:text-[var(--hot)] transition-colors font-mono text-sm uppercase tracking-widest group">
               <span className="transition-transform group-hover:-translate-x-1">←</span> Back to Modes
             </button>
-            <div className="w-full rounded-lg p-[clamp(1rem,2vh,2.5rem)] bg-slate-900/20 backdrop-blur">
+            <div className="w-full rounded-lg p-[clamp(1rem,2vh,2.5rem)]">
             <h3 className="text-2xl font-display tracking-widest text-white uppercase mb-8 border-b border-slate-800/50 pb-4">
               Configure {activeMode === 'words' ? 'Words' : activeMode === 'file' ? 'File Upload' : activeMode === 'random-sentences' ? 'Sentences' : activeMode === 'customization' ? 'Customization' : 'Versus'}
             </h3>
