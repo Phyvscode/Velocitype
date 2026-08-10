@@ -121,18 +121,12 @@ function Key({ def, active }: { def: KeyDef; active: boolean }) {
 }
 
 export default function LiveKeyboard({ activeKeys }: LiveKeyboardProps) {
-  const [hovered, setHovered] = useState(false);
-
   return (
     <div className="w-full max-w-7xl mx-auto" style={{ perspective: "1200px" }}>
       <div
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        className="w-full rounded-2xl border border-border bg-card/60 p-6 transition-transform duration-500 ease-out"
+        className="w-full rounded-2xl border border-[var(--hot)]/40 bg-transparent p-6 transition-transform duration-500 ease-out"
         style={{
-          transform: hovered
-            ? "rotateX(48deg) rotateZ(-4deg)"
-            : "rotateX(25deg)",
+          transform: "rotateX(25deg)",
           transformStyle: "preserve-3d",
         }}
       >
