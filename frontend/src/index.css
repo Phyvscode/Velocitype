@@ -67,6 +67,10 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-key-text: var(--key-text);
+  --color-key-side: var(--key-side);
+  --color-key-cap: var(--key-cap);
+  --color-key-cap-top: var(--key-cap-top);
+  --color-key-glow: var(--key-glow);
 }
 
 :root {
