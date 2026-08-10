@@ -16,6 +16,7 @@ export const BORDER_STYLES = [
   { id: 'b13', name: 'Tumble Trio' },
   { id: 'b14', name: 'Flip Horizontal' },
   { id: 'b15', name: 'Spin Vertical' },
+  { id: 'b16', name: '3D Key' },
 ];
 
 interface BorderModalProps {
