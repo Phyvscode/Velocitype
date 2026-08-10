@@ -4,6 +4,7 @@ import { filterWords } from '@/lib/words';
 import type { RowKey } from '@/lib/words';
 import type { GameConfig } from './SetupScreen';
 import LiveKeyboard, { getKeyLabel } from './LiveKeyboard';
+import HourglassAnimation from './HourglassAnimation';
 import VirtualKeyboardConnector from './VirtualKeyboardConnector';
 
 export interface TypedWord {
@@ -216,7 +217,8 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
             >
               &larr; Quit
             </button>
-            <div className="flex items-center gap-2 text-[clamp(18px,2vw,24px)] font-bold tabular-nums">
+            <div className="flex items-center gap-4 text-[clamp(18px,2vw,24px)] font-bold tabular-nums">
+              <HourglassAnimation durationVal={config.duration} timeLeft={timeLeft} />
               <span className={timeLeft <= 5 ? 'text-rose-400' : 'text-[var(--hot)]'}>{timeLeft}s</span>
             </div>
           </div>
