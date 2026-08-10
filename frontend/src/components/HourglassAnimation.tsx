@@ -18,7 +18,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
   const [streaming, setStreaming] = useState(false);
   const [playing, setPlaying] = useState(false);
   
-  const minuteAngle = getAngleFromDuration(durationVal);
+
 
   useEffect(() => {
     // Start animation shortly after view transition begins
@@ -247,7 +247,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
             </div>
             <div
               className="hg-anim-minute-hand"
-              style={{ transform: `translate(-50%,-100%) rotate(${minuteAngle}deg)` }}
+              style={{ transform: `translate(-50%,-100%) rotate(0deg)` }}
             ></div>
             <div className="hg-anim-pivot"></div>
           </div>
@@ -268,7 +268,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
             </div>
             <div
               className="hg-anim-minute-hand"
-              style={{ transform: `translate(-50%,-100%) rotate(${minuteAngle}deg)` }}
+              style={{ transform: `translate(-50%,-100%) rotate(0deg)` }}
             ></div>
             <div className="hg-anim-pivot"></div>
           </div>

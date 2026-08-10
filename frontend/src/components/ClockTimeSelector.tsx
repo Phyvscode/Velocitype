@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');
 
 interface Props {
@@ -36,17 +36,6 @@ export function getAngleFromDuration(dur: number) {
 }
 
 export default function ClockTimeSelector({ durationVal, setDurationInput }: Props) {
-  const topClockRef = useRef<HTMLDivElement>(null);
-  const minuteHandRef = useRef<HTMLDivElement>(null);
-  
-  const minuteAngle = getAngleFromDuration(durationVal);
-
-  useEffect(() => {
-    if (minuteHandRef.current) {
-      minuteHandRef.current.style.transform = `translate(-50%,-100%) rotate(${minuteAngle}deg)`;
-    }
-  }, [minuteAngle]);
-
   return (
     <div className="w-full flex flex-row items-center justify-center my-4 overflow-hidden pt-4 pb-4 gap-12">
       <style>{`
@@ -135,7 +124,6 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
           width: 5px;
           height: 92px;
           transform: translate(-50%,-100%) rotate(0deg);
-          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
       `}</style>
 
@@ -155,7 +143,6 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
             </div>
             <div
               className="hg-minute-hand"
-              ref={minuteHandRef}
             ></div>
             <div className="hg-pivot"></div>
           </div>
