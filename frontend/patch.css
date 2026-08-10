@@ -1,0 +1,8 @@
+::view-transition-old(hourglass-clock) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(hourglass-clock) {
+  animation: none;
+  opacity: 1;
+}
