@@ -7,18 +7,18 @@ interface Props {
 }
 
 const HOURS = [
-  { label: '30s', val: 30 },
-  { label: '40s', val: 40 },
-  { label: '50s', val: 50 },
-  { label: '1m', val: 60 },
-  { label: '2m', val: 120 },
-  { label: '3m', val: 180 },
-  { label: '4m', val: 240 },
-  { label: '5m', val: 300 },
-  { label: '6m', val: 360 },
-  { label: '7m', val: 420 },
-  { label: '8m', val: 480 },
-  { label: '10m', val: 600 },
+  { label: '12', val: 30 },
+  { label: '1', val: 40 },
+  { label: '2', val: 50 },
+  { label: '3', val: 60 },
+  { label: '4', val: 120 },
+  { label: '5', val: 180 },
+  { label: '6', val: 240 },
+  { label: '7', val: 300 },
+  { label: '8', val: 360 },
+  { label: '9', val: 420 },
+  { label: '10', val: 480 },
+  { label: '11', val: 600 },
 ];
 
 export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
@@ -108,6 +108,12 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
           transition: opacity .9s ease;
         }
 
+        .hg-anim-ticks-container {
+          position: absolute;
+          inset: 0;
+          transition: opacity .5s ease;
+        }
+
         .hg-anim-face {
           position: absolute;
           inset: 0;
@@ -172,7 +178,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
         .hg-anim-scene.playing #animTopClock {
           transform: translate(-50%,-50%) translateY(-190px) scaleY(.34);
         }
-        .hg-anim-scene.playing #animTopClock .absolute.inset-0 {
+        .hg-anim-scene.playing #animTopClock .hg-anim-ticks-container {
           opacity: 0;
         }
         .hg-anim-scene.playing #animBottomClock {
@@ -234,7 +240,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
         <div className="hg-anim-clock" id="animTopClock">
           <div className="hg-anim-face-content">
             <div className="hg-anim-face"></div>
-            <div className="absolute inset-0 transition-opacity duration-500">
+            <div className="hg-anim-ticks-container">
               {HOURS.map((h, i) => (
                 <div key={i} className="hg-anim-tick-wrap" style={{ transform: `rotate(${i * 30}deg)` }}>
                   <div className="hg-anim-tick" style={{ transform: `rotate(${-i * 30}deg)` }}>
@@ -254,7 +260,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
         <div className="hg-anim-clock" id="animBottomClock">
           <div className="hg-anim-face-content">
             <div className="hg-anim-face"></div>
-            <div className="absolute inset-0 transition-opacity duration-500">
+            <div className="hg-anim-ticks-container">
               {HOURS.map((h, i) => (
                 <div key={i} className="hg-anim-tick-wrap" style={{ transform: `rotate(${i * 30}deg)` }}>
                   <div className="hg-anim-tick" style={{ transform: `rotate(${-i * 30}deg)` }}>

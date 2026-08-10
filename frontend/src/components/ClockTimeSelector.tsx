@@ -7,18 +7,18 @@ interface Props {
 }
 
 const HOURS = [
-  { label: '30s', val: 30 },
-  { label: '40s', val: 40 },
-  { label: '50s', val: 50 },
-  { label: '1m', val: 60 },
-  { label: '2m', val: 120 },
-  { label: '3m', val: 180 },
-  { label: '4m', val: 240 },
-  { label: '5m', val: 300 },
-  { label: '6m', val: 360 },
-  { label: '7m', val: 420 },
-  { label: '8m', val: 480 },
-  { label: '10m', val: 600 },
+  { label: '12', val: 30 },
+  { label: '1', val: 40 },
+  { label: '2', val: 50 },
+  { label: '3', val: 60 },
+  { label: '4', val: 120 },
+  { label: '5', val: 180 },
+  { label: '6', val: 240 },
+  { label: '7', val: 300 },
+  { label: '8', val: 360 },
+  { label: '9', val: 420 },
+  { label: '10', val: 480 },
+  { label: '11', val: 600 },
 ];
 
 export default function ClockTimeSelector({ durationVal, setDurationInput }: Props) {
@@ -117,6 +117,11 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
           border-radius: 50%;
         }
 
+        .hg-ticks-container {
+          position: absolute;
+          inset: 0;
+        }
+
 
         .hg-face {
           position: absolute;
@@ -177,7 +182,7 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
         <div className="hg-clock" ref={topClockRef}>
           <div className="hg-face-content">
             <div className="hg-face"></div>
-            <div className="absolute inset-0">
+            <div className="hg-ticks-container">
               {HOURS.map((h, i) => (
                 <div key={i} className="hg-tick-wrap" style={{ transform: `rotate(${i * 30}deg)` }}>
                   <div className="hg-tick" style={{ transform: `rotate(${-i * 30}deg)` }}>
