@@ -81,7 +81,7 @@ function Key({ def, active }: { def: KeyDef; active: boolean }) {
           transform: "rotateX(-90deg)",
           transformOrigin: "top center",
         }}
-        className="absolute inset-x-0 rounded-b-lg bg-key-side"
+        className="absolute inset-x-0 rounded-b-lg bg-[var(--key-side)]"
       />
       {/* Left edge */}
       <div
@@ -92,7 +92,7 @@ function Key({ def, active }: { def: KeyDef; active: boolean }) {
           transform: "rotateY(-90deg)",
           transformOrigin: "right center",
         }}
-        className="absolute inset-y-0 bg-key-side/80"
+        className="absolute inset-y-0 bg-[var(--key-side)] opacity-80"
       />
       {/* Right edge */}
       <div
@@ -103,12 +103,12 @@ function Key({ def, active }: { def: KeyDef; active: boolean }) {
           transform: "rotateY(90deg)",
           transformOrigin: "left center",
         }}
-        className="absolute inset-y-0 bg-key-side/80"
+        className="absolute inset-y-0 bg-[var(--key-side)] opacity-80"
       />
 
       {/* Key cap top face */}
       <div
-        className={`absolute inset-0 flex items-center justify-center rounded-lg font-mono text-[clamp(10px,1.2vw,14px)] font-bold uppercase key-gradient text-key-text transition-shadow duration-100 ${
+        className={`absolute inset-0 flex items-center justify-center rounded-lg font-mono text-[clamp(10px,1.2vw,14px)] font-bold uppercase key-gradient text-[var(--key-text)] transition-shadow duration-100 ${
           active
             ? "shadow-[0_0_18px_var(--key-glow)] brightness-110"
             : "shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"
