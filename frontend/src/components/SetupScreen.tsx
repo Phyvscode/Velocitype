@@ -685,6 +685,11 @@ export default function SetupScreen({
           <div className="flex-none flex flex-col w-full lg:w-[560px] lg:min-w-[560px] lg:max-w-[560px] h-full justify-center">
             <div className="w-full h-[340px] min-h-[340px] max-h-[340px] flex-none overflow-hidden">
               <div className="border border-[var(--hot)]/40 rounded-xl p-[clamp(1rem,2vh,2.5rem)] bg-transparent w-full h-full flex flex-col justify-start text-left overflow-hidden relative">
+                {highestWpm !== null && (
+                  <div className="absolute top-4 right-6 text-xs sm:text-sm font-bold text-slate-500 font-display tracking-widest uppercase z-20 select-none opacity-50">
+                    Highest WPM: <span className="text-[var(--hot)]">{highestWpm}</span>
+                  </div>
+                )}
                 <div ref={textContainerRef} className="font-mono text-2xl sm:text-3xl text-[var(--hot)] leading-[1.6] break-words whitespace-pre-wrap w-full h-full overflow-hidden text-ellipsis relative">
                   {!isHoveringKeyboard && !isRandomSentencesLive ? (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
