@@ -127,12 +127,20 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
           position: absolute;
           inset: 0;
           display: flex;
-          justify-content: center;
-          align-items: flex-start;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .hg-anim-tick-line {
+          width: 2px;
+          height: 6px;
+          background-color: #111;
+          margin-top: 6px;
+          border-radius: 2px;
         }
 
         .hg-anim-tick {
-          margin-top: 15px;
+          margin-top: 2px;
           font-family: monospace;
           font-weight: bold;
           font-size: 13px;
@@ -244,6 +252,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
             <div className="hg-anim-ticks-container">
               {HOURS.map((h, i) => (
                 <div key={i} className="hg-anim-tick-wrap" style={{ transform: `rotate(${i * 30}deg)` }}>
+                  <div className="hg-anim-tick-line"></div>
                   <div className="hg-anim-tick" style={{ transform: `rotate(${-i * 30}deg)` }}>
                     {h.label}
                   </div>
@@ -264,6 +273,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
             <div className="hg-anim-ticks-container">
               {HOURS.map((h, i) => (
                 <div key={i} className="hg-anim-tick-wrap" style={{ transform: `rotate(${i * 30}deg)` }}>
+                  <div className="hg-anim-tick-line"></div>
                   <div className="hg-anim-tick" style={{ transform: `rotate(${-i * 30}deg)` }}>
                     {h.label}
                   </div>

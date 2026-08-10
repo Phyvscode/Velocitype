@@ -136,12 +136,20 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
           position: absolute;
           inset: 0;
           display: flex;
-          justify-content: center;
-          align-items: flex-start;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .hg-tick-line {
+          width: 2px;
+          height: 6px;
+          background-color: #111;
+          margin-top: 6px;
+          border-radius: 2px;
         }
 
         .hg-tick {
-          margin-top: 15px;
+          margin-top: 2px;
           font-family: monospace;
           font-weight: bold;
           font-size: 13px;
@@ -186,6 +194,7 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
             <div className="hg-ticks-container">
               {HOURS.map((h, i) => (
                 <div key={i} className="hg-tick-wrap" style={{ transform: `rotate(${i * 30}deg)` }}>
+                  <div className="hg-tick-line"></div>
                   <div className="hg-tick" style={{ transform: `rotate(${-i * 30}deg)` }}>
                     {h.label}
                   </div>
