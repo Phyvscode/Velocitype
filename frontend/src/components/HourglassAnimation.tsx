@@ -35,18 +35,20 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
   const minuteAngle = initialIndex * 30;
 
   useEffect(() => {
-    // Start animation immediately
-    setPlaying(true);
+    // Start animation shortly after view transition begins
     setTimeout(() => {
-      const curves = [curveLeftTop.current, curveLeftBottom.current, curveRightTop.current, curveRightBottom.current];
-      curves.forEach(p => {
-        if (p) {
-          p.style.transition = 'stroke-dashoffset 700ms ease';
-          p.style.strokeDashoffset = '0';
-        }
-      });
-      setTimeout(() => setStreaming(true), 700);
-    }, 100); // slight delay so transition applies
+      setPlaying(true);
+      setTimeout(() => {
+        const curves = [curveLeftTop.current, curveLeftBottom.current, curveRightTop.current, curveRightBottom.current];
+        curves.forEach(p => {
+          if (p) {
+            p.style.transition = 'stroke-dashoffset 700ms ease';
+            p.style.strokeDashoffset = '0';
+          }
+        });
+        setTimeout(() => setStreaming(true), 700);
+      }, 100);
+    }, 400); // Wait 400ms so view transition is halfway done
   }, []);
 
   useEffect(() => {

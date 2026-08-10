@@ -345,3 +345,15 @@
   animation: liquid-morph 7s ease-in-out infinite;
   border-radius: 68% 32% 39% 61% / 58% 42% 56% 44%;
 }
+
+::view-transition-group(hourglass-clock) {
+  animation-duration: 0.9s;
+  animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+::view-transition-old(hourglass-clock),
+::view-transition-new(hourglass-clock) {
+  animation-duration: 0.9s;
+  animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
