@@ -137,6 +137,7 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
           inset: 0;
           display: flex;
           justify-content: center;
+          align-items: flex-start;
         }
 
         .hg-tick {

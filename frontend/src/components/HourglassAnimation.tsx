@@ -128,6 +128,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
           inset: 0;
           display: flex;
           justify-content: center;
+          align-items: flex-start;
         }
 
         .hg-anim-tick {
