@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 
 import SetupScreen, { type GameConfig } from '@/components/SetupScreen';
 import GameScreen, { type TypedWord } from '@/components/GameScreen';
@@ -78,7 +79,13 @@ function App() {
   const handleStart = (cfg: GameConfig) => {
     setConfig(cfg);
     setTyped([]);
-    setScreen('game');
+    if (document.startViewTransition) {
+      document.startViewTransition(() => {
+        flushSync(() => setScreen('game'));
+      });
+    } else {
+      setScreen('game');
+    }
   };
 
   const handleFinish = (results: TypedWord[]) => {

@@ -172,7 +172,7 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
         .hg-minute-hand.dragging { cursor: grabbing; }
       `}</style>
 
-      <div className="hg-scene">
+      <div className="hg-scene" style={{ viewTransitionName: 'hourglass-clock' }}>
         <div className="hg-clock" ref={topClockRef}>
           <div className="hg-face-content">
             <div className="hg-face"></div>
