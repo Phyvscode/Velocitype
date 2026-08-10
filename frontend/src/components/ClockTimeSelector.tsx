@@ -117,6 +117,7 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
           border-radius: 50%;
         }
 
+
         .hg-face {
           position: absolute;
           inset: 0;
