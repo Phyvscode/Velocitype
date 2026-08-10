@@ -351,9 +351,14 @@
   animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-::view-transition-old(hourglass-clock),
+::view-transition-old(hourglass-clock) {
+  animation: none;
+  opacity: 0;
+  display: none;
+}
+
 ::view-transition-new(hourglass-clock) {
-  animation-duration: 0.9s;
-  animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+  animation: none;
+  opacity: 1;
 }
 
