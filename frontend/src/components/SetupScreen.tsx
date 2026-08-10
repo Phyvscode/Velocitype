@@ -792,7 +792,7 @@ export default function SetupScreen({
       {/* Configuration View */}
       {activeMode && (
       <section className="w-full px-8 py-[clamp(3vh,5vh,6rem)] flex-1 flex flex-col">
-          <div className="w-full max-w-4xl mx-auto animate-in fade-in slide-in-from-top-4 duration-500 mb-20">
+          <div className="w-full max-w-4xl mr-auto animate-in fade-in slide-in-from-top-4 duration-500 mb-20">
             <button onClick={() => setActiveMode(null)} className="mb-8 flex items-center gap-2 text-slate-400 hover:text-[var(--hot)] transition-colors font-mono text-sm uppercase tracking-widest group">
               <span className="transition-transform group-hover:-translate-x-1">←</span> Back to Modes
             </button>
