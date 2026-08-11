@@ -283,10 +283,10 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       />
 
       <footer className="w-full max-w-7xl mx-auto flex-none px-4 sm:px-12 pb-8 pt-4 flex items-center justify-between min-h-0">
-        <div className="w-full max-w-[800px] perspective-[1200px] translate-y-[30px]">
+        <div className="w-full max-w-[800px] perspective-[1200px] translate-y-[60px] -translate-x-8">
           <LiveKeyboard activeKeys={activeKeys} />
         </div>
-        <div className="flex flex-col items-center gap-2 flex-none translate-y-[40px]">
+        <div className="flex flex-col items-center gap-2 flex-none translate-y-[40px] ml-auto translate-x-8">
           <span className={`text-2xl font-bold tabular-nums font-mono tracking-widest ${timeLeft <= 5 ? 'text-rose-400' : 'text-[var(--hot)]'}`}>{timeLeft}s</span>
           <HourglassAnimation durationVal={config.duration} timeLeft={timeLeft} isTyping={started} />
         </div>
