@@ -474,12 +474,10 @@ export default function SetupScreen({
         <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">
           {stepNumber}. Pick a time limit
         </h2>
-        <div className="w-full flex items-center justify-center">
-          <ClockTimeSelector 
-            durationVal={durationVal} 
-            setDurationInput={setDurationInput} 
-          />
-        </div>
+        <ClockTimeSelector 
+          durationVal={durationVal} 
+          setDurationInput={setDurationInput} 
+        />
       </section>
     );
   };

@@ -37,7 +37,7 @@ export function getAngleFromDuration(dur: number) {
 
 export default function ClockTimeSelector({ durationVal, setDurationInput }: Props) {
   return (
-    <div className="w-full flex flex-row items-center justify-center my-4 overflow-hidden pt-4 pb-4 gap-12">
+    <div className="flex flex-row items-center pt-4 pb-4 gap-12">
       <style>{`
         .hg-scene {
           position: relative;
