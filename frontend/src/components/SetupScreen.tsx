@@ -1034,8 +1034,8 @@ export default function SetupScreen({
                   onClick={handleStart}
                   className={
                     borderStyle === 'b16'
-                      ? `relative z-10 w-full px-8 py-4 font-mono text-[10px] uppercase tracking-widest transition-all duration-150 ease-out rounded-2xl border-2 border-[var(--hot)] bg-[var(--key-cap)] text-[var(--key-text)] key-gradient key-3d hover:translate-y-1 hover:key-3d-pressed`
-                      : `portal-stage relative z-10 w-full px-8 py-4 font-mono text-[10px] uppercase tracking-widest transition-all duration-700 rounded border border-[var(--hot)] bg-[var(--hot)]/10 text-[var(--hot)] hover:bg-[var(--hot)] hover:text-black shadow-[0_0_20px_var(--color-hot-soft)]`
+                      ? `portal-stage relative z-10 w-full px-8 py-4 font-mono text-[10px] uppercase tracking-widest transition-all duration-150 ease-out rounded-2xl border-2 border-[var(--hot)] bg-[var(--key-cap)] text-[var(--key-text)] key-gradient key-3d hover:translate-y-1 hover:key-3d-pressed`
+                      : `portal-stage relative z-10 w-full px-8 py-4 font-mono text-[10px] uppercase tracking-widest rounded-full transition-all duration-700 ease-in-out bg-[var(--hot)]/10 text-[var(--hot)] shadow-[0_0_40px_var(--color-hot-soft)] group-hover:bg-transparent group-hover:shadow-none`
                   }
                 >
                   Start Typing
