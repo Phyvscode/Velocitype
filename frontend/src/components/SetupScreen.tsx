@@ -471,9 +471,6 @@ export default function SetupScreen({
   ) => {
     return (
       <section className="pt-2">
-        <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">
-          {stepNumber}. Pick a time limit
-        </h2>
         <ClockTimeSelector 
           durationVal={durationVal} 
           setDurationInput={setDurationInput} 
@@ -1032,7 +1029,7 @@ export default function SetupScreen({
             </div>
           </div>
           {activeMode === 'words' && (
-            <div className="sticky top-1/2 -translate-y-1/2 self-start pt-16">
+            <div className="sticky top-8 self-start">
               {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
             </div>
           )}

@@ -41,16 +41,16 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
       <style>{`
         .hg-scene {
           position: relative;
-          width: 300px;
-          height: 300px;
+          width: 220px;
+          height: 220px;
         }
 
         .hg-clock {
           position: absolute;
           left: 50%;
           top: 50%;
-          width: 260px;
-          height: 260px;
+          width: 190px;
+          height: 190px;
           transform: translate(-50%,-50%);
         }
 
@@ -122,7 +122,7 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
           border-radius: 4px;
           z-index: 4;
           width: 5px;
-          height: 92px;
+          height: 68px;
           transform: translate(-50%,-100%) rotate(0deg);
         }
       `}</style>
