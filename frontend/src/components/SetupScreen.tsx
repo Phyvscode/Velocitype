@@ -1029,16 +1029,17 @@ export default function SetupScreen({
             <div className="sticky top-8 self-start flex flex-col items-center gap-4">
               {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
               {error && <div className="text-[var(--hot)] text-xs font-mono tracking-widest text-center">{error}</div>}
-              <div className="relative group w-full" style={{ perspective: '1500px' }}>
+              <div className="relative group" style={{ perspective: '1500px' }}>
                 <button
                   onClick={handleStart}
+                  style={{ transformStyle: 'preserve-3d' }}
                   className={
                     borderStyle === 'b16'
-                      ? `portal-stage relative z-10 w-full px-8 py-4 font-mono text-[10px] uppercase tracking-widest transition-all duration-150 ease-out rounded-2xl border-2 border-[var(--hot)] bg-[var(--key-cap)] text-[var(--key-text)] key-gradient key-3d hover:translate-y-1 hover:key-3d-pressed`
-                      : `portal-stage relative z-10 w-full px-8 py-4 font-mono text-[10px] uppercase tracking-widest rounded-full transition-all duration-700 ease-in-out bg-[var(--hot)]/10 text-[var(--hot)] shadow-[0_0_40px_var(--color-hot-soft)] group-hover:bg-transparent group-hover:shadow-none`
+                      ? `portal-stage relative z-10 inline-flex flex-col w-40 h-40 items-center justify-center rounded-2xl border-2 border-[var(--hot)] bg-[var(--key-cap)] font-semibold tracking-wide text-[var(--key-text)] key-gradient transform-gpu transition-all duration-150 ease-out key-3d hover:translate-y-2 hover:key-3d-pressed`
+                      : `portal-stage relative z-10 w-40 h-40 rounded-full flex items-center justify-center transition-all duration-700 ease-in-out group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]`
                   }
                 >
-                  Start Typing
+                  <span className="font-mono text-[10px] uppercase tracking-widest">Start Typing</span>
                 </button>
                 <PortalBorderOverlay borderStyle={borderStyle} />
               </div>
