@@ -842,10 +842,7 @@ export default function SetupScreen({
                     </div>
                   </div>
                 </section>
-                {error && <div className="text-[var(--hot)] text-sm font-mono tracking-widest">{error}</div>}
-                <div className="pt-6">
-                  <button onClick={handleStart} className="px-12 py-5 font-mono text-[10px] uppercase tracking-widest transition-all rounded border bg-[var(--hot)]/10 text-[var(--hot)] border-[var(--hot)] hover:bg-[var(--hot)] hover:text-black shadow-[0_0_20px_var(--color-hot-soft)]">Start Typing</button>
-                </div>
+
               </div>
             )}
 
@@ -1029,8 +1026,10 @@ export default function SetupScreen({
             </div>
           </div>
           {activeMode === 'words' && (
-            <div className="sticky top-8 self-start">
+            <div className="sticky top-8 self-start flex flex-col items-center gap-4">
               {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
+              {error && <div className="text-[var(--hot)] text-xs font-mono tracking-widest text-center">{error}</div>}
+              <button onClick={handleStart} className="w-full px-8 py-4 font-mono text-[10px] uppercase tracking-widest transition-all rounded border bg-[var(--hot)]/10 text-[var(--hot)] border-[var(--hot)] hover:bg-[var(--hot)] hover:text-black shadow-[0_0_20px_var(--color-hot-soft)]">Start Typing</button>
             </div>
           )}
         </section>
