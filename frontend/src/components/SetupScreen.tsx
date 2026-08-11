@@ -1029,7 +1029,19 @@ export default function SetupScreen({
             <div className="sticky top-8 self-start flex flex-col items-center gap-4">
               {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
               {error && <div className="text-[var(--hot)] text-xs font-mono tracking-widest text-center">{error}</div>}
-              <button onClick={handleStart} className="w-full px-8 py-4 font-mono text-[10px] uppercase tracking-widest transition-all rounded border bg-[var(--hot)]/10 text-[var(--hot)] border-[var(--hot)] hover:bg-[var(--hot)] hover:text-black shadow-[0_0_20px_var(--color-hot-soft)]">Start Typing</button>
+              <div className="relative group w-full" style={{ perspective: '1500px' }}>
+                <button
+                  onClick={handleStart}
+                  className={
+                    borderStyle === 'b16'
+                      ? `relative z-10 w-full px-8 py-4 font-mono text-[10px] uppercase tracking-widest transition-all duration-150 ease-out rounded-2xl border-2 border-[var(--hot)] bg-[var(--key-cap)] text-[var(--key-text)] key-gradient key-3d hover:translate-y-1 hover:key-3d-pressed`
+                      : `portal-stage relative z-10 w-full px-8 py-4 font-mono text-[10px] uppercase tracking-widest transition-all duration-700 rounded border border-[var(--hot)] bg-[var(--hot)]/10 text-[var(--hot)] hover:bg-[var(--hot)] hover:text-black shadow-[0_0_20px_var(--color-hot-soft)]`
+                  }
+                >
+                  Start Typing
+                </button>
+                <PortalBorderOverlay borderStyle={borderStyle} />
+              </div>
             </div>
           )}
         </section>
