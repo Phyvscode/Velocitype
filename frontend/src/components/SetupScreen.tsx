@@ -769,8 +769,8 @@ export default function SetupScreen({
             
             {activeMode === 'words' && (
               <div className="space-y-10">
-                <div className="flex flex-row gap-10 items-start">
-                  <section className="flex-1 min-w-0">
+                <div className="flex flex-row items-start w-full">
+                  <section className="shrink-0">
                     <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">1. Choose your key rows</h2>
                     <div className="grid sm:grid-cols-3 gap-4">
                       {ROW_LABELS.map((r) => {
@@ -787,7 +787,7 @@ export default function SetupScreen({
                       })}
                     </div>
                   </section>
-                  <div className="flex-shrink-0">
+                  <div className="ml-auto flex-shrink-0">
                     {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
                   </div>
                 </div>
