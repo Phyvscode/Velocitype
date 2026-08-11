@@ -224,7 +224,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       )}
 
       {/* Centered single word */}
-      <main className="flex-1 min-h-0 w-full flex flex-col items-center justify-center overflow-hidden">
+      <main className="flex-1 min-h-0 w-full flex flex-col items-center justify-center overflow-visible">
         <div
           className={`relative w-full max-w-7xl mx-auto text-center font-mono tracking-wide select-none transition-colors duration-150 px-4 py-[clamp(10px,4vh,40px)] ${
             flash === 'correct'
@@ -233,7 +233,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
               ? 'text-rose-400'
               : 'text-slate-100'
           }`}
-          style={{ whiteSpace: 'pre-wrap', fontSize: 'clamp(32px, min(8vw, 12vh), 120px)', lineHeight: 1.2 }}
+          style={{ whiteSpace: 'pre-wrap', fontSize: 'clamp(32px, min(8vw, 12vh), 120px)', lineHeight: 1.4, paddingBottom: '0.35em' }}
         >
           {/* Smooth Fluid Caret Bar */}
           <span
