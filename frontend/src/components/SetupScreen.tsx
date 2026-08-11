@@ -746,7 +746,7 @@ export default function SetupScreen({
 
       {/* Configuration View */}
       {activeMode && (
-      <section className="w-full px-8 py-[clamp(3vh,5vh,6rem)] flex-1 flex flex-col">
+      <section className="w-full px-8 py-[clamp(3vh,5vh,6rem)] flex-1 grid grid-cols-[1fr_auto] gap-8 items-start">
           <div className="w-full max-w-4xl mr-auto animate-in fade-in slide-in-from-top-4 duration-500 mb-20">
             <button onClick={() => setActiveMode(null)} className="mb-8 flex items-center gap-2 text-slate-400 hover:text-[var(--hot)] transition-colors font-mono text-sm uppercase tracking-widest group">
               <span className="transition-transform group-hover:-translate-x-1">←</span> Back to Modes
@@ -785,9 +785,6 @@ export default function SetupScreen({
                       })}
                     </div>
                   </section>
-                  <div className="fixed right-8 top-1/2 -translate-y-1/2 z-50">
-                    {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
-                  </div>
                 </div>
                 <section>
                   <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">3. Set word length</h2>
@@ -1034,6 +1031,11 @@ export default function SetupScreen({
             )}
             </div>
           </div>
+          {activeMode === 'words' && (
+            <div className="sticky top-1/2 -translate-y-1/2 self-start pt-16">
+              {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
+            </div>
+          )}
         </section>
       )}
     </div>
