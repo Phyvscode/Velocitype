@@ -1026,7 +1026,7 @@ export default function SetupScreen({
             </div>
           </div>
           {activeMode === 'words' && (
-            <div className="sticky top-8 self-start flex flex-col items-center gap-4">
+            <div className="sticky top-20 self-start flex flex-col items-center gap-4">
               {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
               {error && <div className="text-[var(--hot)] text-xs font-mono tracking-widest text-center">{error}</div>}
               {/* Start Typing — mirrors PortalButton exactly */}
@@ -1072,13 +1072,13 @@ export default function SetupScreen({
                   style={{ transformStyle: 'preserve-3d' }}
                   className={
                     borderStyle === 'b16'
-                      ? `portal-stage relative inline-flex flex-col w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] items-center justify-center rounded-2xl border-2 border-[var(--hot)] bg-[var(--key-cap)] font-semibold tracking-wide text-[var(--key-text)] key-gradient transform-gpu transition-all duration-150 ease-out z-10 key-3d hover:translate-y-3 hover:key-3d-pressed active:translate-y-4 active:scale-[0.98]`
-                      : `portal-stage w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] rounded-full flex items-center justify-center transition-all duration-700 ease-in-out ${borderStyle === 'b0' ? 'group-hover:-translate-y-[10%] group-hover:[transform:rotateX(75deg)] border' : ''} group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 ${borderStyle === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]`
+                      ? `portal-stage relative inline-flex flex-col w-[clamp(7rem,10vw,12rem)] h-[clamp(7rem,10vw,12rem)] items-center justify-center rounded-2xl border-2 border-[var(--hot)] bg-[var(--key-cap)] font-semibold tracking-wide text-[var(--key-text)] key-gradient transform-gpu transition-all duration-150 ease-out z-10 key-3d hover:translate-y-3 hover:key-3d-pressed active:translate-y-4 active:scale-[0.98]`
+                      : `portal-stage w-[clamp(7rem,10vw,12rem)] h-[clamp(7rem,10vw,12rem)] rounded-full flex items-center justify-center transition-all duration-700 ease-in-out ${borderStyle === 'b0' ? 'group-hover:-translate-y-[10%] group-hover:[transform:rotateX(75deg)] border' : ''} group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 ${borderStyle === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]`
                   }
                 >
                   {/* Play icon */}
                   <div className="flex flex-col items-center justify-center leading-none">
-                    <svg viewBox="0 0 24 24" className="w-[clamp(2rem,3.5vw,4rem)]" fill="currentColor">
+                    <svg viewBox="0 0 24 24" className="w-[clamp(2.8rem,5vw,6rem)]" fill="currentColor">
                       <polygon points="5,3 19,12 5,21" />
                     </svg>
                   </div>
