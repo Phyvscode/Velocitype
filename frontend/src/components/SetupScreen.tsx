@@ -1032,16 +1032,52 @@ export default function SetupScreen({
               <div className="relative group" style={{ perspective: '1500px' }}>
                 <button
                   onClick={handleStart}
+                  onMouseMove={(e) => {
+                    const stage = e.currentTarget;
+                    const rect = stage.getBoundingClientRect();
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
+                    const dx = e.clientX - cx;
+                    const dy = e.clientY - cy;
+                    const mx = Math.max(-1, Math.min(1, dx / (rect.width / 2)));
+                    const my = Math.max(-1, Math.min(1, dy / (rect.height / 2)));
+                    const dist = Math.min(1, Math.hypot(dx, dy) / (rect.width / 2));
+                    const angle = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360;
+                    stage.style.setProperty('--mx', mx.toFixed(3));
+                    stage.style.setProperty('--my', my.toFixed(3));
+                    stage.style.setProperty('--dist', dist.toFixed(3));
+                    stage.style.setProperty('--angle', angle.toFixed(1));
+                    const radar = stage.querySelector('#radar');
+                    if (radar) {
+                      radar.querySelectorAll('i').forEach((t) => {
+                        const tAngle = parseFloat(t.getAttribute('data-angle') || '0');
+                        let diff = Math.abs(angle - tAngle) % 360;
+                        diff = diff > 180 ? 360 - diff : diff;
+                        t.classList.toggle('lit', diff < 10);
+                        t.classList.toggle('near', diff >= 10 && diff < 28);
+                      });
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    const stage = e.currentTarget;
+                    stage.classList.add('leaving');
+                    stage.style.setProperty('--mx', '0');
+                    stage.style.setProperty('--my', '0');
+                    stage.style.setProperty('--dist', '0');
+                    const radar = stage.querySelector('#radar');
+                    if (radar) radar.querySelectorAll('i').forEach((t) => { t.classList.remove('lit'); t.classList.remove('near'); });
+                    setTimeout(() => stage.classList.remove('leaving'), 650);
+                  }}
                   style={{ transformStyle: 'preserve-3d' }}
                   className={
                     borderStyle === 'b16'
-                      ? `portal-stage relative z-10 inline-flex flex-col w-40 h-40 items-center justify-center rounded-2xl border-2 border-[var(--hot)] bg-[var(--key-cap)] font-semibold tracking-wide text-[var(--key-text)] key-gradient transform-gpu transition-all duration-150 ease-out key-3d hover:translate-y-2 hover:key-3d-pressed`
-                      : `portal-stage relative z-10 w-40 h-40 rounded-full flex items-center justify-center transition-all duration-700 ease-in-out group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]`
+                      ? `portal-stage relative inline-flex flex-col w-40 h-40 items-center justify-center rounded-2xl border-2 border-[var(--hot)] bg-[var(--key-cap)] font-semibold tracking-wide text-[var(--key-text)] key-gradient transform-gpu transition-all duration-150 ease-out z-10 key-3d hover:translate-y-2 hover:key-3d-pressed`
+                      : `portal-stage w-40 h-40 rounded-full flex items-center justify-center transition-all duration-700 ease-in-out group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]`
                   }
                 >
-                  <span className="font-mono text-[10px] uppercase tracking-widest">Start Typing</span>
+                  <span className="font-mono text-[10px] uppercase tracking-widest relative z-10">Start Typing</span>
+                  <PortalBorderOverlay borderStyle={borderStyle} />
                 </button>
-                <PortalBorderOverlay borderStyle={borderStyle} />
               </div>
             </div>
           )}
