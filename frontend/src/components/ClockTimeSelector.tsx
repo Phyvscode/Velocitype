@@ -128,7 +128,7 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
       `}</style>
 
       <div className="flex-shrink-0 hg-scene" style={{ viewTransitionName: 'hourglass-clock' }}>
-        <div className="hg-clock" ref={topClockRef}>
+        <div className="hg-clock">
           <div className="hg-face-content">
             <div className="hg-face"></div>
             <div className="hg-ticks-container">
