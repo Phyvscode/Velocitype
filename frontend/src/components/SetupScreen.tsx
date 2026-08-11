@@ -769,24 +769,28 @@ export default function SetupScreen({
             
             {activeMode === 'words' && (
               <div className="space-y-10">
-                <section>
-                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">1. Choose your key rows</h2>
-                  <div className="grid sm:grid-cols-3 gap-4">
-                    {ROW_LABELS.map((r) => {
-                      const active = rows.includes(r.key);
-                      return (
-                        <button key={r.key} onClick={() => toggleRow(r.key)} className={`text-left p-6 border transition-all rounded ${active ? 'border-[var(--hot)] bg-[var(--hot)]/10' : 'border-slate-800 bg-slate-900/40 hover:border-slate-600'}`}>
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="font-semibold text-white tracking-wide">{r.label}</span>
-                            <span className={`w-4 h-4 border-2 rounded-sm flex items-center justify-center transition-colors ${active ? 'border-[var(--hot)] bg-[var(--hot)]' : 'border-slate-600'}`}></span>
-                          </div>
-                          <code className="text-[10px] text-slate-500 tracking-widest">{r.keys}</code>
-                        </button>
-                      );
-                    })}
+                <div className="flex flex-row gap-10 items-start">
+                  <section className="flex-1 min-w-0">
+                    <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">1. Choose your key rows</h2>
+                    <div className="grid sm:grid-cols-3 gap-4">
+                      {ROW_LABELS.map((r) => {
+                        const active = rows.includes(r.key);
+                        return (
+                          <button key={r.key} onClick={() => toggleRow(r.key)} className={`text-left p-6 border transition-all rounded ${active ? 'border-[var(--hot)] bg-[var(--hot)]/10' : 'border-slate-800 bg-slate-900/40 hover:border-slate-600'}`}>
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="font-semibold text-white tracking-wide">{r.label}</span>
+                              <span className={`w-4 h-4 border-2 rounded-sm flex items-center justify-center transition-colors ${active ? 'border-[var(--hot)] bg-[var(--hot)]' : 'border-slate-600'}`}></span>
+                            </div>
+                            <code className="text-[10px] text-slate-500 tracking-widest">{r.keys}</code>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                  <div className="flex-shrink-0">
+                    {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
                   </div>
-                </section>
-                {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
+                </div>
                 <section>
                   <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">3. Set word length</h2>
                   <div className="grid sm:grid-cols-2 gap-[clamp(0.5rem,1.5vh,1.5rem)]">
