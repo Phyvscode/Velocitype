@@ -785,7 +785,7 @@ export default function SetupScreen({
                       })}
                     </div>
                   </section>
-                  <div className="ml-auto flex-shrink-0">
+                  <div className="fixed right-8 top-1/2 -translate-y-1/2 z-50">
                     {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
                   </div>
                 </div>

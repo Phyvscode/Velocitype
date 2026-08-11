@@ -162,15 +162,12 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
         }
 
         @keyframes hg-tick {
-          0%   { transform: translate(-50%,-100%) rotate(0deg); }
-          8%   { transform: translate(-50%,-100%) rotate(6deg); }
-          50%  { transform: translate(-50%,-100%) rotate(6deg); }
-          58%  { transform: translate(-50%,-100%) rotate(0deg); }
-          100% { transform: translate(-50%,-100%) rotate(0deg); }
+          from { transform: translate(-50%,-100%) rotate(0deg); }
+          to   { transform: translate(-50%,-100%) rotate(360deg); }
         }
 
         .hg-anim-scene.playing .hg-anim-minute-hand {
-          animation: hg-tick 1s steps(1, end) infinite;
+          animation: hg-tick 60s steps(60, end) infinite;
         }
 
         .hg-anim-sand {
