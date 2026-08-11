@@ -33,7 +33,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
           }
         });
         setTimeout(() => setStreaming(true), 700);
-      }, 100);
+      }, 600); // Delayed curve spawn
     }, 400); // Wait 400ms so view transition is halfway done
   }, []);
 
@@ -158,6 +158,19 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
           z-index: 4;
           width: 5px;
           height: 92px;
+          transform: translate(-50%,-100%) rotate(0deg);
+        }
+
+        @keyframes hg-tick {
+          0%   { transform: translate(-50%,-100%) rotate(0deg); }
+          8%   { transform: translate(-50%,-100%) rotate(6deg); }
+          50%  { transform: translate(-50%,-100%) rotate(6deg); }
+          58%  { transform: translate(-50%,-100%) rotate(0deg); }
+          100% { transform: translate(-50%,-100%) rotate(0deg); }
+        }
+
+        .hg-anim-scene.playing .hg-anim-minute-hand {
+          animation: hg-tick 1s steps(1, end) infinite;
         }
 
         .hg-anim-sand {
@@ -236,19 +249,13 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
           <div className="hg-anim-face-content">
             <div className="hg-anim-face"></div>
             <div className="hg-anim-ticks-container">
-              {HOURS.map((h, i) => (
+              {HOURS.map((_h, i) => (
                 <div key={i} className="hg-anim-tick-wrap" style={{ transform: `rotate(${i * 30}deg)` }}>
                   <div className="hg-anim-tick-line"></div>
-                  <div className="hg-anim-tick" style={{ transform: `rotate(${-i * 30}deg)` }}>
-                    {h.label}
-                  </div>
                 </div>
               ))}
             </div>
-            <div
-              className="hg-anim-minute-hand"
-              style={{ transform: `translate(-50%,-100%) rotate(0deg)` }}
-            ></div>
+            <div className="hg-anim-minute-hand"></div>
             <div className="hg-anim-pivot"></div>
           </div>
         </div>
@@ -257,19 +264,13 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
           <div className="hg-anim-face-content">
             <div className="hg-anim-face"></div>
             <div className="hg-anim-ticks-container">
-              {HOURS.map((h, i) => (
+              {HOURS.map((_h, i) => (
                 <div key={i} className="hg-anim-tick-wrap" style={{ transform: `rotate(${i * 30}deg)` }}>
                   <div className="hg-anim-tick-line"></div>
-                  <div className="hg-anim-tick" style={{ transform: `rotate(${-i * 30}deg)` }}>
-                    {h.label}
-                  </div>
                 </div>
               ))}
             </div>
-            <div
-              className="hg-anim-minute-hand"
-              style={{ transform: `translate(-50%,-100%) rotate(0deg)` }}
-            ></div>
+            <div className="hg-anim-minute-hand"></div>
             <div className="hg-anim-pivot"></div>
           </div>
           <div className="hg-anim-sand"></div>

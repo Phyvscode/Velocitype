@@ -132,12 +132,9 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
           <div className="hg-face-content">
             <div className="hg-face"></div>
             <div className="hg-ticks-container">
-              {HOURS.map((h, i) => (
+              {HOURS.map((_h, i) => (
                 <div key={i} className="hg-tick-wrap" style={{ transform: `rotate(${i * 30}deg)` }}>
                   <div className="hg-tick-line"></div>
-                  <div className="hg-tick" style={{ transform: `rotate(${-i * 30}deg)` }}>
-                    {h.label}
-                  </div>
                 </div>
               ))}
             </div>
