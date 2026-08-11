@@ -4,11 +4,12 @@ const cn = (...classes: (string | undefined | null | false)[]) => classes.filter
 interface Props {
   durationVal: number;
   timeLeft: number;
+  isTyping?: boolean;
 }
 
 import { getAngleFromDuration, HOURS } from './ClockTimeSelector';
 
-export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
+export default function HourglassAnimation({ durationVal, timeLeft, isTyping }: Props) {
   const sceneRef = useRef<HTMLDivElement>(null);
   const curveLeftTop = useRef<SVGPathElement>(null);
   const curveLeftBottom = useRef<SVGPathElement>(null);
@@ -166,7 +167,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
           to   { transform: translate(-50%,-100%) rotate(360deg); }
         }
 
-        .hg-anim-scene.playing .hg-anim-minute-hand {
+        .hg-anim-scene.typing .hg-anim-minute-hand {
           animation: hg-tick 60s steps(60, end) infinite;
         }
 
@@ -241,7 +242,7 @@ export default function HourglassAnimation({ durationVal, timeLeft }: Props) {
         }
       `}</style>
 
-      <div className={cn("hg-anim-scene", playing && "playing", streaming && (timeLeft > 0) && "streaming")} ref={sceneRef}>
+      <div className={cn("hg-anim-scene", playing && "playing", isTyping && "typing", streaming && (timeLeft > 0) && "streaming")} ref={sceneRef}>
         <div className="hg-anim-clock" id="animTopClock">
           <div className="hg-anim-face-content">
             <div className="hg-anim-face"></div>

@@ -288,7 +288,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
         </div>
         <div className="flex flex-col items-center gap-2 flex-none translate-y-[40px]">
           <span className={`text-2xl font-bold tabular-nums font-mono tracking-widest ${timeLeft <= 5 ? 'text-rose-400' : 'text-[var(--hot)]'}`}>{timeLeft}s</span>
-          <HourglassAnimation durationVal={config.duration} timeLeft={timeLeft} />
+          <HourglassAnimation durationVal={config.duration} timeLeft={timeLeft} isTyping={started} />
         </div>
       </footer>
 

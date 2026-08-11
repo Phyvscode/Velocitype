@@ -347,8 +347,8 @@
 }
 
 ::view-transition-group(hourglass-clock) {
-  animation-duration: 0.9s;
-  animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+  animation-duration: 1.4s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 ::view-transition-old(hourglass-clock) {
