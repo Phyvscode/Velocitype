@@ -1029,7 +1029,8 @@ export default function SetupScreen({
             <div className="sticky top-8 self-start flex flex-col items-center gap-4">
               {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
               {error && <div className="text-[var(--hot)] text-xs font-mono tracking-widest text-center">{error}</div>}
-              <div className="relative group" style={{ perspective: '1500px' }}>
+              {/* Start Typing — mirrors PortalButton exactly */}
+              <div className="flex flex-col items-center gap-6 relative group" style={{ perspective: '1500px' }}>
                 <button
                   onClick={handleStart}
                   onMouseMove={(e) => {
@@ -1071,13 +1072,27 @@ export default function SetupScreen({
                   style={{ transformStyle: 'preserve-3d' }}
                   className={
                     borderStyle === 'b16'
-                      ? `portal-stage relative inline-flex flex-col w-40 h-40 items-center justify-center rounded-2xl border-2 border-[var(--hot)] bg-[var(--key-cap)] font-semibold tracking-wide text-[var(--key-text)] key-gradient transform-gpu transition-all duration-150 ease-out z-10 key-3d hover:translate-y-2 hover:key-3d-pressed`
-                      : `portal-stage w-40 h-40 rounded-full flex items-center justify-center transition-all duration-700 ease-in-out group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]`
+                      ? `portal-stage relative inline-flex flex-col w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] items-center justify-center rounded-2xl border-2 border-[var(--hot)] bg-[var(--key-cap)] font-semibold tracking-wide text-[var(--key-text)] key-gradient transform-gpu transition-all duration-150 ease-out z-10 key-3d hover:translate-y-3 hover:key-3d-pressed active:translate-y-4 active:scale-[0.98]`
+                      : `portal-stage w-[clamp(5rem,8vw,9rem)] h-[clamp(5rem,8vw,9rem)] rounded-full flex items-center justify-center transition-all duration-700 ease-in-out ${borderStyle === 'b0' ? 'group-hover:-translate-y-[10%] group-hover:[transform:rotateX(75deg)] border' : ''} group-hover:border-transparent group-hover:bg-transparent group-hover:shadow-none relative z-10 ${borderStyle === 'b0' ? 'border-[var(--hot)] ' : ''}bg-[var(--hot)]/10 shadow-[0_0_40px_var(--color-hot-soft)] text-[var(--hot)]`
                   }
                 >
-                  <span className="font-mono text-[10px] uppercase tracking-widest relative z-10">Start Typing</span>
+                  {/* Play icon */}
+                  <div className="flex flex-col items-center justify-center leading-none">
+                    <svg viewBox="0 0 24 24" className="w-[clamp(2rem,3.5vw,4rem)]" fill="currentColor">
+                      <polygon points="5,3 19,12 5,21" />
+                    </svg>
+                  </div>
                   <PortalBorderOverlay borderStyle={borderStyle} />
                 </button>
+
+                {/* Floating label — same pattern as PortalButton */}
+                <span className={`absolute left-1/2 -translate-x-1/2 text-xl sm:text-2xl font-display uppercase tracking-widest text-[var(--hot)] whitespace-nowrap opacity-0 transition-all duration-700 ease-out pointer-events-none z-50 drop-shadow-[0_0_15px_var(--color-hot-soft)] ${
+                  borderStyle === 'b0'
+                    ? 'top-0 translate-y-4 group-hover:-translate-y-4'
+                    : '-bottom-10 -translate-y-4 group-hover:translate-y-8'
+                } group-hover:opacity-100`}>
+                  Start
+                </span>
               </div>
             </div>
           )}
