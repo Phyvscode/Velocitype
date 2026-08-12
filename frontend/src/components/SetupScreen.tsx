@@ -771,12 +771,11 @@ export default function SetupScreen({
                       {ROW_LABELS.map((r) => {
                         const active = rows.includes(r.key);
                         return (
-                          <button key={r.key} onClick={() => toggleRow(r.key)} className={`text-left p-6 border transition-all rounded ${active ? 'border-[var(--hot)] bg-[var(--hot)]/10' : 'border-slate-800 bg-slate-900/40 hover:border-slate-600'}`}>
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="font-semibold text-white tracking-wide">{r.label}</span>
-                              <span className={`w-4 h-4 border-2 rounded-sm flex items-center justify-center transition-colors ${active ? 'border-[var(--hot)] bg-[var(--hot)]' : 'border-slate-600'}`}></span>
+                          <button key={r.key} onClick={() => toggleRow(r.key)} className={`text-left p-6 transition-all rounded ${active ? 'text-[var(--hot)]' : 'text-slate-400 hover:text-slate-200'}`}>
+                            <div className="flex items-center mb-3">
+                              <span className="font-semibold tracking-wide">{r.label}</span>
                             </div>
-                            <code className="text-[10px] text-slate-500 tracking-widest">{r.keys}</code>
+                            <code className="text-[10px] tracking-widest opacity-70">{r.keys}</code>
                           </button>
                         );
                       })}
