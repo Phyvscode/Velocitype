@@ -784,64 +784,80 @@ export default function SetupScreen({
                   </section>
                 </div>
                 <section>
-                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">3. Set word length</h2>
-                  <div className="grid sm:grid-cols-2 gap-[clamp(0.5rem,1.5vh,1.5rem)]">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Min Letters</label>
-                      <input 
-                        type="text" 
-                        inputMode="numeric"
-                        value={minLen} 
-                        onChange={(e) => setMinLen(e.target.value.replace(/[^0-9-]/g, ''))} 
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            let v = parseInt(String(minLen), 10);
-                            if (isNaN(v)) v = 2;
-                            let currentMax = parseInt(String(maxLen), 10) || 15;
-                            v = Math.max(2, Math.min(45, Math.min(currentMax, v)));
-                            setMinLen(v);
-                            e.currentTarget.blur();
-                          }
-                        }}
-                        onBlur={() => {
-                          let v = parseInt(String(minLen), 10);
-                          if (isNaN(v)) v = 2;
-                          let currentMax = parseInt(String(maxLen), 10) || 15;
-                          v = Math.max(2, Math.min(45, Math.min(currentMax, v)));
-                          setMinLen(v);
-                        }}
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)]" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Max Letters</label>
-                      <input 
-                        type="text" 
-                        inputMode="numeric"
-                        value={maxLen} 
-                        onChange={(e) => setMaxLen(e.target.value.replace(/[^0-9-]/g, ''))} 
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            let v = parseInt(String(maxLen), 10);
-                            if (isNaN(v)) v = 15;
-                            let currentMin = parseInt(String(minLen), 10) || 2;
-                            v = Math.max(2, Math.min(45, Math.max(currentMin, v)));
-                            setMaxLen(v);
-                            e.currentTarget.blur();
-                          }
-                        }}
-                        onBlur={() => {
-                          let v = parseInt(String(maxLen), 10);
-                          if (isNaN(v)) v = 15;
-                          let currentMin = parseInt(String(minLen), 10) || 2;
-                          v = Math.max(2, Math.min(45, Math.max(currentMin, v)));
-                          setMaxLen(v);
-                        }}
-                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)]" 
-                      />
-                    </div>
+                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-6">3. Set word length</h2>
+                  <div className="flex items-center gap-10">
+                    {/* Min Letters Spinner */}
+                    {(() => {
+                      const holdRef = { timer: null as ReturnType<typeof setInterval> | null };
+                      const startHold = (fn: () => void) => {
+                        fn();
+                        holdRef.timer = setInterval(fn, 80);
+                      };
+                      const stopHold = () => { if (holdRef.timer) { clearInterval(holdRef.timer); holdRef.timer = null; } };
+                      const inc = () => setMinLen((v: number | string) => { const cur = parseInt(String(v), 10) || 2; const max = parseInt(String(maxLen), 10) || 45; return Math.min(45, Math.min(max, cur + 1)); });
+                      const dec = () => setMinLen((v: number | string) => { const cur = parseInt(String(v), 10) || 2; return Math.max(2, cur - 1); });
+                      return (
+                        <div className="flex flex-col items-center gap-2">
+                          <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">Min</span>
+                          <button
+                            onMouseDown={() => startHold(inc)} onMouseUp={stopHold} onMouseLeave={stopHold}
+                            onTouchStart={(e) => { e.preventDefault(); startHold(inc); }} onTouchEnd={stopHold}
+                            className="w-12 h-10 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+                          >
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7"><polygon points="12,4 22,20 2,20"/></svg>
+                          </button>
+                          <div className="w-16 h-14 flex items-center justify-center bg-slate-900/60 border border-slate-700 rounded-lg text-2xl font-mono font-bold text-white select-none">
+                            {minLen}
+                          </div>
+                          <button
+                            onMouseDown={() => startHold(dec)} onMouseUp={stopHold} onMouseLeave={stopHold}
+                            onTouchStart={(e) => { e.preventDefault(); startHold(dec); }} onTouchEnd={stopHold}
+                            className="w-12 h-10 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+                          >
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7"><polygon points="12,20 22,4 2,4"/></svg>
+                          </button>
+                        </div>
+                      );
+                    })()}
+
+                    <div className="w-px h-20 bg-slate-800 self-center" />
+
+                    {/* Max Letters Spinner */}
+                    {(() => {
+                      const holdRef = { timer: null as ReturnType<typeof setInterval> | null };
+                      const startHold = (fn: () => void) => {
+                        fn();
+                        holdRef.timer = setInterval(fn, 80);
+                      };
+                      const stopHold = () => { if (holdRef.timer) { clearInterval(holdRef.timer); holdRef.timer = null; } };
+                      const inc = () => setMaxLen((v: number | string) => { const cur = parseInt(String(v), 10) || 15; return Math.min(45, cur + 1); });
+                      const dec = () => setMaxLen((v: number | string) => { const cur = parseInt(String(v), 10) || 15; const min = parseInt(String(minLen), 10) || 2; return Math.max(min, cur - 1); });
+                      return (
+                        <div className="flex flex-col items-center gap-2">
+                          <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">Max</span>
+                          <button
+                            onMouseDown={() => startHold(inc)} onMouseUp={stopHold} onMouseLeave={stopHold}
+                            onTouchStart={(e) => { e.preventDefault(); startHold(inc); }} onTouchEnd={stopHold}
+                            className="w-12 h-10 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+                          >
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7"><polygon points="12,4 22,20 2,20"/></svg>
+                          </button>
+                          <div className="w-16 h-14 flex items-center justify-center bg-slate-900/60 border border-slate-700 rounded-lg text-2xl font-mono font-bold text-white select-none">
+                            {maxLen}
+                          </div>
+                          <button
+                            onMouseDown={() => startHold(dec)} onMouseUp={stopHold} onMouseLeave={stopHold}
+                            onTouchStart={(e) => { e.preventDefault(); startHold(dec); }} onTouchEnd={stopHold}
+                            className="w-12 h-10 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+                          >
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7"><polygon points="12,20 22,4 2,4"/></svg>
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </section>
+
 
               </div>
             )}
