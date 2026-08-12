@@ -802,19 +802,19 @@ export default function SetupScreen({
                           <button
                             onMouseDown={() => startHold(inc)} onMouseUp={stopHold} onMouseLeave={stopHold}
                             onTouchStart={(e) => { e.preventDefault(); startHold(inc); }} onTouchEnd={stopHold}
-                            className="w-12 h-10 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+                            className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
                           >
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7"><polygon points="12,4 22,20 2,20"/></svg>
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,4 22,20 2,20"/></svg>
                           </button>
-                          <div className="w-16 h-14 flex items-center justify-center bg-slate-900/60 border border-slate-700 rounded-lg text-2xl font-mono font-bold text-white select-none">
+                          <div className="flex items-center justify-center text-4xl font-mono font-bold text-white select-none py-2">
                             {minLen}
                           </div>
                           <button
                             onMouseDown={() => startHold(dec)} onMouseUp={stopHold} onMouseLeave={stopHold}
                             onTouchStart={(e) => { e.preventDefault(); startHold(dec); }} onTouchEnd={stopHold}
-                            className="w-12 h-10 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+                            className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
                           >
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7"><polygon points="12,20 22,4 2,4"/></svg>
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,20 22,4 2,4"/></svg>
                           </button>
                         </div>
                       );
@@ -838,19 +838,19 @@ export default function SetupScreen({
                           <button
                             onMouseDown={() => startHold(inc)} onMouseUp={stopHold} onMouseLeave={stopHold}
                             onTouchStart={(e) => { e.preventDefault(); startHold(inc); }} onTouchEnd={stopHold}
-                            className="w-12 h-10 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+                            className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
                           >
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7"><polygon points="12,4 22,20 2,20"/></svg>
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,4 22,20 2,20"/></svg>
                           </button>
-                          <div className="w-16 h-14 flex items-center justify-center bg-slate-900/60 border border-slate-700 rounded-lg text-2xl font-mono font-bold text-white select-none">
+                          <div className="flex items-center justify-center text-4xl font-mono font-bold text-white select-none py-2">
                             {maxLen}
                           </div>
                           <button
                             onMouseDown={() => startHold(dec)} onMouseUp={stopHold} onMouseLeave={stopHold}
                             onTouchStart={(e) => { e.preventDefault(); startHold(dec); }} onTouchEnd={stopHold}
-                            className="w-12 h-10 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+                            className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
                           >
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7"><polygon points="12,20 22,4 2,4"/></svg>
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,20 22,4 2,4"/></svg>
                           </button>
                         </div>
                       );
