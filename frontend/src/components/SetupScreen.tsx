@@ -369,7 +369,6 @@ export default function SetupScreen({
           if (s.minWordsSentences) setMinWordsSentences(s.minWordsSentences);
           if (s.maxWordsSentences) setMaxWordsSentences(s.maxWordsSentences);
           if (s.rows) setRows(s.rows);
-          if (s.activeMode) setActiveMode(s.activeMode);
           if (s.durationWords) setDurationWords(s.durationWords);
           if (s.durationFile) setDurationFile(s.durationFile);
           if (s.durationSentences) setDurationSentences(s.durationSentences);
@@ -397,14 +396,13 @@ export default function SetupScreen({
           minWordsSentences: parsedMinW,
           maxWordsSentences: parsedMaxW,
           rows,
-          activeMode,
           durationWords,
           durationFile,
           durationSentences,
         }));
       }
     }
-  }, [user, minLen, maxLen, minWordsSentences, maxWordsSentences, rows, activeMode, durationWords, durationFile, durationSentences]);
+  }, [user, minLen, maxLen, minWordsSentences, maxWordsSentences, rows, durationWords, durationFile, durationSentences]);
 
   const handleApiKeyChange = (val: string) => {
     setApiKey(val);

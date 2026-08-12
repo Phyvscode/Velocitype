@@ -221,7 +221,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
         <header className="w-full flex-none px-4 sm:px-8 py-[clamp(8px,2vh,24px)] flex items-center justify-between pointer-events-auto">
           <div className="w-full max-w-7xl mx-auto flex items-center justify-between">
             <button
-              onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+              onMouseDown={(e) => e.stopPropagation()}
               onClick={onQuit}
               className="text-sm font-mono text-slate-400 hover:text-[var(--hot)] transition-colors uppercase tracking-widest"
             >
