@@ -209,10 +209,10 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
     <div className="h-full min-h-0 w-full bg-[#0f1117] text-slate-100 flex flex-col overflow-hidden">
       {/* Top bar */}
       {!hideHeader && (
-        <header className="w-full flex-none px-4 sm:px-8 py-[clamp(8px,2vh,24px)] flex items-center justify-between">
+        <header className="w-full flex-none px-4 sm:px-8 py-[clamp(8px,2vh,24px)] flex items-center justify-between pointer-events-auto">
           <div className="w-full max-w-7xl mx-auto flex items-center justify-between">
             <button
-              onClick={onQuit}
+              onMouseDown={(e) => { e.preventDefault(); onQuit(); }}
               className="text-sm font-mono text-slate-400 hover:text-[var(--hot)] transition-colors uppercase tracking-widest"
             >
               &larr; Quit
@@ -292,10 +292,10 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
         </div>
       </footer>
 
-      {/* Click anywhere to refocus */}
+      {/* Click anywhere to refocus — use onMouseDown so it fires before blur */}
       <div
         className="fixed inset-0 -z-10"
-        onClick={() => inputRef.current?.focus()}
+        onMouseDown={(e) => { e.preventDefault(); inputRef.current?.focus(); }}
       />
       {/* Virtual Keyboard Overlay */}
       {/* Handled globally by App.tsx, GameScreen listens to virtual_keydown */}
