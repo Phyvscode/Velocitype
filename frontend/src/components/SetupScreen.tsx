@@ -323,7 +323,7 @@ export default function SetupScreen({
   };
 
   const { user, stats, logout } = useAuth();
-  const [rows, setRows] = useState<RowKey[]>(['home']);
+  const [rows, setRows] = useState<RowKey[]>(['top', 'home', 'bottom']);
   const [durationWords, setDurationWords] = useState<string>('30');
   const [showCustomWords, setShowCustomWords] = useState<boolean>(false);
   const durWords = Math.max(1, Math.min(3600, parseInt(durationWords, 10) || 0));
@@ -379,6 +379,7 @@ export default function SetupScreen({
       setMaxLen(8);
       setMinWordsSentences(5);
       setMaxWordsSentences(12);
+      setRows(['top', 'home', 'bottom']);
     }
   }, [user]);
 
@@ -779,12 +780,26 @@ export default function SetupScreen({
                       {ROW_LABELS.map((r) => {
                         const active = rows.includes(r.key);
                         return (
-                          <button key={r.key} onClick={() => toggleRow(r.key)} className={`text-left p-6 transition-all rounded ${active ? 'text-[var(--hot)]' : 'text-slate-400 hover:text-slate-200'}`}>
-                            <div className="flex items-center mb-3">
-                              <span className="font-semibold tracking-wide">{r.label}</span>
+                          <div key={r.key} className={`text-left p-6 transition-all rounded flex flex-col items-start gap-4 ${active ? 'text-[var(--hot)]' : 'text-slate-400'}`}>
+                            <div>
+                              <div className="flex items-center mb-3">
+                                <span className="font-semibold tracking-wide">{r.label}</span>
+                              </div>
+                              <code className="text-[10px] tracking-widest opacity-70">{r.keys}</code>
                             </div>
-                            <code className="text-[10px] tracking-widest opacity-70">{r.keys}</code>
-                          </button>
+                            <button
+                              onClick={() => toggleRow(r.key)}
+                              className={`w-12 h-6 rounded-full relative transition-all duration-300 flex-shrink-0 ${
+                                active ? 'bg-[var(--hot)] shadow-[0_0_15px_var(--color-hot-soft)]' : 'bg-slate-700'
+                              }`}
+                            >
+                              <div
+                                className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform duration-300 ${
+                                  active ? 'translate-x-[26px]' : 'translate-x-0.5'
+                                } shadow-sm`}
+                              />
+                            </button>
+                          </div>
                         );
                       })}
                     </div>
