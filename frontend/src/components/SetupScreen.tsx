@@ -159,7 +159,42 @@ export default function SetupScreen({
   const textContainerRef = useRef<HTMLDivElement>(null);
   const previousTextRef = useRef('');
   const spinnerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const spinnerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const startSpin = (fn: () => void) => {
+    fn(); // Increment once immediately
+    spinnerTimeoutRef.current = setTimeout(() => {
+      spinnerTimerRef.current = setInterval(fn, 80);
+    }, 400); // Wait 400ms before starting continuous loop
+  };
+
+  const stopSpin = () => {
+    if (spinnerTimeoutRef.current) clearTimeout(spinnerTimeoutRef.current);
+    if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current);
+  };
+
+  const renderSpinner = (label: string, val: number | string, onInc: () => void, onDec: () => void) => (
+    <div className="flex flex-col items-center gap-2">
+      <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">{label}</span>
+      <button
+        onMouseDown={() => startSpin(onInc)} onMouseUp={stopSpin} onMouseLeave={stopSpin}
+        onTouchStart={(e) => { e.preventDefault(); startSpin(onInc); }} onTouchEnd={stopSpin}
+        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,4 22,20 2,20"/></svg>
+      </button>
+      <div className="flex items-center justify-center text-4xl font-mono font-bold text-white select-none py-2">
+        {val}
+      </div>
+      <button
+        onMouseDown={() => startSpin(onDec)} onMouseUp={stopSpin} onMouseLeave={stopSpin}
+        onTouchStart={(e) => { e.preventDefault(); startSpin(onDec); }} onTouchEnd={stopSpin}
+        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,20 22,4 2,4"/></svg>
+      </button>
+    </div>
+  );
   const [isRandomSentencesLive, setIsRandomSentencesLive] = useState(false);
   const [liveTargetSentence, setLiveTargetSentence] = useState('');
   const [liveWpm, setLiveWpm] = useState<number | null>(null);
@@ -810,90 +845,18 @@ export default function SetupScreen({
                   <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-6">3. Set word length</h2>
                   <div className="flex items-center gap-10">
                     {/* Min Letters Spinner */}
-                    <div className="flex flex-col items-center gap-2">
-                      <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">Min</span>
-                      <button
-                        onMouseDown={() => {
-                          const inc = () => setMinLen(v => { const c = parseInt(String(v), 10) || 2; const m = parseInt(String(maxLen), 10) || 45; return Math.min(45, Math.min(m, c + 1)); });
-                          inc(); spinnerTimerRef.current = setInterval(inc, 80);
-                        }}
-                        onMouseUp={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
-                        onMouseLeave={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
-                        onTouchStart={(e) => {
-                          e.preventDefault();
-                          const inc = () => setMinLen(v => { const c = parseInt(String(v), 10) || 2; const m = parseInt(String(maxLen), 10) || 45; return Math.min(45, Math.min(m, c + 1)); });
-                          inc(); spinnerTimerRef.current = setInterval(inc, 80);
-                        }}
-                        onTouchEnd={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
-                        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
-                      >
-                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,4 22,20 2,20"/></svg>
-                      </button>
-                      <div className="flex items-center justify-center text-4xl font-mono font-bold text-white select-none py-2">
-                        {minLen}
-                      </div>
-                      <button
-                        onMouseDown={() => {
-                          const dec = () => setMinLen(v => { const c = parseInt(String(v), 10) || 2; return Math.max(2, c - 1); });
-                          dec(); spinnerTimerRef.current = setInterval(dec, 80);
-                        }}
-                        onMouseUp={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
-                        onMouseLeave={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
-                        onTouchStart={(e) => {
-                          e.preventDefault();
-                          const dec = () => setMinLen(v => { const c = parseInt(String(v), 10) || 2; return Math.max(2, c - 1); });
-                          dec(); spinnerTimerRef.current = setInterval(dec, 80);
-                        }}
-                        onTouchEnd={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
-                        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
-                      >
-                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,20 22,4 2,4"/></svg>
-                      </button>
-                    </div>
+                    {renderSpinner('Min', minLen, 
+                      () => setMinLen(v => { const c = parseInt(String(v), 10) || 2; const m = parseInt(String(maxLen), 10) || 45; return Math.min(45, Math.min(m, c + 1)); }),
+                      () => setMinLen(v => { const c = parseInt(String(v), 10) || 2; return Math.max(2, c - 1); })
+                    )}
 
                     <div className="w-px h-20 bg-slate-800 self-center" />
 
                     {/* Max Letters Spinner */}
-                    <div className="flex flex-col items-center gap-2">
-                      <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">Max</span>
-                      <button
-                        onMouseDown={() => {
-                          const inc = () => setMaxLen(v => { const c = parseInt(String(v), 10) || 15; return Math.min(45, c + 1); });
-                          inc(); spinnerTimerRef.current = setInterval(inc, 80);
-                        }}
-                        onMouseUp={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
-                        onMouseLeave={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
-                        onTouchStart={(e) => {
-                          e.preventDefault();
-                          const inc = () => setMaxLen(v => { const c = parseInt(String(v), 10) || 15; return Math.min(45, c + 1); });
-                          inc(); spinnerTimerRef.current = setInterval(inc, 80);
-                        }}
-                        onTouchEnd={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
-                        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
-                      >
-                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,4 22,20 2,20"/></svg>
-                      </button>
-                      <div className="flex items-center justify-center text-4xl font-mono font-bold text-white select-none py-2">
-                        {maxLen}
-                      </div>
-                      <button
-                        onMouseDown={() => {
-                          const dec = () => setMaxLen(v => { const c = parseInt(String(v), 10) || 15; const min = parseInt(String(minLen), 10) || 2; return Math.max(min, c - 1); });
-                          dec(); spinnerTimerRef.current = setInterval(dec, 80);
-                        }}
-                        onMouseUp={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
-                        onMouseLeave={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
-                        onTouchStart={(e) => {
-                          e.preventDefault();
-                          const dec = () => setMaxLen(v => { const c = parseInt(String(v), 10) || 15; const min = parseInt(String(minLen), 10) || 2; return Math.max(min, c - 1); });
-                          dec(); spinnerTimerRef.current = setInterval(dec, 80);
-                        }}
-                        onTouchEnd={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
-                        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
-                      >
-                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,20 22,4 2,4"/></svg>
-                      </button>
-                    </div>
+                    {renderSpinner('Max', maxLen, 
+                      () => setMaxLen(v => { const c = parseInt(String(v), 10) || 15; return Math.min(45, c + 1); }),
+                      () => setMaxLen(v => { const c = parseInt(String(v), 10) || 15; const min = parseInt(String(minLen), 10) || 2; return Math.max(min, c - 1); })
+                    )}
                   </div>
                 </section>
 
@@ -1000,61 +963,20 @@ export default function SetupScreen({
                         <input type="text" value={sentenceTheme} onChange={(e) => setSentenceTheme(e.target.value)} disabled={!apiKey} placeholder={apiKey ? "e.g., rick and morty" : ""} className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)] disabled:opacity-50 disabled:cursor-not-allowed" />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Min Words/Sent.</label>
-                          <input 
-                            type="text" 
-                            inputMode="numeric"
-                            value={minWordsSentences} 
-                            onChange={(e) => setMinWordsSentences(e.target.value.replace(/[^0-9-]/g, ''))} 
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                let v = parseInt(String(minWordsSentences), 10);
-                                if (isNaN(v)) v = 2;
-                                let currentMax = parseInt(String(maxWordsSentences), 10) || 12;
-                                v = Math.max(2, Math.min(100, Math.min(currentMax, v)));
-                                setMinWordsSentences(v);
-                                e.currentTarget.blur();
-                              }
-                            }}
-                            onBlur={() => {
-                              let v = parseInt(String(minWordsSentences), 10);
-                              if (isNaN(v)) v = 2;
-                              let currentMax = parseInt(String(maxWordsSentences), 10) || 12;
-                              v = Math.max(2, Math.min(100, Math.min(currentMax, v)));
-                              setMinWordsSentences(v);
-                            }}
-                            className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)]" 
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Max Words/Sent.</label>
-                          <input 
-                            type="text" 
-                            inputMode="numeric"
-                            value={maxWordsSentences} 
-                            onChange={(e) => setMaxWordsSentences(e.target.value.replace(/[^0-9-]/g, ''))} 
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                let v = parseInt(String(maxWordsSentences), 10);
-                                if (isNaN(v)) v = 12;
-                                let currentMin = parseInt(String(minWordsSentences), 10) || 2;
-                                v = Math.max(2, Math.min(100, Math.max(currentMin, v)));
-                                setMaxWordsSentences(v);
-                                e.currentTarget.blur();
-                              }
-                            }}
-                            onBlur={() => {
-                              let v = parseInt(String(maxWordsSentences), 10);
-                              if (isNaN(v)) v = 12;
-                              let currentMin = parseInt(String(minWordsSentences), 10) || 2;
-                              v = Math.max(2, Math.min(100, Math.max(currentMin, v)));
-                              setMaxWordsSentences(v);
-                            }}
-                            className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)]" 
-                          />
-                        </div>
+                    <div className="flex items-center gap-10">
+                        {/* Min Words/Sent Spinner */}
+                        {renderSpinner('Min Words/Sent.', minWordsSentences, 
+                          () => setMinWordsSentences(v => { const c = parseInt(String(v), 10) || 2; const m = parseInt(String(maxWordsSentences), 10) || 12; return Math.min(100, Math.min(m, c + 1)); }),
+                          () => setMinWordsSentences(v => { const c = parseInt(String(v), 10) || 2; return Math.max(2, c - 1); })
+                        )}
+
+                        <div className="w-px h-20 bg-slate-800 self-center" />
+
+                        {/* Max Words/Sent Spinner */}
+                        {renderSpinner('Max Words/Sent.', maxWordsSentences, 
+                          () => setMaxWordsSentences(v => { const c = parseInt(String(v), 10) || 12; return Math.min(100, c + 1); }),
+                          () => setMaxWordsSentences(v => { const c = parseInt(String(v), 10) || 12; const min = parseInt(String(minWordsSentences), 10) || 2; return Math.max(min, c - 1); })
+                        )}
                     </div>
                   </div>
                 </section>
