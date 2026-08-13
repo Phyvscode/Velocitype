@@ -486,6 +486,17 @@ export default function SetupScreen({
   };
 
   const handleStartRandomSentences = async () => {
+    if (activeMode === 'random-sentences' && rows.length > 0) {
+      const minW = Math.max(2, Math.min(100, parseInt(String(minWordsSentences), 10) || 5));
+      const maxW = Math.max(minW, Math.min(100, parseInt(String(maxWordsSentences), 10) || 12));
+      const available = filterWords(rows, 1, 15);
+      if (available.length === 0) {
+        setQuoteError('No words or sentences available with the chosen rows.');
+        setTimeout(() => setQuoteError(''), 3000);
+        return;
+      }
+    }
+
     setIsLoadingQuotes(true);
     setQuoteError('');
     try {
@@ -534,10 +545,18 @@ export default function SetupScreen({
   const handleStart = () => {
     if (rows.length === 0) {
       setError('Select at least one key row.');
+      setTimeout(() => setError(''), 3000);
       return;
     }
     const minL = Math.max(2, Math.min(45, parseInt(String(minLen), 10) || 3));
     const maxL = Math.max(minL, Math.min(45, parseInt(String(maxLen), 10) || 8));
+    
+    const available = filterWords(rows, minL, maxL);
+    if (available.length === 0) {
+      setError('No words available for these settings.');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
     
     if (activeMode === 'words') {
       onStart({
@@ -794,9 +813,6 @@ export default function SetupScreen({
               <span className="transition-transform group-hover:-translate-x-1">←</span> Back to Modes
             </button>
             <div className="w-full rounded-lg p-[clamp(1rem,2vh,2.5rem)]">
-            <h3 className="text-2xl font-display tracking-widest text-white uppercase mb-8 border-b border-slate-800/50 pb-4">
-              Configure {activeMode === 'words' ? 'Words' : activeMode === 'file' ? 'File Upload' : activeMode === 'random-sentences' ? 'Sentences' : activeMode === 'customization' ? 'Customization' : 'Versus'}
-            </h3>
             
             {activeMode === 'customization' && (
               <div className="flex items-center justify-center gap-16 py-12">
@@ -996,10 +1012,6 @@ export default function SetupScreen({
               {activeMode === 'file' && renderDurationSelector(3, durationFile, setDurationFile, showCustomFile, setShowCustomFile, durFile)}
               {activeMode === 'random-sentences' && renderDurationSelector(2, durationSentences, setDurationSentences, showCustomSentences, setShowCustomSentences, durSentences)}
               
-              {activeMode === 'words' && error && <div className="text-[var(--hot)] text-xs font-mono tracking-widest text-center">{error}</div>}
-              {activeMode === 'file' && fileError && <div className="text-[var(--hot)] text-xs font-mono tracking-widest text-center">{fileError}</div>}
-              {activeMode === 'random-sentences' && quoteError && <div className="text-[var(--hot)] text-xs font-mono tracking-widest text-center">{quoteError}</div>}
-              
               {/* Start Typing — mirrors PortalButton exactly */}
               <div className={`flex flex-col items-center gap-6 relative group ${(activeMode === 'file' && (!parsedDoc || isParsing)) || (activeMode === 'random-sentences' && isLoadingQuotes) ? 'opacity-50 pointer-events-none' : ''}`} style={{ perspective: '1500px' }}>
                 <button
@@ -1064,6 +1076,13 @@ export default function SetupScreen({
                 } group-hover:opacity-100`}>
                   {activeMode === 'random-sentences' && isLoadingQuotes ? 'Loading...' : 'Start'}
                 </span>
+              </div>
+
+              {/* Error Messages Below Start Button */}
+              <div className="mt-6 flex flex-col items-center justify-center min-h-[24px]">
+                {activeMode === 'words' && error && <div className="text-[var(--hot)] text-sm font-mono tracking-widest text-center animate-in fade-in duration-300">{error}</div>}
+                {activeMode === 'file' && fileError && <div className="text-[var(--hot)] text-sm font-mono tracking-widest text-center animate-in fade-in duration-300">{fileError}</div>}
+                {activeMode === 'random-sentences' && quoteError && <div className="text-[var(--hot)] text-sm font-mono tracking-widest text-center animate-in fade-in duration-300">{quoteError}</div>}
               </div>
             </div>
           )}
