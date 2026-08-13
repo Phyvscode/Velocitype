@@ -780,8 +780,8 @@ export default function SetupScreen({
                       {ROW_LABELS.map((r) => {
                         const active = rows.includes(r.key);
                         return (
-                          <div key={r.key} className={`text-left p-6 transition-all rounded flex flex-col items-start gap-4 ${active ? 'text-[var(--hot)]' : 'text-slate-400'}`}>
-                            <div>
+                          <div key={r.key} className="text-left p-6 transition-all rounded flex flex-col items-start gap-4">
+                            <div className={`transition-all duration-300 ${active ? 'text-[var(--hot)] drop-shadow-[0_0_10px_var(--color-hot-soft)]' : 'text-slate-400'}`}>
                               <div className="flex items-center mb-3">
                                 <span className="font-semibold tracking-wide">{r.label}</span>
                               </div>
@@ -790,7 +790,7 @@ export default function SetupScreen({
                             <button
                               onClick={() => toggleRow(r.key)}
                               className={`w-12 h-6 rounded-full relative transition-all duration-300 flex-shrink-0 ${
-                                active ? 'bg-[var(--hot)] shadow-[0_0_15px_var(--color-hot-soft)]' : 'bg-slate-700'
+                                active ? 'bg-[var(--hot)] shadow-[0_0_15px_var(--color-hot-soft)]' : 'bg-slate-700 shadow-[0_0_10px_rgba(255,255,255,0.15)]'
                               }`}
                             >
                               <div
