@@ -158,6 +158,7 @@ export default function SetupScreen({
   const keyboardRef = useRef<HTMLDivElement>(null);
   const textContainerRef = useRef<HTMLDivElement>(null);
   const previousTextRef = useRef('');
+  const spinnerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [isRandomSentencesLive, setIsRandomSentencesLive] = useState(false);
   const [liveTargetSentence, setLiveTargetSentence] = useState('');
@@ -809,74 +810,90 @@ export default function SetupScreen({
                   <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-6">3. Set word length</h2>
                   <div className="flex items-center gap-10">
                     {/* Min Letters Spinner */}
-                    {(() => {
-                      const holdRef = { timer: null as ReturnType<typeof setInterval> | null };
-                      const startHold = (fn: () => void) => {
-                        fn();
-                        holdRef.timer = setInterval(fn, 80);
-                      };
-                      const stopHold = () => { if (holdRef.timer) { clearInterval(holdRef.timer); holdRef.timer = null; } };
-                      const inc = () => setMinLen((v: number | string) => { const cur = parseInt(String(v), 10) || 2; const max = parseInt(String(maxLen), 10) || 45; return Math.min(45, Math.min(max, cur + 1)); });
-                      const dec = () => setMinLen((v: number | string) => { const cur = parseInt(String(v), 10) || 2; return Math.max(2, cur - 1); });
-                      return (
-                        <div className="flex flex-col items-center gap-2">
-                          <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">Min</span>
-                          <button
-                            onMouseDown={() => startHold(inc)} onMouseUp={stopHold} onMouseLeave={stopHold}
-                            onTouchStart={(e) => { e.preventDefault(); startHold(inc); }} onTouchEnd={stopHold}
-                            className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
-                          >
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,4 22,20 2,20"/></svg>
-                          </button>
-                          <div className="flex items-center justify-center text-4xl font-mono font-bold text-white select-none py-2">
-                            {minLen}
-                          </div>
-                          <button
-                            onMouseDown={() => startHold(dec)} onMouseUp={stopHold} onMouseLeave={stopHold}
-                            onTouchStart={(e) => { e.preventDefault(); startHold(dec); }} onTouchEnd={stopHold}
-                            className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
-                          >
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,20 22,4 2,4"/></svg>
-                          </button>
-                        </div>
-                      );
-                    })()}
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">Min</span>
+                      <button
+                        onMouseDown={() => {
+                          const inc = () => setMinLen(v => { const c = parseInt(String(v), 10) || 2; const m = parseInt(String(maxLen), 10) || 45; return Math.min(45, Math.min(m, c + 1)); });
+                          inc(); spinnerTimerRef.current = setInterval(inc, 80);
+                        }}
+                        onMouseUp={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
+                        onMouseLeave={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          const inc = () => setMinLen(v => { const c = parseInt(String(v), 10) || 2; const m = parseInt(String(maxLen), 10) || 45; return Math.min(45, Math.min(m, c + 1)); });
+                          inc(); spinnerTimerRef.current = setInterval(inc, 80);
+                        }}
+                        onTouchEnd={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
+                        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+                      >
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,4 22,20 2,20"/></svg>
+                      </button>
+                      <div className="flex items-center justify-center text-4xl font-mono font-bold text-white select-none py-2">
+                        {minLen}
+                      </div>
+                      <button
+                        onMouseDown={() => {
+                          const dec = () => setMinLen(v => { const c = parseInt(String(v), 10) || 2; return Math.max(2, c - 1); });
+                          dec(); spinnerTimerRef.current = setInterval(dec, 80);
+                        }}
+                        onMouseUp={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
+                        onMouseLeave={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          const dec = () => setMinLen(v => { const c = parseInt(String(v), 10) || 2; return Math.max(2, c - 1); });
+                          dec(); spinnerTimerRef.current = setInterval(dec, 80);
+                        }}
+                        onTouchEnd={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
+                        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+                      >
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,20 22,4 2,4"/></svg>
+                      </button>
+                    </div>
 
                     <div className="w-px h-20 bg-slate-800 self-center" />
 
                     {/* Max Letters Spinner */}
-                    {(() => {
-                      const holdRef = { timer: null as ReturnType<typeof setInterval> | null };
-                      const startHold = (fn: () => void) => {
-                        fn();
-                        holdRef.timer = setInterval(fn, 80);
-                      };
-                      const stopHold = () => { if (holdRef.timer) { clearInterval(holdRef.timer); holdRef.timer = null; } };
-                      const inc = () => setMaxLen((v: number | string) => { const cur = parseInt(String(v), 10) || 15; return Math.min(45, cur + 1); });
-                      const dec = () => setMaxLen((v: number | string) => { const cur = parseInt(String(v), 10) || 15; const min = parseInt(String(minLen), 10) || 2; return Math.max(min, cur - 1); });
-                      return (
-                        <div className="flex flex-col items-center gap-2">
-                          <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">Max</span>
-                          <button
-                            onMouseDown={() => startHold(inc)} onMouseUp={stopHold} onMouseLeave={stopHold}
-                            onTouchStart={(e) => { e.preventDefault(); startHold(inc); }} onTouchEnd={stopHold}
-                            className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
-                          >
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,4 22,20 2,20"/></svg>
-                          </button>
-                          <div className="flex items-center justify-center text-4xl font-mono font-bold text-white select-none py-2">
-                            {maxLen}
-                          </div>
-                          <button
-                            onMouseDown={() => startHold(dec)} onMouseUp={stopHold} onMouseLeave={stopHold}
-                            onTouchStart={(e) => { e.preventDefault(); startHold(dec); }} onTouchEnd={stopHold}
-                            className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
-                          >
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,20 22,4 2,4"/></svg>
-                          </button>
-                        </div>
-                      );
-                    })()}
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">Max</span>
+                      <button
+                        onMouseDown={() => {
+                          const inc = () => setMaxLen(v => { const c = parseInt(String(v), 10) || 15; return Math.min(45, c + 1); });
+                          inc(); spinnerTimerRef.current = setInterval(inc, 80);
+                        }}
+                        onMouseUp={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
+                        onMouseLeave={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          const inc = () => setMaxLen(v => { const c = parseInt(String(v), 10) || 15; return Math.min(45, c + 1); });
+                          inc(); spinnerTimerRef.current = setInterval(inc, 80);
+                        }}
+                        onTouchEnd={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
+                        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+                      >
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,4 22,20 2,20"/></svg>
+                      </button>
+                      <div className="flex items-center justify-center text-4xl font-mono font-bold text-white select-none py-2">
+                        {maxLen}
+                      </div>
+                      <button
+                        onMouseDown={() => {
+                          const dec = () => setMaxLen(v => { const c = parseInt(String(v), 10) || 15; const min = parseInt(String(minLen), 10) || 2; return Math.max(min, c - 1); });
+                          dec(); spinnerTimerRef.current = setInterval(dec, 80);
+                        }}
+                        onMouseUp={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
+                        onMouseLeave={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          const dec = () => setMaxLen(v => { const c = parseInt(String(v), 10) || 15; const min = parseInt(String(minLen), 10) || 2; return Math.max(min, c - 1); });
+                          dec(); spinnerTimerRef.current = setInterval(dec, 80);
+                        }}
+                        onTouchEnd={() => { if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current); }}
+                        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+                      >
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,20 22,4 2,4"/></svg>
+                      </button>
+                    </div>
                   </div>
                 </section>
 
