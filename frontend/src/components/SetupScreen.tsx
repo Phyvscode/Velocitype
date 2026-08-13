@@ -785,7 +785,7 @@ export default function SetupScreen({
                               <div className="flex items-center mb-3">
                                 <span className="font-semibold tracking-wide">{r.label}</span>
                               </div>
-                              <code className="text-[10px] tracking-widest opacity-70">{r.keys}</code>
+                              <code className={`text-[10px] tracking-widest transition-opacity duration-300 ${active ? 'opacity-100' : 'opacity-70'}`}>{r.keys}</code>
                             </div>
                             <button
                               onClick={() => toggleRow(r.key)}
