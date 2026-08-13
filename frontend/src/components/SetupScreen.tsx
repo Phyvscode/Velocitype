@@ -950,11 +950,6 @@ export default function SetupScreen({
                     </div>
                   </div>
                 </section>
-                {renderDurationSelector(3, durationFile, setDurationFile, showCustomFile, setShowCustomFile, durFile)}
-                {fileError && <div className="text-rose-400 text-sm font-mono tracking-widest">{fileError}</div>}
-                <div className="pt-6">
-                  <button onClick={handleStartFile} disabled={!parsedDoc || isParsing} className={`px-12 py-5 font-mono text-[10px] uppercase tracking-widest transition-all rounded border ${parsedDoc && !isParsing ? 'bg-[var(--hot)]/10 text-[var(--hot)] border-[var(--hot)] hover:bg-[var(--hot)] hover:text-black shadow-[0_0_20px_var(--color-hot-soft)]' : 'bg-slate-900 text-slate-600 border-slate-800 cursor-not-allowed'}`}>Start Typing</button>
-                </div>
               </div>
             )}
 
@@ -1031,13 +1026,6 @@ export default function SetupScreen({
                     </div>
                   </div>
                 </section>
-                {renderDurationSelector(2, durationSentences, setDurationSentences, showCustomSentences, setShowCustomSentences, durSentences)}
-                {quoteError && <div className="text-rose-400 text-sm font-mono tracking-widest">{quoteError}</div>}
-                <div className="pt-6">
-                  <button onClick={handleStartRandomSentences} disabled={isLoadingQuotes} className={`px-12 py-5 font-mono text-[10px] uppercase tracking-widest transition-all rounded border ${!isLoadingQuotes ? 'bg-[var(--hot)]/10 text-[var(--hot)] border-[var(--hot)] hover:bg-[var(--hot)] hover:text-black shadow-[0_0_20px_var(--color-hot-soft)]' : 'bg-slate-900 text-slate-600 border-slate-800 cursor-not-allowed'}`}>
-                    {isLoadingQuotes ? 'Loading Quotes...' : 'Start Typing'}
-                  </button>
-                </div>
               </div>
             )}
 
@@ -1048,14 +1036,20 @@ export default function SetupScreen({
             )}
             </div>
           </div>
-          {activeMode === 'words' && (
+          {['words', 'file', 'random-sentences'].includes(activeMode || '') && (
             <div className="sticky top-20 self-start flex flex-col items-center gap-4">
-              {renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
-              {error && <div className="text-[var(--hot)] text-xs font-mono tracking-widest text-center">{error}</div>}
+              {activeMode === 'words' && renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
+              {activeMode === 'file' && renderDurationSelector(3, durationFile, setDurationFile, showCustomFile, setShowCustomFile, durFile)}
+              {activeMode === 'random-sentences' && renderDurationSelector(2, durationSentences, setDurationSentences, showCustomSentences, setShowCustomSentences, durSentences)}
+              
+              {activeMode === 'words' && error && <div className="text-[var(--hot)] text-xs font-mono tracking-widest text-center">{error}</div>}
+              {activeMode === 'file' && fileError && <div className="text-[var(--hot)] text-xs font-mono tracking-widest text-center">{fileError}</div>}
+              {activeMode === 'random-sentences' && quoteError && <div className="text-[var(--hot)] text-xs font-mono tracking-widest text-center">{quoteError}</div>}
+              
               {/* Start Typing — mirrors PortalButton exactly */}
-              <div className="flex flex-col items-center gap-6 relative group" style={{ perspective: '1500px' }}>
+              <div className={`flex flex-col items-center gap-6 relative group ${(activeMode === 'file' && (!parsedDoc || isParsing)) || (activeMode === 'random-sentences' && isLoadingQuotes) ? 'opacity-50 pointer-events-none' : ''}`} style={{ perspective: '1500px' }}>
                 <button
-                  onClick={handleStart}
+                  onClick={activeMode === 'words' ? handleStart : activeMode === 'file' ? handleStartFile : handleStartRandomSentences}
                   onMouseMove={(e) => {
                     const stage = e.currentTarget;
                     const rect = stage.getBoundingClientRect();
@@ -1114,7 +1108,7 @@ export default function SetupScreen({
                     ? 'top-0 translate-y-4 group-hover:-translate-y-4'
                     : '-bottom-10 -translate-y-4 group-hover:translate-y-8'
                 } group-hover:opacity-100`}>
-                  Start
+                  {activeMode === 'random-sentences' && isLoadingQuotes ? 'Loading...' : 'Start'}
                 </span>
               </div>
             </div>
