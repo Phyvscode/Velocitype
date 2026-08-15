@@ -368,7 +368,8 @@ export default function SetupScreen({
   const [showCustomFile, setShowCustomFile] = useState<boolean>(false);
   const durFile = Math.max(1, Math.min(3600, parseInt(durationFile, 10) || 0));
 
-  const [durationSentences, setDurationSentences] = useState<string>('30');
+  const [fileSequential, setFileSequential] = useState<boolean>(false);
+  const [durationSentences, setDurationSentences] = useState<number>(30);
   const [showCustomSentences, setShowCustomSentences] = useState<boolean>(false);
   const durSentences = Math.max(1, Math.min(3600, parseInt(durationSentences, 10) || 0));
   const [minLen, setMinLen] = useState<number | string>(2);
@@ -467,11 +468,33 @@ export default function SetupScreen({
       setFileError('No text found in selected pages.');
       return;
     }
+
+    const sentences = [...textArray];
+    if (!fileSequential) {
+      for (let i = sentences.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [sentences[i], sentences[j]] = [sentences[j], sentences[i]];
+      }
+    }
+
+    const batched: string[] = [];
+    let currentBatch = '';
+    for (const s of sentences) {
+      if ((currentBatch + ' ' + s).split(' ').length > 80 && currentBatch.length > 0) {
+        batched.push(currentBatch.trim());
+        currentBatch = s;
+      } else {
+        currentBatch += (currentBatch ? ' ' : '') + s;
+      }
+    }
+    if (currentBatch) batched.push(currentBatch.trim());
+
     onStart({
       mode: 'file',
-      customSentences: textArray,
+      customSentences: batched,
       duration: durFile,
-      useVirtualKeyboard
+      useVirtualKeyboard,
+      sequential: true
     } as any);
   };
 
@@ -880,8 +903,25 @@ export default function SetupScreen({
                   {isParsing && <p className="text-[var(--hot)] mt-3 text-xs font-mono uppercase tracking-widest">Parsing file...</p>}
                   {parsedDoc && !isParsing && <p className="text-emerald-400 mt-3 text-xs font-mono uppercase tracking-widest">✓ File parsed ({parsedDoc.pages.length} pages)</p>}
                 </section>
+                <section>
+                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">2. Sentence Order</h2>
+                  <div className="flex items-center gap-6">
+                    <span className={`text-sm font-mono tracking-widest uppercase transition-colors ${!fileSequential ? 'text-[var(--hot)] drop-shadow-[0_0_8px_var(--color-hot-soft)]' : 'text-slate-500'}`}>Random</span>
+                    <button
+                      onClick={() => setFileSequential(!fileSequential)}
+                      className={`w-14 h-7 rounded-full relative transition-all duration-300 flex-shrink-0 bg-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] border border-slate-700/50`}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-full bg-white absolute top-1 shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                          fileSequential ? 'translate-x-[30px]' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                    <span className={`text-sm font-mono tracking-widest uppercase transition-colors ${fileSequential ? 'text-[var(--hot)] drop-shadow-[0_0_8px_var(--color-hot-soft)]' : 'text-slate-500'}`}>Line by Line</span>
+                  </div>
+                </section>
                 <section className={`transition-opacity ${parsedDoc?.isTextFile ? 'opacity-50 pointer-events-none' : ''}`}>
-                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">2. Select Page Range</h2>
+                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">3. Select Page Range</h2>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Start Page</label>

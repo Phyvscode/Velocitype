@@ -35,7 +35,8 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   const pool = useMemo(() => customSentences && customSentences.length > 0 ? customSentences : filterWords(rows as RowKey[], minLen, maxLen), [rows, minLen, maxLen, customSentences]);
 
   // A shuffled queue of all pool words; when exhausted, reshuffle for a fresh cycle.
-  const queueRef = useRef<string[]>(shuffle(pool));
+  // If sequential is true (for file mode), we just use the sentences in their original order.
+  const queueRef = useRef<string[]>((config as any).sequential ? [...pool] : shuffle(pool));
   const [currentWord, setCurrentWord] = useState<string>(() => queueRef.current[0] ?? '');
 
   const [timeLeft, setTimeLeft] = useState<number>(duration);
@@ -98,10 +99,10 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   const nextWord = useCallback(() => {
     queueRef.current.shift();
     if (queueRef.current.length === 0) {
-      queueRef.current = shuffle(pool);
+      queueRef.current = (config as any).sequential ? [...pool] : shuffle(pool);
     }
     setCurrentWord(queueRef.current[0] ?? '');
-  }, [pool]);
+  }, [pool, config]);
 
   const finish = useCallback(() => {
     if (finishedRef.current) return;
