@@ -204,7 +204,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
 
   return (
     <div
-      className="h-full min-h-0 w-full bg-[#0f1117] text-slate-100 flex flex-col overflow-hidden"
+      className="h-full min-h-0 w-full bg-background text-slate-100 flex flex-col overflow-hidden"
       onMouseDown={(e) => {
         const t = e.target as HTMLElement;
         // Don't steal focus if clicking a real interactive element

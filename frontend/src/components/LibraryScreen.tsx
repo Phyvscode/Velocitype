@@ -52,7 +52,7 @@ export default function LibraryScreen({ onBack, onOpenAuth }: Props) {
   );
 
   return (
-    <div className="min-h-screen bg-[#0f1117] text-slate-100 px-4 py-8">
+    <div className="min-h-screen bg-background text-slate-100 px-4 py-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
