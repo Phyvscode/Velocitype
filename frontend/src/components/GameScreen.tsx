@@ -70,11 +70,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       }
     }
 
-    if (currentLine >= 1) {
-      setScrollLines(currentLine - 1);
-    } else {
-      setScrollLines(0);
-    }
+    setScrollLines(currentLine);
 
     const nextEl = letterRefs.current[nextIndex];
     if (nextEl) {
