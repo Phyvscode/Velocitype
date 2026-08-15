@@ -487,7 +487,7 @@ export default function SetupScreen({
     setIsLoadingQuotes(true);
     setQuoteError('');
     try {
-      const genSentences = await generateSentences(apiKey, rows, 50, 50, 20, sentenceTheme);
+      const genSentences = await generateSentences(apiKey, rows, 100, 100, 20, sentenceTheme);
       onStart({
         mode: 'random-sentences',
         customSentences: genSentences,

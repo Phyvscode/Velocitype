@@ -132,7 +132,7 @@ async function generateRandomDictionarySentences(rows: RowKey[], minWords: numbe
   
   const sentences: string[] = [];
   for (let i = 0; i < count; i++) {
-    const targetLength = Math.max(3, Math.min(15, Math.floor(Math.random() * (maxWords - minWords + 1)) + minWords));
+    const targetLength = Math.max(3, Math.floor(Math.random() * (maxWords - minWords + 1)) + minWords);
     let sentence = '';
     for (let j = 0; j < targetLength; j++) {
       let w = 'fallback';
