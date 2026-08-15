@@ -57,12 +57,12 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   const [scrollLines, setScrollLines] = useState(0);
 
   const updateCaretPosition = useCallback(() => {
-    const targetIndex = Math.min(Math.max(0, typed.length), currentWord.length - 1);
+    const nextIndex = Math.min(typed.length, currentWord.length - 1);
     
-    // Compute line index accurately by tracking offsetTop changes
+    // Compute line index accurately by tracking offsetTop changes up to the NEXT character
     let currentLine = 0;
     let lastTop = letterRefs.current[0]?.offsetTop || 0;
-    for (let i = 1; i <= targetIndex; i++) {
+    for (let i = 1; i <= nextIndex; i++) {
       const el = letterRefs.current[i];
       if (el && el.offsetTop > lastTop + 10) { // +10 threshold to ignore sub-pixel rounding
         currentLine++;
@@ -76,19 +76,17 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       setScrollLines(0);
     }
 
-    if (typed.length === 0) {
-      const firstEl = letterRefs.current[0];
-      if (firstEl) {
-        setCaretLeft(firstEl.offsetLeft);
-        setCaretTop(firstEl.offsetTop + firstEl.offsetHeight / 2);
+    const nextEl = letterRefs.current[nextIndex];
+    if (nextEl) {
+      // Position caret at the left edge of the character we are ABOUT to type.
+      // This ensures it wraps to the next line immediately when a word wraps.
+      // If we've typed everything, position it at the right edge of the last character.
+      if (typed.length >= currentWord.length) {
+        setCaretLeft(nextEl.offsetLeft + nextEl.offsetWidth);
+      } else {
+        setCaretLeft(nextEl.offsetLeft);
       }
-    } else {
-      const elIndex = Math.min(typed.length - 1, currentWord.length - 1);
-      const targetEl = letterRefs.current[elIndex];
-      if (targetEl) {
-        setCaretLeft(targetEl.offsetLeft + targetEl.offsetWidth);
-        setCaretTop(targetEl.offsetTop + targetEl.offsetHeight / 2);
-      }
+      setCaretTop(nextEl.offsetTop + nextEl.offsetHeight / 2);
     }
   }, [typed, currentWord]);
 
@@ -252,10 +250,15 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
             ? { fontSize: 'clamp(20px, 2.5vw, 32px)' }
             : { whiteSpace: 'pre-wrap', fontSize: 'clamp(32px, min(8vw, 12vh), 120px)', lineHeight: 1.4, paddingBottom: '0.35em' }}
         >
-          {/* Inner scroll window */}
+          {/* Inner scroll window with fade mask to hide clipped ascenders/descenders */}
           <div 
             className={(config as any).mode === 'file' || (config as any).mode === 'random-sentences' ? 'overflow-hidden relative' : ''}
-            style={(config as any).mode === 'file' || (config as any).mode === 'random-sentences' ? { height: '3.2em', lineHeight: 1.6 } : {}}
+            style={(config as any).mode === 'file' || (config as any).mode === 'random-sentences' ? { 
+              height: '3.2em', 
+              lineHeight: 1.6,
+              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
+              maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
+            } : {}}
           >
             <div 
               className="transition-transform duration-200 ease-out relative"
