@@ -299,7 +299,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
                   <span
                     key={ci}
                     ref={(el) => { letterRefs.current[ci] = el; }}
-                    className={`transition-colors leading-loose ${cls}`}
+                    className={`transition-colors ${cls}`}
                   >
                     {ch}
                   </span>
