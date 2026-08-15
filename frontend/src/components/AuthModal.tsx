@@ -160,8 +160,8 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-md bg-background border border-slate-700/60 p-6 sm:p-8 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="w-full max-w-md bg-background border border-white/10 p-6 sm:p-8 shadow-2xl relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-white hover:text-slate-200 transition-colors p-2 text-xl font-bold exclude-theme"
@@ -186,7 +186,7 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
         </div>
 
         {(mode === 'login' || mode === 'signup') && (
-          <div className="flex bg-slate-900/60 p-1 mb-6 border border-slate-800">
+          <div className="flex bg-white/5 p-1 mb-6 border border-white/10">
             <button
               type="button"
               onClick={() => switchMode('signup')}
@@ -230,7 +230,7 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="speedtyper99"
                 autoComplete="off"
-                className="w-full px-4 py-2.5 bg-slate-900/80 border border-slate-700/60 focus:border-amber-400 focus:outline-none text-slate-100 text-sm"
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 focus:border-amber-400 focus:outline-none text-slate-100 text-sm"
               />
             </div>
           )}
@@ -240,7 +240,7 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Profile Picture (Optional)</label>
               <div className="flex items-center gap-3">
                 {avatarBase64 && (
-                  <img src={avatarBase64} alt="Avatar preview" className="w-10 h-10 rounded-full object-cover border border-slate-700/60" />
+                  <img src={avatarBase64} alt="Avatar preview" className="w-10 h-10 rounded-full object-cover border border-white/10" />
                 )}
                 <input
                   type="file"
@@ -263,7 +263,7 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 autoComplete="off"
-                className="w-full px-4 py-2.5 bg-slate-900/80 border border-slate-700/60 focus:border-amber-400 focus:outline-none text-slate-100 text-sm disabled:opacity-50"
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 focus:border-amber-400 focus:outline-none text-slate-100 text-sm disabled:opacity-50"
               />
             </div>
           )}
@@ -289,7 +289,7 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
                 <button
                   type="button"
                   onClick={generateCaptcha}
-                  className="bg-slate-500 hover:bg-slate-600 border border-l-0 border-slate-500 text-white px-4 flex items-center justify-center transition-colors rounded-br-sm"
+                  className="bg-slate-500 hover:bg-white/20 border border-l-0 border-slate-500 text-white px-4 flex items-center justify-center transition-colors rounded-br-sm"
                   title="Refresh CAPTCHA"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>
@@ -308,7 +308,7 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 placeholder="000000"
-                className="w-full px-4 py-2.5 bg-slate-900/80 border border-slate-700/60 focus:border-amber-400 focus:outline-none text-slate-100 text-sm tracking-widest text-center text-lg"
+                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 focus:border-amber-400 focus:outline-none text-slate-100 text-sm tracking-widest text-center text-lg"
               />
             </div>
           )}
@@ -327,7 +327,7 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="new-password"
-                  className="w-full pr-16 px-4 py-2.5 bg-slate-900/80 border border-slate-700/60 focus:border-amber-400 focus:outline-none text-slate-100 text-sm"
+                  className="w-full pr-16 px-4 py-2.5 bg-white/5 border border-white/10 focus:border-amber-400 focus:outline-none text-slate-100 text-sm"
                 />
                 <button
                   type="button"
@@ -352,7 +352,7 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="new-password"
-                  className="w-full pr-16 px-4 py-2.5 bg-slate-900/80 border border-slate-700/60 focus:border-amber-400 focus:outline-none text-slate-100 text-sm"
+                  className="w-full pr-16 px-4 py-2.5 bg-white/5 border border-white/10 focus:border-amber-400 focus:outline-none text-slate-100 text-sm"
                 />
               </div>
             </div>

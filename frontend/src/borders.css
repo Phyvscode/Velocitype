@@ -147,12 +147,12 @@
   background: linear-gradient(var(--background), color-mix(in srgb, var(--hot) 8%, #05060d)); z-index: 3;
 }
 .portal-b11 .lid-top {
-  top: -6px; transform-origin: top; border-bottom: 1px solid var(--color-border);
+  top: -6px; transform-origin: top; border-bottom: 1px solid var(--hot);
   border-radius: 0;
   transition: transform .3s cubic-bezier(.4,0,.2,1), border-radius .3s ease;
 }
 .portal-b11 .lid-bottom {
-  bottom: -6px; transform-origin: bottom; border-top: 1px solid var(--color-border);
+  bottom: -6px; transform-origin: bottom; border-top: 1px solid var(--hot);
   border-radius: 0;
   transition: transform .3s cubic-bezier(.4,0,.2,1), border-radius .3s ease;
 }

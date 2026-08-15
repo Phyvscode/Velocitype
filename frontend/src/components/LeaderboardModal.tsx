@@ -41,8 +41,8 @@ export default function LeaderboardModal({ isOpen, onClose }: Props) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-background border border-slate-700/60 p-6 shadow-2xl relative max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl bg-background border border-white/10 p-6 shadow-2xl relative max-h-[85vh] flex flex-col">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-white hover:text-slate-200 transition-colors p-2 text-xl font-bold exclude-theme"
@@ -61,7 +61,7 @@ export default function LeaderboardModal({ isOpen, onClose }: Props) {
         </div>
 
         {/* Tabs */}
-        <div className="flex bg-slate-900/60 p-1 mb-4 border border-slate-800 shrink-0">
+        <div className="flex bg-white/5 p-1 mb-4 border border-white/10 shrink-0">
           <button
             onClick={() => setTab('leaderboard')}
             className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
@@ -101,7 +101,7 @@ export default function LeaderboardModal({ isOpen, onClose }: Props) {
                 {leaderboard.map((item, idx) => (
                   <div
                     key={item.id || idx}
-                    className="flex items-center justify-between p-3.5 bg-slate-900/50 border border-slate-800 hover:border-slate-700 transition-colors"
+                    className="flex items-center justify-between p-3.5 bg-white/5 border border-white/10 hover:border-white/10 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <div
@@ -112,7 +112,7 @@ export default function LeaderboardModal({ isOpen, onClose }: Props) {
                             ? 'bg-slate-300 text-slate-950'
                             : idx === 2
                             ? 'bg-amber-700 text-slate-100'
-                            : 'bg-slate-800 text-slate-400'
+                            : 'bg-white/10 text-slate-400'
                         }`}
                       >
                         {idx === 0 ? "1st" : `#${idx + 1}`}
@@ -147,10 +147,10 @@ export default function LeaderboardModal({ isOpen, onClose }: Props) {
               {history.map((item, idx) => (
                 <div
                   key={item._id || idx}
-                  className="flex items-center justify-between p-3.5 bg-slate-900/50 border border-slate-800"
+                  className="flex items-center justify-between p-3.5 bg-white/5 border border-white/10"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-800 text-slate-400">
+                    <div className="p-2 bg-white/10 text-slate-400">
                       
                     </div>
                     <div>

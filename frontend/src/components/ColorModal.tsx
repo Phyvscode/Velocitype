@@ -43,8 +43,8 @@ export default function ColorModal({ isOpen, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-3xl bg-background border border-slate-700/60 p-6 sm:p-8 shadow-2xl relative max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="w-full max-w-3xl bg-background border border-white/10 p-6 sm:p-8 shadow-2xl relative max-h-[85vh] flex flex-col">
         <button
           onClick={handleClose}
           className="absolute top-4 right-4 text-white hover:text-slate-200 transition-colors p-2 text-xl font-bold exclude-theme"
@@ -63,7 +63,7 @@ export default function ColorModal({ isOpen, onClose }: Props) {
         </div>
 
         {/* Source Selector Tabs */}
-        <div className="flex bg-slate-900/60 p-1 mb-6 border border-slate-800 shrink-0">
+        <div className="flex bg-white/5 p-1 mb-6 border border-white/10 shrink-0">
           <button
             onClick={() => setActiveTab('solid')}
             className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 transition-all exclude-theme ${
@@ -97,7 +97,7 @@ export default function ColorModal({ isOpen, onClose }: Props) {
               />
               <div className="mt-8 flex items-center gap-4">
                 <div 
-                  className="w-12 h-12 rounded-lg border border-slate-600 shadow-inner"
+                  className="w-12 h-12 rounded-lg border border-white/20 shadow-inner"
                   style={{ backgroundColor: activeColor.includes('gradient') ? '#f1f5f9' : activeColor || '#f1f5f9' }}
                 />
                 <input
@@ -108,7 +108,7 @@ export default function ColorModal({ isOpen, onClose }: Props) {
                     if (!val.startsWith('#') && val.length > 0) val = '#' + val;
                     handleSelectColor({ name: 'Custom', value: val, isGradient: false });
                   }}
-                  className="font-mono text-xl text-slate-100 bg-slate-900 border border-slate-700 px-3 py-2 rounded-md w-32 text-center exclude-theme focus:border-amber-400 focus:outline-none transition-colors shadow-inner"
+                  className="font-mono text-xl text-slate-100 bg-white/5 border border-white/10 px-3 py-2 rounded-md w-32 text-center exclude-theme focus:border-amber-400 focus:outline-none transition-colors shadow-inner"
                   maxLength={7}
                   spellCheck={false}
                 />
@@ -123,7 +123,7 @@ export default function ColorModal({ isOpen, onClose }: Props) {
                     key={idx}
                     onClick={() => handleSelectColor(color)}
                     className={`h-24 flex items-end p-3 transition-all hover:scale-105 exclude-theme ${
-                      isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#161922] shadow-lg' : 'shadow-md border border-slate-700/50'
+                      isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#161922] shadow-lg' : 'shadow-md border border-white/10'
                     }`}
                     style={{ background: color.value }}
                   >
@@ -141,7 +141,7 @@ export default function ColorModal({ isOpen, onClose }: Props) {
         </div>
 
         {/* Live Preview */}
-        <div className="mt-6 p-6 bg-slate-950 border border-slate-800 text-center">
+        <div className="mt-6 p-6 bg-black/20 border border-white/10 text-center">
           <p className="text-sm text-slate-500 mb-2 uppercase tracking-widest">Live Text Preview</p>
           <h1 
             className="text-3xl sm:text-4xl font-bold font-mono tracking-wide"

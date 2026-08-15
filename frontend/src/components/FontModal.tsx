@@ -150,8 +150,8 @@ export default function FontModal({ isOpen, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-background border border-slate-700/60 p-6 sm:p-8 shadow-2xl relative max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl bg-background border border-white/10 p-6 sm:p-8 shadow-2xl relative max-h-[85vh] flex flex-col">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-white hover:text-slate-200 transition-colors p-2 text-xl font-bold exclude-theme"
@@ -170,7 +170,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
         </div>
 
         {/* Source Selector Tabs */}
-        <div className="flex bg-slate-900/60 p-1 mb-6 border border-slate-800 shrink-0">
+        <div className="flex bg-white/5 p-1 mb-6 border border-white/10 shrink-0">
           <button
             onClick={() => setActiveSource('google')}
             className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
@@ -204,7 +204,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
                   placeholder="Type ANY Google Font name (e.g. Montserrat, Oswald, Pacifico)..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900/80 border border-slate-700/60 focus:border-amber-400 focus:outline-none text-slate-100 text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 focus:border-amber-400 focus:outline-none text-slate-100 text-sm"
                 />
               </div>
               <button
@@ -224,7 +224,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
                   className={`px-3.5 py-1.5 text-xs font-semibold transition-colors shrink-0 ${
                     activeCategory === cat
                       ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40'
-                      : 'bg-slate-900/60 text-slate-400 border border-slate-800 hover:bg-slate-800'
+                      : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
                   }`}
                 >
                   {cat}
@@ -244,12 +244,12 @@ export default function FontModal({ isOpen, onClose }: Props) {
                     className={`p-4 text-left border transition-all flex flex-col justify-between ${
                       selected
                         ? 'border-amber-400 bg-amber-400/10 shadow-lg shadow-amber-500/10'
-                        : 'border-slate-800 bg-slate-900/40 hover:border-slate-700'
+                        : 'border-white/10 bg-white/5 hover:border-white/10'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-semibold text-slate-200">{f.name}</span>
-                      <span className="text-[10px] uppercase tracking-wider text-slate-500 bg-slate-800 px-2 py-0.5 ">
+                      <span className="text-[10px] uppercase tracking-wider text-slate-500 bg-white/10 px-2 py-0.5 ">
                         {f.category}
                       </span>
                     </div>
@@ -282,7 +282,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
               className={`border-2 border-dashed p-8 text-center cursor-pointer transition-all ${
                 dragOver
                   ? 'border-amber-400 bg-amber-400/10'
-                  : 'border-slate-700/80 bg-slate-900/40 hover:border-slate-600'
+                  : 'border-white/10 bg-white/5 hover:border-white/20'
               }`}
             >
               <input
@@ -299,9 +299,9 @@ export default function FontModal({ isOpen, onClose }: Props) {
                 Upload your font file
               </h3>
               <p className="text-sm text-slate-400 mb-3">
-                Drag and drop your <code className="text-amber-300 bg-slate-800 px-1.5 py-0.5 text-xs">.ttf</code>, <code className="text-amber-300 bg-slate-800 px-1.5 py-0.5 text-xs">.otf</code>, <code className="text-amber-300 bg-slate-800 px-1.5 py-0.5 text-xs">.woff</code>, or <code className="text-amber-300 bg-slate-800 px-1.5 py-0.5 text-xs">.woff2</code> file here
+                Drag and drop your <code className="text-amber-300 bg-white/10 px-1.5 py-0.5 text-xs">.ttf</code>, <code className="text-amber-300 bg-white/10 px-1.5 py-0.5 text-xs">.otf</code>, <code className="text-amber-300 bg-white/10 px-1.5 py-0.5 text-xs">.woff</code>, or <code className="text-amber-300 bg-white/10 px-1.5 py-0.5 text-xs">.woff2</code> file here
               </p>
-              <span className="inline-block px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors">
+              <span className="inline-block px-4 py-2 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-semibold border border-white/10 transition-colors">
                 Browse File
               </span>
             </div>
@@ -322,7 +322,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
 
             {/* Currently Active Uploaded Font Info */}
             {uploadedInfo && (
-              <div className="p-5 bg-slate-900/60 border border-slate-800 ">
+              <div className="p-5 bg-white/5 border border-white/10 ">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2.5">
                     
@@ -343,7 +343,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
                   ref={(el) => {
                     if (el) el.style.setProperty('font-family', "'VelocitypeUploadedPreview', sans-serif", 'important');
                   }}
-                  className="p-4 bg-slate-950 border border-slate-800 text-slate-100 text-2xl font-medium tracking-wide"
+                  className="p-4 bg-black/20 border border-white/10 text-slate-100 text-2xl font-medium tracking-wide"
                 >
                   The quick brown fox jumps over the lazy dog 1234567890
                 </div>
