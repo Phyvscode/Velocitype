@@ -53,6 +53,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   useEffect(() => {
     if (letterRefs.current[typed.length]) {
@@ -74,11 +75,16 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   }, [typed, currentWord]);
 
   const updateCaretPosition = useCallback(() => {
+    let activeTop = 0;
+    let activeHeight = 0;
+
     if (typed.length === 0) {
       const firstEl = letterRefs.current[0];
       if (firstEl) {
         setCaretLeft(firstEl.offsetLeft);
         setCaretTop(firstEl.offsetTop + firstEl.offsetHeight / 2);
+        activeTop = firstEl.offsetTop;
+        activeHeight = firstEl.offsetHeight;
       }
     } else {
       const targetIndex = Math.min(typed.length - 1, currentWord.length - 1);
@@ -86,6 +92,17 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       if (targetEl) {
         setCaretLeft(targetEl.offsetLeft + targetEl.offsetWidth);
         setCaretTop(targetEl.offsetTop + targetEl.offsetHeight / 2);
+        activeTop = targetEl.offsetTop;
+        activeHeight = targetEl.offsetHeight;
+      }
+    }
+
+    if (activeHeight > 0) {
+      const lineIndex = Math.round(activeTop / activeHeight);
+      if (lineIndex >= 2) {
+        setScrollOffset((lineIndex - 1) * activeHeight);
+      } else {
+        setScrollOffset(0);
       }
     }
   }, [typed, currentWord]);
@@ -247,35 +264,49 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
               : 'text-slate-100'
           }`}
           style={(config as any).mode === 'file' || (config as any).mode === 'random-sentences'
-            ? { whiteSpace: 'pre-wrap', fontSize: 'clamp(20px, 2.5vw, 32px)', lineHeight: 1.6 }
+            ? { fontSize: 'clamp(20px, 2.5vw, 32px)' }
             : { whiteSpace: 'pre-wrap', fontSize: 'clamp(32px, min(8vw, 12vh), 120px)', lineHeight: 1.4, paddingBottom: '0.35em' }}
         >
-          {/* Smooth Fluid Caret Bar */}
-          <span
-            className="absolute -translate-y-1/2 w-[3px] h-[1em] bg-[var(--hot)] rounded-full pointer-events-none transition-all duration-150 ease-out animate-caret exclude-theme"
-            style={{
-              left: `${caretLeft}px`,
-              top: `${caretTop}px`,
-            }}
-          />
-
-          {currentWord.split('').map((ch, ci) => {
-            let cls = 'text-slate-500 exclude-theme';
-            if (ci < typed.length) {
-              cls = typed[ci] === ch ? 'text-amber-300 theme-text-override' : 'text-rose-400 underline exclude-theme';
-            } else if (ci === typed.length) {
-              cls = 'text-slate-100 exclude-theme';
-            }
-            return (
+          {/* Inner scroll window */}
+          <div 
+            className={(config as any).mode === 'file' || (config as any).mode === 'random-sentences' ? 'overflow-hidden relative' : ''}
+            style={(config as any).mode === 'file' || (config as any).mode === 'random-sentences' ? { height: '3.2em', lineHeight: 1.6 } : {}}
+          >
+            <div 
+              className="transition-transform duration-200 ease-out relative"
+              style={{
+                transform: `translateY(-${scrollOffset}px)`,
+                whiteSpace: 'pre-wrap'
+              }}
+            >
+              {/* Smooth Fluid Caret Bar */}
               <span
-                key={ci}
-                ref={(el) => { letterRefs.current[ci] = el; }}
-                className={`transition-colors leading-loose ${cls}`}
-              >
-                {ch}
-              </span>
-            );
-          })}
+                className="absolute -translate-y-1/2 w-[3px] h-[1em] bg-[var(--hot)] rounded-full pointer-events-none transition-all duration-150 ease-out animate-caret exclude-theme"
+                style={{
+                  left: `${caretLeft}px`,
+                  top: `${caretTop}px`,
+                }}
+              />
+
+              {currentWord.split('').map((ch, ci) => {
+                let cls = 'text-slate-500 exclude-theme';
+                if (ci < typed.length) {
+                  cls = typed[ci] === ch ? 'text-amber-300 theme-text-override' : 'text-rose-400 underline exclude-theme';
+                } else if (ci === typed.length) {
+                  cls = 'text-slate-100 exclude-theme';
+                }
+                return (
+                  <span
+                    key={ci}
+                    ref={(el) => { letterRefs.current[ci] = el; }}
+                    className={`transition-colors leading-loose ${cls}`}
+                  >
+                    {ch}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
       </main>
