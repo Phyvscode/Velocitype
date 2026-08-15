@@ -18,15 +18,17 @@ export async function generateSentences(
   count: number = 20,
   theme?: string
 ): Promise<string[]> {
+  let sentences: string[] = [];
+  
   if (apiKey && apiKey.trim().length > 0) {
-    return generateWithGemini(apiKey.trim(), rows, minWords, maxWords, count, theme);
+    sentences = await generateWithGemini(apiKey.trim(), rows, minWords, maxWords, count, theme);
+  } else if (rows.length > 0) {
+    sentences = await generateRandomDictionarySentences(rows, minWords, maxWords, count);
+  } else {
+    sentences = await generateMarkovSentences(minWords, maxWords, count);
   }
 
-  if (rows.length > 0) {
-    return generateRandomDictionarySentences(rows, minWords, maxWords, count);
-  }
-
-  return generateMarkovSentences(minWords, maxWords, count);
+  return sentences.map(s => s.toLowerCase().replace(/[.,!?;:]/g, ''));
 }
 
 // 1. GEMINI LLM

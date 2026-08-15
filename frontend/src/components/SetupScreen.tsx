@@ -391,8 +391,6 @@ export default function SetupScreen({
     if (typeof window !== 'undefined') return localStorage.getItem('gemini_api_key') || '';
     return '';
   });
-  const [minWordsSentences, setMinWordsSentences] = useState<number | string>(5);
-  const [maxWordsSentences, setMaxWordsSentences] = useState<number | string>(12);
 
   useEffect(() => {
     if (user) {
@@ -402,8 +400,6 @@ export default function SetupScreen({
           const s = JSON.parse(stored);
           if (s.minLen) setMinLen(s.minLen);
           if (s.maxLen) setMaxLen(s.maxLen);
-          if (s.minWordsSentences) setMinWordsSentences(s.minWordsSentences);
-          if (s.maxWordsSentences) setMaxWordsSentences(s.maxWordsSentences);
           if (s.rows) setRows(s.rows);
           if (s.durationWords) setDurationWords(s.durationWords);
           if (s.durationFile) setDurationFile(s.durationFile);
@@ -413,8 +409,6 @@ export default function SetupScreen({
     } else {
       setMinLen(2);
       setMaxLen(8);
-      setMinWordsSentences(5);
-      setMaxWordsSentences(12);
       setRows(['top', 'home', 'bottom']);
     }
   }, [user]);
@@ -423,15 +417,11 @@ export default function SetupScreen({
     if (user) {
       const parsedMinL = parseInt(String(minLen), 10);
       const parsedMaxL = parseInt(String(maxLen), 10);
-      const parsedMinW = parseInt(String(minWordsSentences), 10);
-      const parsedMaxW = parseInt(String(maxWordsSentences), 10);
       
-      if (!isNaN(parsedMinL) && !isNaN(parsedMaxL) && !isNaN(parsedMinW) && !isNaN(parsedMaxW)) {
+      if (!isNaN(parsedMinL) && !isNaN(parsedMaxL)) {
         localStorage.setItem(`velocitype_settings_${user.id}`, JSON.stringify({
           minLen: parsedMinL,
           maxLen: parsedMaxL,
-          minWordsSentences: parsedMinW,
-          maxWordsSentences: parsedMaxW,
           rows,
           durationWords,
           durationFile,
@@ -439,7 +429,7 @@ export default function SetupScreen({
         }));
       }
     }
-  }, [user, minLen, maxLen, minWordsSentences, maxWordsSentences, rows, durationWords, durationFile, durationSentences]);
+  }, [user, minLen, maxLen, rows, durationWords, durationFile, durationSentences]);
 
   const handleApiKeyChange = (val: string) => {
     setApiKey(val);
@@ -487,8 +477,6 @@ export default function SetupScreen({
 
   const handleStartRandomSentences = async () => {
     if (activeMode === 'random-sentences' && rows.length > 0) {
-      const minW = Math.max(2, Math.min(100, parseInt(String(minWordsSentences), 10) || 5));
-      const maxW = Math.max(minW, Math.min(100, parseInt(String(maxWordsSentences), 10) || 12));
       const available = filterWords(rows, 1, 15);
       if (available.length === 0) {
         setQuoteError('No words or sentences available with the chosen rows.');
@@ -496,14 +484,10 @@ export default function SetupScreen({
         return;
       }
     }
-
     setIsLoadingQuotes(true);
     setQuoteError('');
     try {
-      const minW = Math.max(2, Math.min(100, parseInt(String(minWordsSentences), 10) || 5));
-      const maxW = Math.max(minW, Math.min(100, parseInt(String(maxWordsSentences), 10) || 12));
-      
-      const genSentences = await generateSentences(apiKey, rows, minW, maxW, 20, sentenceTheme);
+      const genSentences = await generateSentences(apiKey, rows, 50, 50, 20, sentenceTheme);
       onStart({
         mode: 'random-sentences',
         customSentences: genSentences,
@@ -979,20 +963,6 @@ export default function SetupScreen({
                         <input type="text" value={sentenceTheme} onChange={(e) => setSentenceTheme(e.target.value)} disabled={!apiKey} placeholder={apiKey ? "e.g., rick and morty" : ""} className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)] disabled:opacity-50 disabled:cursor-not-allowed" />
                       </div>
                     </div>
-                    <div className="flex items-center gap-10">
-                        {/* Min Words/Sent Spinner */}
-                        {renderSpinner('Min Words/Sent.', minWordsSentences, 
-                          () => setMinWordsSentences(v => { const c = parseInt(String(v), 10) || 2; const m = parseInt(String(maxWordsSentences), 10) || 12; return Math.min(100, Math.min(m, c + 1)); }),
-                          () => setMinWordsSentences(v => { const c = parseInt(String(v), 10) || 2; return Math.max(2, c - 1); })
-                        )}
-
-                        <div className="w-px h-20 bg-slate-800 self-center" />
-
-                        {/* Max Words/Sent Spinner */}
-                        {renderSpinner('Max Words/Sent.', maxWordsSentences, 
-                          () => setMaxWordsSentences(v => { const c = parseInt(String(v), 10) || 12; return Math.min(100, c + 1); }),
-                          () => setMaxWordsSentences(v => { const c = parseInt(String(v), 10) || 12; const min = parseInt(String(minWordsSentences), 10) || 2; return Math.max(min, c - 1); })
-                        )}
                     </div>
                   </div>
                 </section>
