@@ -950,17 +950,49 @@ export default function SetupScreen({
 
             {activeMode === 'random-sentences' && (
               <div className="space-y-10">
+                <div className="flex flex-row items-start w-full">
+                  <section className="shrink-0">
+                    <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">1. Choose your key rows</h2>
+                    <div className="grid sm:grid-cols-3 gap-4">
+                      {ROW_LABELS.map((r) => {
+                        const active = rows.includes(r.key);
+                        return (
+                          <div key={r.key} className="text-left p-6 transition-all rounded flex flex-col items-start gap-4">
+                            <div className={`transition-all duration-300 ${active ? 'text-[var(--hot)] drop-shadow-[0_0_10px_var(--color-hot-soft)]' : 'text-slate-400'}`}>
+                              <div className="flex items-center mb-3">
+                                <span className="font-semibold tracking-wide">{r.label}</span>
+                              </div>
+                              <code className={`text-[10px] tracking-widest transition-opacity duration-300 ${active ? 'opacity-100' : 'opacity-70'}`}>{r.keys}</code>
+                            </div>
+                            <button
+                              onClick={() => toggleRow(r.key)}
+                              className={`w-12 h-6 rounded-full relative transition-all duration-300 flex-shrink-0 ${
+                                active ? 'bg-[var(--hot)] shadow-[0_0_15px_var(--color-hot-soft)]' : 'bg-slate-700 shadow-[0_0_10px_rgba(255,255,255,0.15)]'
+                              }`}
+                            >
+                              <div
+                                className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform duration-300 ${
+                                  active ? 'translate-x-[26px]' : 'translate-x-0.5'
+                                } shadow-sm`}
+                              />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                </div>
                 <section>
-                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">1. Sentence Configuration</h2>
+                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">2. Sentence Configuration</h2>
                   <div className="space-y-6">
                     <div className="grid sm:grid-cols-2 gap-[clamp(0.5rem,1.5vh,1.5rem)]">
                       <div>
                         <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2 block">Gemini API Key (Optional)</label>
-                        <input type="password" value={apiKey} onChange={(e) => handleApiKeyChange(e.target.value)} placeholder="AIzaSy..." className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)]" />
+                        <input type="password" value={apiKey} onChange={(e) => handleApiKeyChange(e.target.value)} placeholder="AIzaSy..." className="w-full px-4 py-3 bg-slate-900/50 border border-[var(--hot)] rounded focus:outline-none focus:ring-1 focus:ring-[var(--hot)] text-lg font-mono text-white caret-[var(--hot)] transition-colors" />
                       </div>
                       <div>
                         <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-2 block">Topic / Theme (Requires Key)</label>
-                        <input type="text" value={sentenceTheme} onChange={(e) => setSentenceTheme(e.target.value)} disabled={!apiKey} placeholder={apiKey ? "e.g., rick and morty" : ""} className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)] disabled:opacity-50 disabled:cursor-not-allowed" />
+                        <input type="text" value={sentenceTheme} onChange={(e) => setSentenceTheme(e.target.value)} disabled={!apiKey} placeholder={apiKey ? "e.g., rick and morty" : ""} className="w-full px-4 py-3 bg-slate-900/50 border border-[var(--hot)] rounded focus:outline-none focus:ring-1 focus:ring-[var(--hot)] text-lg font-mono text-white caret-[var(--hot)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors" />
                       </div>
                     </div>
                   </div>
