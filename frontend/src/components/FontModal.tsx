@@ -151,7 +151,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-background border border-white/10 p-6 sm:p-8 shadow-2xl relative max-h-[85vh] flex flex-col">
+      <div className="w-full max-w-2xl bg-background border border-[var(--hot)] rounded-2xl p-6 md:p-8 shadow-[0_0_40px_var(--color-hot-soft)] relative max-h-[85vh] flex flex-col">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-white hover:text-slate-200 transition-colors p-2 text-xl font-bold exclude-theme"
@@ -160,9 +160,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
         </button>
 
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400">
-            
-          </div>
+          
           <div>
             <h2 className="text-xl font-bold text-slate-100">Typography Settings</h2>
             <p className="text-xs text-slate-400">Choose a Google Font or upload your custom font file</p>
@@ -175,7 +173,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
             onClick={() => setActiveSource('google')}
             className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
               activeSource === 'google'
-                ? 'bg-amber-400 text-slate-950 shadow-md'
+                ? 'bg-[var(--hot)] text-[var(--background)] shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -185,7 +183,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
             onClick={() => setActiveSource('upload')}
             className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
               activeSource === 'upload'
-                ? 'bg-amber-400 text-slate-950 shadow-md'
+                ? 'bg-[var(--hot)] text-[var(--background)] shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -204,12 +202,12 @@ export default function FontModal({ isOpen, onClose }: Props) {
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
                   placeholder="Type ANY Google Font name (e.g. Montserrat, Oswald, Pacifico)..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 focus:border-amber-400 focus:outline-none text-slate-100 text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 focus:border-[var(--hot)] focus:outline-none text-slate-100 text-sm"
                 />
               </div>
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm transition-colors flex items-center gap-1.5 shrink-0"
+                className="px-5 py-2.5 bg-[var(--hot)] hover:bg-[var(--hot)]/80 text-slate-950 font-bold text-sm transition-colors flex items-center gap-1.5 shrink-0"
               >
                  Apply Font
               </button>
@@ -223,7 +221,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
                   onClick={() => setActiveCategory(cat)}
                   className={`px-3.5 py-1.5 text-xs font-semibold transition-colors shrink-0 ${
                     activeCategory === cat
-                      ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40'
+                      ? 'bg-[var(--hot)]/20 text-[var(--hot)] border border-[var(--hot)]/40'
                       : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
                   }`}
                 >
@@ -243,7 +241,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
                     onClick={() => handleSelectGoogleFont(f.name)}
                     className={`p-4 text-left border transition-all flex flex-col justify-between ${
                       selected
-                        ? 'border-amber-400 bg-amber-400/10 shadow-lg shadow-amber-500/10'
+                        ? 'border-[var(--hot)] bg-[var(--hot)]/10 shadow-lg shadow-[var(--hot)]/20'
                         : 'border-white/10 bg-white/5 hover:border-white/10'
                     }`}
                   >
@@ -257,12 +255,12 @@ export default function FontModal({ isOpen, onClose }: Props) {
                       ref={(el) => {
                         if (el) el.style.setProperty('font-family', `'${f.name}', sans-serif`, 'important');
                       }}
-                      className="text-xl text-amber-300 font-semibold truncate"
+                      className="text-xl text-[var(--hot)] font-semibold truncate"
                     >
                       The quick brown fox
                     </div>
                     {selected && (
-                      <div className="mt-2 flex items-center gap-1 text-xs text-amber-400 font-medium">
+                      <div className="mt-2 flex items-center gap-1 text-xs text-[var(--hot)] font-medium">
                          Active Font
                       </div>
                     )}
@@ -281,7 +279,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
               onClick={() => fileInputRef.current?.click()}
               className={`border-2 border-dashed p-8 text-center cursor-pointer transition-all ${
                 dragOver
-                  ? 'border-amber-400 bg-amber-400/10'
+                  ? 'border-[var(--hot)] bg-[var(--hot)]/10'
                   : 'border-white/10 bg-white/5 hover:border-white/20'
               }`}
             >
@@ -292,14 +290,14 @@ export default function FontModal({ isOpen, onClose }: Props) {
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <div className="w-12 h-12 bg-amber-400/10 text-amber-400 border border-amber-400/30 flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 bg-[var(--hot)]/10 text-[var(--hot)] border border-[var(--hot)]/30 flex items-center justify-center mx-auto mb-3">
                 
               </div>
               <h3 className="text-lg font-bold text-slate-100 mb-1">
                 Upload your font file
               </h3>
               <p className="text-sm text-slate-400 mb-3">
-                Drag and drop your <code className="text-amber-300 bg-white/10 px-1.5 py-0.5 text-xs">.ttf</code>, <code className="text-amber-300 bg-white/10 px-1.5 py-0.5 text-xs">.otf</code>, <code className="text-amber-300 bg-white/10 px-1.5 py-0.5 text-xs">.woff</code>, or <code className="text-amber-300 bg-white/10 px-1.5 py-0.5 text-xs">.woff2</code> file here
+                Drag and drop your <code className="text-[var(--hot)] bg-white/10 px-1.5 py-0.5 text-xs">.ttf</code>, <code className="text-[var(--hot)] bg-white/10 px-1.5 py-0.5 text-xs">.otf</code>, <code className="text-[var(--hot)] bg-white/10 px-1.5 py-0.5 text-xs">.woff</code>, or <code className="text-[var(--hot)] bg-white/10 px-1.5 py-0.5 text-xs">.woff2</code> file here
               </p>
               <span className="inline-block px-4 py-2 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-semibold border border-white/10 transition-colors">
                 Browse File
@@ -354,7 +352,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
                       applyUploadedFontFile(uploadedInfo.fileName, uploadedInfo.dataUrl);
                       setActiveSource('upload');
                     }}
-                    className="mt-3 w-full py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm transition-colors"
+                    className="mt-3 w-full py-2 bg-[var(--hot)] hover:bg-[var(--hot)]/80 text-slate-950 font-bold text-sm transition-colors"
                   >
                     Use This Uploaded Font
                   </button>

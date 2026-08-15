@@ -38,7 +38,7 @@ export default function BgColorModal({ isOpen, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-3xl bg-background border border-white/10 p-6 sm:p-8 shadow-2xl relative max-h-[85vh] flex flex-col">
+      <div className="w-full max-w-3xl bg-background border border-[var(--hot)] rounded-2xl p-6 md:p-8 shadow-[0_0_40px_var(--color-hot-soft)] relative max-h-[85vh] flex flex-col">
         <button
           onClick={handleClose}
           className="absolute top-4 right-4 text-white hover:text-slate-200 transition-colors p-2 text-xl font-bold exclude-theme"
@@ -47,9 +47,7 @@ export default function BgColorModal({ isOpen, onClose }: Props) {
         </button>
 
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400">
-            
-          </div>
+          
           <div>
             <h2 className="text-xl font-display uppercase tracking-widest text-slate-100 mb-1">Background Color</h2>
             <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-6">Personalize your app's background.</p>
@@ -62,7 +60,7 @@ export default function BgColorModal({ isOpen, onClose }: Props) {
             onClick={() => setActiveTab('solid')}
             className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 transition-all exclude-theme ${
               activeTab === 'solid'
-                ? 'bg-amber-400 text-slate-950 shadow-md'
+                ? 'bg-[var(--hot)] text-[var(--background)] shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -72,7 +70,7 @@ export default function BgColorModal({ isOpen, onClose }: Props) {
             onClick={() => setActiveTab('gradient')}
             className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 transition-all exclude-theme ${
               activeTab === 'gradient'
-                ? 'bg-amber-400 text-slate-950 shadow-md'
+                ? 'bg-[var(--hot)] text-[var(--background)] shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -108,7 +106,7 @@ export default function BgColorModal({ isOpen, onClose }: Props) {
                     if (!val.startsWith('#') && val.length > 0) val = '#' + val;
                     handleSelectColor({ name: 'Custom', value: val, isGradient: false });
                   }}
-                  className="font-mono text-xl text-slate-100 bg-white/5 border border-white/10 px-3 py-2 rounded-md w-32 text-center exclude-theme focus:border-amber-400 focus:outline-none transition-colors shadow-inner"
+                  className="font-mono text-xl text-slate-100 bg-white/5 border border-white/10 px-3 py-2 rounded-md w-32 text-center exclude-theme focus:border-[var(--hot)] focus:outline-none transition-colors shadow-inner"
                   maxLength={7}
                   spellCheck={false}
                 />
