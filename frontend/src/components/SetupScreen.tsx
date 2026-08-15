@@ -963,7 +963,6 @@ export default function SetupScreen({
                         <input type="text" value={sentenceTheme} onChange={(e) => setSentenceTheme(e.target.value)} disabled={!apiKey} placeholder={apiKey ? "e.g., rick and morty" : ""} className="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded focus:border-[var(--hot)] focus:outline-none text-lg font-mono text-white caret-[var(--hot)] disabled:opacity-50 disabled:cursor-not-allowed" />
                       </div>
                     </div>
-                    </div>
                   </div>
                 </section>
               </div>
