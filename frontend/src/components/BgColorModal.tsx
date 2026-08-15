@@ -38,7 +38,7 @@ export default function BgColorModal({ isOpen, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-3xl bg-[#161922] border border-slate-700/60 p-6 sm:p-8 shadow-2xl relative max-h-[85vh] flex flex-col">
+      <div className="w-full max-w-3xl bg-background border border-slate-700/60 p-6 sm:p-8 shadow-2xl relative max-h-[85vh] flex flex-col">
         <button
           onClick={handleClose}
           className="absolute top-4 right-4 text-white hover:text-slate-200 transition-colors p-2 text-xl font-bold exclude-theme"

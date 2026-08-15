@@ -100,7 +100,7 @@ export default function BorderModal({ isOpen, onClose }: BorderModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-2xl bg-[#0b0e1a] border border-[var(--hot)] rounded-2xl p-6 md:p-8 shadow-[0_0_40px_var(--color-hot-soft)] flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-2xl bg-background border border-[var(--hot)] rounded-2xl p-6 md:p-8 shadow-[0_0_40px_var(--color-hot-soft)] flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         <button 
