@@ -53,56 +53,41 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
-  const [scrollOffset, setScrollOffset] = useState(0);
 
-  useEffect(() => {
-    if (letterRefs.current[typed.length]) {
-      const el = document.getElementById('current-word');
-      if (!el) return;
-      if (typed.length < currentWord.length) {
-        setCaretLeft(el.offsetLeft);
-        setCaretTop(el.offsetTop + el.offsetHeight / 2);
-      }
-    } else if (typed.length > 0 && letterRefs.current[typed.length - 1]) {
-      const el = letterRefs.current[typed.length - 1];
-      if (!el) return;
-      setCaretLeft(el.offsetLeft + el.offsetWidth);
-      setCaretTop(el.offsetTop + el.offsetHeight / 2);
-    } else {
-      setCaretLeft(0);
-      setCaretTop(0);
-    }
-  }, [typed, currentWord]);
+  const [scrollLines, setScrollLines] = useState(0);
 
   const updateCaretPosition = useCallback(() => {
-    let activeTop = 0;
-    let activeHeight = 0;
+    const targetIndex = Math.min(Math.max(0, typed.length), currentWord.length - 1);
+    
+    // Compute line index accurately by tracking offsetTop changes
+    let currentLine = 0;
+    let lastTop = letterRefs.current[0]?.offsetTop || 0;
+    for (let i = 1; i <= targetIndex; i++) {
+      const el = letterRefs.current[i];
+      if (el && el.offsetTop > lastTop + 10) { // +10 threshold to ignore sub-pixel rounding
+        currentLine++;
+        lastTop = el.offsetTop;
+      }
+    }
+
+    if (currentLine >= 1) {
+      setScrollLines(currentLine - 1);
+    } else {
+      setScrollLines(0);
+    }
 
     if (typed.length === 0) {
       const firstEl = letterRefs.current[0];
       if (firstEl) {
         setCaretLeft(firstEl.offsetLeft);
         setCaretTop(firstEl.offsetTop + firstEl.offsetHeight / 2);
-        activeTop = firstEl.offsetTop;
-        activeHeight = firstEl.offsetHeight;
       }
     } else {
-      const targetIndex = Math.min(typed.length - 1, currentWord.length - 1);
-      const targetEl = letterRefs.current[targetIndex];
+      const elIndex = Math.min(typed.length - 1, currentWord.length - 1);
+      const targetEl = letterRefs.current[elIndex];
       if (targetEl) {
         setCaretLeft(targetEl.offsetLeft + targetEl.offsetWidth);
         setCaretTop(targetEl.offsetTop + targetEl.offsetHeight / 2);
-        activeTop = targetEl.offsetTop;
-        activeHeight = targetEl.offsetHeight;
-      }
-    }
-
-    if (activeHeight > 0) {
-      const lineIndex = Math.round(activeTop / activeHeight);
-      if (lineIndex >= 2) {
-        setScrollOffset((lineIndex - 1) * activeHeight);
-      } else {
-        setScrollOffset(0);
       }
     }
   }, [typed, currentWord]);
@@ -275,7 +260,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
             <div 
               className="transition-transform duration-200 ease-out relative"
               style={{
-                transform: `translateY(-${scrollOffset}px)`,
+                transform: `translateY(calc(-${scrollLines} * 1.6em))`,
                 whiteSpace: 'pre-wrap'
               }}
             >
