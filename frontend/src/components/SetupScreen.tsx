@@ -550,27 +550,19 @@ export default function SetupScreen({
     return (
       <section className="pt-2">
         {setLimitMode && (
-          <div className="flex bg-[#11131a] p-1 rounded-xl border border-slate-800 shrink-0 w-64 mx-auto mb-6">
+          <div className="flex items-center justify-center gap-6 mb-6">
+            <span className={`text-sm font-mono tracking-widest uppercase transition-colors ${limitMode === 'time' ? 'text-[var(--hot)] drop-shadow-[0_0_8px_var(--color-hot-soft)]' : 'text-slate-500'}`}>Time Limit</span>
             <button
-              onClick={() => setLimitMode('time')}
-              className={`flex-1 py-1.5 text-xs font-semibold flex items-center justify-center gap-2 rounded-lg transition-all exclude-theme ${
-                limitMode === 'time'
-                  ? 'bg-[var(--hot)] text-[var(--background)] shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+              onClick={() => setLimitMode(limitMode === 'time' ? 'words' : 'time')}
+              className={`w-14 h-7 rounded-full relative transition-all duration-300 flex-shrink-0 bg-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] border border-slate-700/50`}
             >
-              Time Limit
+              <div
+                className={`w-5 h-5 rounded-full bg-white absolute top-1 shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                  limitMode === 'words' ? 'translate-x-[30px]' : 'translate-x-1'
+                }`}
+              />
             </button>
-            <button
-              onClick={() => setLimitMode('words')}
-              className={`flex-1 py-1.5 text-xs font-semibold flex items-center justify-center gap-2 rounded-lg transition-all exclude-theme ${
-                limitMode === 'words'
-                  ? 'bg-[var(--hot)] text-[var(--background)] shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Word Limit
-            </button>
+            <span className={`text-sm font-mono tracking-widest uppercase transition-colors ${limitMode === 'words' ? 'text-[var(--hot)] drop-shadow-[0_0_8px_var(--color-hot-soft)]' : 'text-slate-500'}`}>Word Limit</span>
           </div>
         )}
         <ClockTimeSelector 
