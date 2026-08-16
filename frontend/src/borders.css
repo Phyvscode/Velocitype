@@ -144,7 +144,7 @@
 }
 .portal-b11 .lid {
   position: absolute; left: -4px; right: -4px; height: 60%;
-  background: linear-gradient(var(--background), color-mix(in srgb, var(--hot) 8%, #05060d)); z-index: 3;
+  background: var(--hot); z-index: 3;
 }
 .portal-b11 .lid-top {
   top: -6px; transform-origin: top; border-bottom: 1px solid var(--hot);
@@ -167,7 +167,7 @@
   transition: transform .55s cubic-bezier(.34,1.56,.64,1) .05s, border-radius .55s ease .05s;
 }
 .portal-b11 .lash {
-  position: absolute; bottom: 3px; width: 2px; height: 11px; background: color-mix(in srgb, var(--hot) 12%, #05060d);
+  position: absolute; bottom: 3px; width: 2px; height: 11px; background: var(--background);
   border-radius: 2px; transform-origin: bottom center;
 }
 .portal-b11 .lash.l1 { right: 22px; transform: rotate(-28deg); }
