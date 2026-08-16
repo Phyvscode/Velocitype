@@ -113,36 +113,61 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
     onFinish(completedRef.current, elapsed);
   }, [onFinish, config, duration]);
 
+  const startTimeRef = useRef<number | null>(null);
+
   // Timer starts on first keystroke.
   useEffect(() => {
     if (!started) return;
+    startTimeRef.current = performance.now();
+    let animFrameId: number;
     const isWordsMode = (config as any).limitMode === 'words';
-    const id = setInterval(() => {
-      setTimeLeft((t) => {
-        if (!isWordsMode && t <= 1) {
-          clearInterval(id);
-          finish();
-          return 0;
+    
+    const update = () => {
+      if (finishedRef.current) return;
+      const now = performance.now();
+      const elapsedMs = now - (startTimeRef.current || now);
+      const elapsedSec = elapsedMs / 1000;
+      
+      let newT = 0;
+      let shouldFinish = false;
+      
+      if (isWordsMode) {
+        newT = elapsedSec;
+      } else {
+        newT = Math.max(0, duration - elapsedSec);
+        if (newT <= 0) {
+          shouldFinish = true;
+          newT = 0;
         }
-        
-        const newT = isWordsMode ? t + 1 : t - 1;
-        timeLeftRef.current = newT;
-        
-        // Calculate WPM
-        const timeElapsed = isWordsMode ? newT : duration - newT;
-        const correctWords = completedRef.current.filter(w => w.correct).length;
-        const currentWpm = timeElapsed > 0 ? (correctWords / timeElapsed) * 60 : 0;
-        
-        if (onProgress) {
+      }
+      
+      timeLeftRef.current = newT;
+      setTimeLeft(newT);
+      
+      // Calculate WPM
+      const timeElapsed = isWordsMode ? newT : duration - newT;
+      const correctWords = completedRef.current.filter(w => w.correct).length;
+      const currentWpm = timeElapsed > 0 ? (correctWords / timeElapsed) * 60 : 0;
+      
+      if (onProgress) {
+        const lastProg = (startTimeRef as any).lastProgressTime || 0;
+        if (now - lastProg >= 1000) {
+          (startTimeRef as any).lastProgressTime = now;
           const limit = (config as any).limitValue || 20;
           const progressPct = isWordsMode ? (completedRef.current.length / limit) * 100 : (timeElapsed / duration) * 100;
           onProgress(progressPct, currentWpm);
         }
-        
-        return newT;
-      });
-    }, 1000);
-    return () => clearInterval(id);
+      }
+      
+      if (shouldFinish) {
+        finish();
+      } else {
+        animFrameId = requestAnimationFrame(update);
+      }
+    };
+    
+    animFrameId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(animFrameId);
   }, [started, finish, duration, onProgress, config]);
 
   // Focus input on mount.
@@ -335,7 +360,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
           <LiveKeyboard activeKeys={activeKeys} />
         </div>
         <div className="flex flex-col items-center gap-2 flex-none translate-y-[40px] ml-auto translate-x-24">
-          <span className={`text-2xl font-bold tabular-nums font-mono tracking-widest ${!(config as any).limitMode || (config as any).limitMode === 'time' ? (timeLeft <= 5 ? 'text-rose-400' : 'text-[var(--hot)]') : 'text-[var(--hot)]'}`}>{timeLeft}s</span>
+          <span className={`text-2xl font-bold tabular-nums font-mono tracking-widest ${!(config as any).limitMode || (config as any).limitMode === 'time' ? (timeLeft <= 5 ? 'text-rose-400' : 'text-[var(--hot)]') : 'text-[var(--hot)]'}`}>{timeLeft.toFixed(2)}s</span>
           <HourglassAnimation 
             durationVal={(config as any).limitMode === 'words' ? ((config as any).limitValue || 20) : config.duration} 
             timeLeft={(config as any).limitMode === 'words' ? Math.max(0, ((config as any).limitValue || 20) - completedRef.current.length) : timeLeft} 
