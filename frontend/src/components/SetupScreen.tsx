@@ -15,11 +15,13 @@ import PortalBorderOverlay from './PortalBorderOverlay';
 
 export interface GameConfig {
   rows: RowKey[];
-  duration: number;
+  duration: number; // Keep for backwards compatibility
   minLen: number;
   maxLen: number;
   customSentences?: string[];
   useVirtualKeyboard?: boolean;
+  limitMode?: 'time' | 'words';
+  limitValue?: number;
 }
 
 interface Props {
@@ -363,15 +365,20 @@ export default function SetupScreen({
   const [durationWords, setDurationWords] = useState<string>('30');
   const [showCustomWords, setShowCustomWords] = useState<boolean>(false);
   const durWords = Math.max(1, Math.min(3600, parseInt(durationWords, 10) || 0));
+  const [limitModeWords, setLimitModeWords] = useState<'time' | 'words'>('time');
+  const [wordLimitWords, setWordLimitWords] = useState<string>('20');
 
   const [durationFile, setDurationFile] = useState<string>('30');
   const [showCustomFile, setShowCustomFile] = useState<boolean>(false);
   const durFile = Math.max(1, Math.min(3600, parseInt(durationFile, 10) || 0));
 
   const [fileSequential, setFileSequential] = useState<boolean>(false);
-  const [durationSentences, setDurationSentences] = useState<number>(30);
+  const [durationSentences, setDurationSentences] = useState<string>('30');
   const [showCustomSentences, setShowCustomSentences] = useState<boolean>(false);
   const durSentences = Math.max(1, Math.min(3600, parseInt(durationSentences, 10) || 0));
+  const [limitModeSentences, setLimitModeSentences] = useState<'time' | 'words'>('time');
+  const [wordLimitSentences, setWordLimitSentences] = useState<string>('10');
+  
   const [minLen, setMinLen] = useState<number | string>(2);
   const [maxLen, setMaxLen] = useState<number | string>(8);
   const [error, setError] = useState<string>('');
@@ -515,6 +522,8 @@ export default function SetupScreen({
         mode: 'random-sentences',
         customSentences: genSentences,
         duration: durSentences,
+        limitMode: limitModeSentences,
+        limitValue: limitModeSentences === 'words' ? parseInt(wordLimitSentences, 10) || 10 : undefined,
         useVirtualKeyboard
       } as any);
     } catch (err: any) {
@@ -530,14 +539,64 @@ export default function SetupScreen({
     setDurationInput: (v: string) => void,
     showCustom: boolean,
     setShowCustom: (v: boolean) => void,
-    durationVal: number
+    durationVal: number,
+    limitMode?: 'time' | 'words',
+    setLimitMode?: (m: 'time' | 'words') => void,
+    wordLimitInput?: string,
+    setWordLimitInput?: (v: string) => void
   ) => {
     return (
       <section className="pt-2">
-        <ClockTimeSelector 
-          durationVal={durationVal} 
-          setDurationInput={setDurationInput} 
-        />
+        {setLimitMode && (
+          <div className="flex bg-[#11131a] p-1 rounded-xl border border-slate-800 shrink-0 w-64 mx-auto mb-6">
+            <button
+              onClick={() => setLimitMode('time')}
+              className={`flex-1 py-1.5 text-xs font-semibold flex items-center justify-center gap-2 rounded-lg transition-all exclude-theme ${
+                limitMode === 'time'
+                  ? 'bg-[var(--hot)] text-[var(--background)] shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Time Limit
+            </button>
+            <button
+              onClick={() => setLimitMode('words')}
+              className={`flex-1 py-1.5 text-xs font-semibold flex items-center justify-center gap-2 rounded-lg transition-all exclude-theme ${
+                limitMode === 'words'
+                  ? 'bg-[var(--hot)] text-[var(--background)] shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Word Limit
+            </button>
+          </div>
+        )}
+        {limitMode === 'words' ? (
+          <div className="flex flex-col items-center gap-2 pt-4 pb-4">
+            <label className="text-sm font-mono text-slate-500 uppercase tracking-widest">
+              Number of Words
+            </label>
+            <div className="relative group mt-2">
+              <input 
+                type="number"
+                min="1"
+                max="1000"
+                value={wordLimitInput || ''}
+                onChange={(e) => setWordLimitInput?.(e.target.value)}
+                className="w-48 bg-[#0c0a1f] border-2 border-[var(--hot)] rounded-xl py-3 px-4 text-[var(--hot)] font-mono text-2xl font-bold focus:outline-none focus:ring-4 focus:ring-[var(--hot)]/20 transition-all text-center"
+                placeholder="20"
+              />
+            </div>
+            <p className="text-xs text-slate-500 mt-2 max-w-[12rem] text-center">
+              Type the number of words to type.
+            </p>
+          </div>
+        ) : (
+          <ClockTimeSelector 
+            durationVal={durationVal} 
+            setDurationInput={setDurationInput} 
+          />
+        )}
       </section>
     );
   };
@@ -570,6 +629,8 @@ export default function SetupScreen({
         mode: 'words',
         rows,
         duration: durWords,
+        limitMode: limitModeWords,
+        limitValue: limitModeWords === 'words' ? parseInt(wordLimitWords, 10) || 20 : undefined,
         minLen: minL,
         maxLen: maxL,
         useVirtualKeyboard
@@ -1049,9 +1110,9 @@ export default function SetupScreen({
           </div>
           {['words', 'file', 'random-sentences'].includes(activeMode || '') && (
             <div className="sticky top-20 self-start flex flex-col items-center gap-4">
-              {activeMode === 'words' && renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords)}
+              {activeMode === 'words' && renderDurationSelector(2, durationWords, setDurationWords, showCustomWords, setShowCustomWords, durWords, limitModeWords, setLimitModeWords, wordLimitWords, setWordLimitWords)}
               {activeMode === 'file' && renderDurationSelector(3, durationFile, setDurationFile, showCustomFile, setShowCustomFile, durFile)}
-              {activeMode === 'random-sentences' && renderDurationSelector(2, durationSentences, setDurationSentences, showCustomSentences, setShowCustomSentences, durSentences)}
+              {activeMode === 'random-sentences' && renderDurationSelector(2, durationSentences, setDurationSentences, showCustomSentences, setShowCustomSentences, durSentences, limitModeSentences, setLimitModeSentences, wordLimitSentences, setWordLimitSentences)}
               
               {/* Start Typing — mirrors PortalButton exactly */}
               <div className={`flex flex-col items-center gap-6 relative group ${(activeMode === 'file' && (!parsedDoc || isParsing)) || (activeMode === 'random-sentences' && isLoadingQuotes) ? 'opacity-50 pointer-events-none' : ''}`} style={{ perspective: '1500px' }}>

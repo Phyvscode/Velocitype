@@ -39,7 +39,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   const queueRef = useRef<string[]>((config as any).sequential ? [...pool] : shuffle(pool));
   const [currentWord, setCurrentWord] = useState<string>(() => queueRef.current[0] ?? '');
 
-  const [timeLeft, setTimeLeft] = useState<number>(duration);
+  const [timeLeft, setTimeLeft] = useState<number>(() => (config as any).limitMode === 'words' ? 0 : duration);
   const [typed, setTyped] = useState<string>('');
   const [, setCompleted] = useState<TypedWord[]>([]);
   const [started, setStarted] = useState<boolean>(false);
@@ -113,28 +113,33 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   // Timer starts on first keystroke.
   useEffect(() => {
     if (!started) return;
+    const isWordsMode = (config as any).limitMode === 'words';
     const id = setInterval(() => {
       setTimeLeft((t) => {
-        if (t <= 1) {
+        if (!isWordsMode && t <= 1) {
           clearInterval(id);
           finish();
           return 0;
         }
         
+        const newT = isWordsMode ? t + 1 : t - 1;
+        
         // Calculate WPM
-        const timeElapsed = duration - (t - 1);
+        const timeElapsed = isWordsMode ? newT : duration - newT;
         const correctWords = completedRef.current.filter(w => w.correct).length;
         const currentWpm = timeElapsed > 0 ? (correctWords / timeElapsed) * 60 : 0;
         
         if (onProgress) {
-          onProgress((timeElapsed / duration) * 100, currentWpm);
+          const limit = (config as any).limitValue || 20;
+          const progressPct = isWordsMode ? (completedRef.current.length / limit) * 100 : (timeElapsed / duration) * 100;
+          onProgress(progressPct, currentWpm);
         }
         
-        return t - 1;
+        return newT;
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [started, finish, duration, onProgress]);
+  }, [started, finish, duration, onProgress, config]);
 
   // Focus input on mount.
   useEffect(() => {
@@ -149,10 +154,17 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       const word = value.slice(0, currentWord.length);
       const isCorrect = word === currentWord && value.length >= currentWord.length;
       const entry: TypedWord = { word: currentWord, correct: isCorrect };
-      completedRef.current = [...completedRef.current, entry];
-      setCompleted((prev) => [...prev, entry]);
+      const newCompleted = [...completedRef.current, entry];
+      completedRef.current = newCompleted;
+      setCompleted(newCompleted);
       setFlash(isCorrect ? 'correct' : 'wrong');
       setTimeout(() => setFlash('none'), 200);
+
+      if ((config as any).limitMode === 'words' && newCompleted.length >= ((config as any).limitValue || 20)) {
+        finish();
+        return;
+      }
+
       nextWord();
       setTyped('');
     },
@@ -318,8 +330,12 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
           <LiveKeyboard activeKeys={activeKeys} />
         </div>
         <div className="flex flex-col items-center gap-2 flex-none translate-y-[40px] ml-auto translate-x-24">
-          <span className={`text-2xl font-bold tabular-nums font-mono tracking-widest ${timeLeft <= 5 ? 'text-rose-400' : 'text-[var(--hot)]'}`}>{timeLeft}s</span>
-          <HourglassAnimation durationVal={config.duration} timeLeft={timeLeft} isTyping={started} />
+          <span className={`text-2xl font-bold tabular-nums font-mono tracking-widest ${!(config as any).limitMode || (config as any).limitMode === 'time' ? (timeLeft <= 5 ? 'text-rose-400' : 'text-[var(--hot)]') : 'text-[var(--hot)]'}`}>{timeLeft}s</span>
+          <HourglassAnimation 
+            durationVal={(config as any).limitMode === 'words' ? ((config as any).limitValue || 20) : config.duration} 
+            timeLeft={(config as any).limitMode === 'words' ? Math.max(0, ((config as any).limitValue || 20) - completedRef.current.length) : timeLeft} 
+            isTyping={started} 
+          />
         </div>
       </footer>
 
