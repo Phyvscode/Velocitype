@@ -14,7 +14,7 @@ export interface TypedWord {
 
 interface Props {
   config: GameConfig;
-  onFinish: (typed: TypedWord[]) => void;
+  onFinish: (typed: TypedWord[], finalTimeElapsed?: number) => void;
   onQuit: () => void;
   onProgress?: (progress: number, wpm: number) => void;
   hideHeader?: boolean;
@@ -40,6 +40,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   const [currentWord, setCurrentWord] = useState<string>(() => queueRef.current[0] ?? '');
 
   const [timeLeft, setTimeLeft] = useState<number>(() => (config as any).limitMode === 'words' ? 0 : duration);
+  const timeLeftRef = useRef<number>((config as any).limitMode === 'words' ? 0 : duration);
   const [typed, setTyped] = useState<string>('');
   const [, setCompleted] = useState<TypedWord[]>([]);
   const [started, setStarted] = useState<boolean>(false);
@@ -107,8 +108,10 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   const finish = useCallback(() => {
     if (finishedRef.current) return;
     finishedRef.current = true;
-    onFinish(completedRef.current);
-  }, [onFinish]);
+    const isWordsMode = (config as any).limitMode === 'words';
+    const elapsed = isWordsMode ? timeLeftRef.current : duration - timeLeftRef.current;
+    onFinish(completedRef.current, elapsed);
+  }, [onFinish, config, duration]);
 
   // Timer starts on first keystroke.
   useEffect(() => {
@@ -123,6 +126,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
         }
         
         const newT = isWordsMode ? t + 1 : t - 1;
+        timeLeftRef.current = newT;
         
         // Calculate WPM
         const timeElapsed = isWordsMode ? newT : duration - newT;
@@ -160,7 +164,8 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       setFlash(isCorrect ? 'correct' : 'wrong');
       setTimeout(() => setFlash('none'), 200);
 
-      if ((config as any).limitMode === 'words' && newCompleted.length >= ((config as any).limitValue || 20)) {
+      const wordsTyped = newCompleted.reduce((acc, curr) => acc + curr.word.trim().split(/\s+/).length, 0);
+      if ((config as any).limitMode === 'words' && wordsTyped >= ((config as any).limitValue || 20)) {
         finish();
         return;
       }

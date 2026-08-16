@@ -571,32 +571,11 @@ export default function SetupScreen({
             </button>
           </div>
         )}
-        {limitMode === 'words' ? (
-          <div className="flex flex-col items-center gap-2 pt-4 pb-4">
-            <label className="text-sm font-mono text-slate-500 uppercase tracking-widest">
-              Number of Words
-            </label>
-            <div className="relative group mt-2">
-              <input 
-                type="number"
-                min="1"
-                max="1000"
-                value={wordLimitInput || ''}
-                onChange={(e) => setWordLimitInput?.(e.target.value)}
-                className="w-48 bg-[#0c0a1f] border-2 border-[var(--hot)] rounded-xl py-3 px-4 text-[var(--hot)] font-mono text-2xl font-bold focus:outline-none focus:ring-4 focus:ring-[var(--hot)]/20 transition-all text-center"
-                placeholder="20"
-              />
-            </div>
-            <p className="text-xs text-slate-500 mt-2 max-w-[12rem] text-center">
-              Type the number of words to type.
-            </p>
-          </div>
-        ) : (
-          <ClockTimeSelector 
-            durationVal={durationVal} 
-            setDurationInput={setDurationInput} 
-          />
-        )}
+        <ClockTimeSelector 
+          durationVal={limitMode === 'words' ? (parseInt(wordLimitInput || '20', 10) || 20) : durationVal} 
+          setDurationInput={limitMode === 'words' && setWordLimitInput ? setWordLimitInput : setDurationInput}
+          mode={limitMode || 'time'}
+        />
       </section>
     );
   };

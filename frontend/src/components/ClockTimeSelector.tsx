@@ -4,6 +4,7 @@ const cn = (...classes: (string | undefined | null | false)[]) => classes.filter
 interface Props {
   durationVal: number;
   setDurationInput: (val: string) => void;
+  mode?: 'time' | 'words';
 }
 
 export const HOURS = [
@@ -35,9 +36,9 @@ export function getAngleFromDuration(dur: number) {
   return 0;
 }
 
-export default function ClockTimeSelector({ durationVal, setDurationInput }: Props) {
+export default function ClockTimeSelector({ durationVal, setDurationInput, mode = 'time' }: Props) {
   return (
-    <div className="flex flex-row items-center pt-4 pb-4 gap-12">
+    <div className={`flex flex-row items-center pt-4 pb-4 gap-12 ${mode === 'words' ? 'justify-center' : ''}`}>
       <style>{`
         .hg-scene {
           position: relative;
@@ -127,45 +128,47 @@ export default function ClockTimeSelector({ durationVal, setDurationInput }: Pro
         }
       `}</style>
 
-      <div className="flex-shrink-0 hg-scene" style={{ viewTransitionName: 'hourglass-clock' }}>
-        <div className="hg-clock">
-          <div className="hg-face-content">
-            <div className="hg-face"></div>
-            <div className="hg-ticks-container">
-              {HOURS.map((_h, i) => (
-                <div key={i} className="hg-tick-wrap" style={{ transform: `rotate(${i * 30}deg)` }}>
-                  <div className="hg-tick-line"></div>
-                </div>
-              ))}
+      {mode !== 'words' && (
+        <div className="flex-shrink-0 hg-scene" style={{ viewTransitionName: 'hourglass-clock' }}>
+          <div className="hg-clock">
+            <div className="hg-face-content">
+              <div className="hg-face"></div>
+              <div className="hg-ticks-container">
+                {HOURS.map((_h, i) => (
+                  <div key={i} className="hg-tick-wrap" style={{ transform: `rotate(${i * 30}deg)` }}>
+                    <div className="hg-tick-line"></div>
+                  </div>
+                ))}
+              </div>
+              <div
+                className="hg-minute-hand"
+              ></div>
+              <div className="hg-pivot"></div>
             </div>
-            <div
-              className="hg-minute-hand"
-            ></div>
-            <div className="hg-pivot"></div>
           </div>
         </div>
-      </div>
+      )}
       
       <div className="flex flex-col gap-2">
         <label className="text-sm font-mono text-slate-500 uppercase tracking-widest">
-          Time Limit (seconds)
+          {mode === 'words' ? 'Number of Words' : 'Time Limit (seconds)'}
         </label>
         <div className="relative group">
           <input 
             type="number"
-            min="10"
-            max="3600"
+            min={mode === 'words' ? "1" : "10"}
+            max={mode === 'words' ? "1000" : "3600"}
             value={durationVal || ''}
             onChange={(e) => setDurationInput(e.target.value)}
             className="w-48 bg-[#0c0a1f] border-2 border-[var(--hot)] rounded-xl py-3 px-4 text-[var(--hot)] font-mono text-2xl font-bold focus:outline-none focus:ring-4 focus:ring-[var(--hot)]/20 transition-all text-center"
-            placeholder="60"
+            placeholder={mode === 'words' ? "20" : "60"}
           />
           <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--hot)]/50 font-mono text-xl font-bold pointer-events-none">
-            s
+            {mode === 'words' ? 'w' : 's'}
           </div>
         </div>
         <p className="text-xs text-slate-500 mt-2 max-w-[12rem] text-center">
-          Type a custom time limit in seconds.
+          {mode === 'words' ? 'Type the number of words to type.' : 'Type a custom time limit in seconds.'}
         </p>
       </div>
     </div>
