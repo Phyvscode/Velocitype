@@ -517,7 +517,9 @@ export default function SetupScreen({
     setIsLoadingQuotes(true);
     setQuoteError('');
     try {
-      const genSentences = await generateSentences(apiKey, rows, 100, 100, 20, sentenceTheme);
+      const minL = Math.max(2, Math.min(45, parseInt(String(minLen), 10) || 10));
+      const maxL = Math.max(minL, Math.min(45, parseInt(String(maxLen), 10) || 27));
+      const genSentences = await generateSentences(apiKey, rows, minL, maxL, 20, sentenceTheme);
       onStart({
         mode: 'random-sentences',
         customSentences: genSentences,
@@ -1075,6 +1077,24 @@ export default function SetupScreen({
                         <input type="text" value={sentenceTheme} onChange={(e) => setSentenceTheme(e.target.value)} disabled={!apiKey} placeholder={apiKey ? "e.g., rick and morty" : ""} className="w-full px-4 py-3 bg-slate-900/50 border border-[var(--hot)] rounded focus:outline-none focus:ring-1 focus:ring-[var(--hot)] text-lg font-mono text-white caret-[var(--hot)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors" />
                       </div>
                     </div>
+                  </div>
+                </section>
+                <section>
+                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-6">3. Set word length</h2>
+                  <div className="flex items-center gap-10">
+                    {/* Min Letters Spinner */}
+                    {renderSpinner('Min', minLen, 
+                      () => setMinLen(v => { const c = parseInt(String(v), 10) || 2; const m = parseInt(String(maxLen), 10) || 45; return Math.min(45, Math.min(m, c + 1)); }),
+                      () => setMinLen(v => { const c = parseInt(String(v), 10) || 2; return Math.max(2, c - 1); })
+                    )}
+
+                    <div className="w-px h-20 bg-slate-800 self-center" />
+
+                    {/* Max Letters Spinner */}
+                    {renderSpinner('Max', maxLen, 
+                      () => setMaxLen(v => { const c = parseInt(String(v), 10) || 15; return Math.min(45, c + 1); }),
+                      () => setMaxLen(v => { const c = parseInt(String(v), 10) || 15; const min = parseInt(String(minLen), 10) || 2; return Math.max(min, c - 1); })
+                    )}
                   </div>
                 </section>
               </div>
