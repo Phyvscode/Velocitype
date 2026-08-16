@@ -128,26 +128,24 @@ export default function ClockTimeSelector({ durationVal, setDurationInput, mode 
         }
       `}</style>
 
-      {mode !== 'words' && (
-        <div className="flex-shrink-0 hg-scene" style={{ viewTransitionName: 'hourglass-clock' }}>
-          <div className="hg-clock">
-            <div className="hg-face-content">
-              <div className="hg-face"></div>
-              <div className="hg-ticks-container">
-                {HOURS.map((_h, i) => (
-                  <div key={i} className="hg-tick-wrap" style={{ transform: `rotate(${i * 30}deg)` }}>
-                    <div className="hg-tick-line"></div>
-                  </div>
-                ))}
-              </div>
-              <div
-                className="hg-minute-hand"
-              ></div>
-              <div className="hg-pivot"></div>
+      <div className="flex-shrink-0 hg-scene" style={{ viewTransitionName: 'hourglass-clock' }}>
+        <div className="hg-clock">
+          <div className="hg-face-content">
+            <div className="hg-face"></div>
+            <div className="hg-ticks-container">
+              {HOURS.map((_h, i) => (
+                <div key={i} className="hg-tick-wrap" style={{ transform: `rotate(${i * 30}deg)` }}>
+                  <div className="hg-tick-line"></div>
+                </div>
+              ))}
             </div>
+            <div
+              className="hg-minute-hand"
+            ></div>
+            <div className="hg-pivot"></div>
           </div>
         </div>
-      )}
+      </div>
       
       <div className="flex flex-col gap-2">
         <label className="text-sm font-mono text-slate-500 uppercase tracking-widest">

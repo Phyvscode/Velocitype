@@ -37,7 +37,16 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   // A shuffled queue of all pool words; when exhausted, reshuffle for a fresh cycle.
   // If sequential is true (for file mode), we just use the sentences in their original order.
   const queueRef = useRef<string[]>((config as any).sequential ? [...pool] : shuffle(pool));
-  const [currentWord, setCurrentWord] = useState<string>(() => queueRef.current[0] ?? '');
+  const [currentWord, setCurrentWord] = useState<string>(() => {
+    let nextStr = queueRef.current[0] ?? '';
+    if ((config as any).limitMode === 'words' && (config as any).limitValue) {
+      const words = nextStr.trim().split(/\s+/);
+      if (words.length > (config as any).limitValue) {
+        nextStr = words.slice(0, (config as any).limitValue).join(' ');
+      }
+    }
+    return nextStr;
+  });
 
   const [timeLeft, setTimeLeft] = useState<number>(() => (config as any).limitMode === 'words' ? 0 : duration);
   const timeLeftRef = useRef<number>((config as any).limitMode === 'words' ? 0 : duration);
@@ -102,7 +111,18 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
     if (queueRef.current.length === 0) {
       queueRef.current = (config as any).sequential ? [...pool] : shuffle(pool);
     }
-    setCurrentWord(queueRef.current[0] ?? '');
+    let nextStr = queueRef.current[0] ?? '';
+    if ((config as any).limitMode === 'words' && (config as any).limitValue) {
+      const wordsTyped = completedRef.current.reduce((acc, curr) => acc + curr.word.trim().split(/\s+/).length, 0);
+      const remaining = (config as any).limitValue - wordsTyped;
+      if (remaining > 0) {
+        const words = nextStr.trim().split(/\s+/);
+        if (words.length > remaining) {
+          nextStr = words.slice(0, remaining).join(' ');
+        }
+      }
+    }
+    setCurrentWord(nextStr);
   }, [pool, config]);
 
   const finish = useCallback(() => {
