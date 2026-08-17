@@ -41,6 +41,8 @@ function App() {
     setScreenState(newScreen);
   };
 
+  const isQuittingRef = useRef(false);
+
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       const stateIdx = e.state?.idx ?? 0;
@@ -51,11 +53,16 @@ function App() {
       }
       
       if (screenRef.current === 'game' && stateIdx < historyIdxRef.current) {
-        // Trap them in the game on back navigation!
-        const nextIdx = historyIdxRef.current + 1;
-        window.history.pushState({ ...e.state, screen: 'game', idx: nextIdx }, '');
-        historyIdxRef.current = nextIdx;
-        return;
+        if (isQuittingRef.current) {
+          // Bypassing trap because we are intentionally popping the game state via Quit
+          isQuittingRef.current = false;
+        } else {
+          // Trap them in the game on actual back navigation!
+          const nextIdx = historyIdxRef.current + 1;
+          window.history.pushState({ ...e.state, screen: 'game', idx: nextIdx }, '');
+          historyIdxRef.current = nextIdx;
+          return;
+        }
       }
       
       historyIdxRef.current = stateIdx;
@@ -173,7 +180,12 @@ function App() {
   };
 
   const handleHome = () => {
-    navigate('setup');
+    if (screen === 'game') {
+      isQuittingRef.current = true;
+      window.history.back();
+    } else {
+      navigate('setup');
+    }
   };
 
   const [fontLoaded, setFontLoaded] = useState(false);
