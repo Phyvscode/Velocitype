@@ -882,14 +882,12 @@ export default function SetupScreen({
                             </div>
                             <button
                               onClick={() => toggleRow(r.key)}
-                              className={`w-12 h-6 rounded-full relative transition-all duration-300 flex-shrink-0 ${
-                                active ? 'bg-[var(--hot)] shadow-[0_0_15px_var(--color-hot-soft)]' : 'bg-slate-700 shadow-[0_0_10px_rgba(255,255,255,0.15)]'
-                              }`}
+                              className={`w-14 h-7 rounded-full relative transition-all duration-300 flex-shrink-0 bg-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] border border-slate-700/50`}
                             >
                               <div
-                                className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform duration-300 ${
-                                  active ? 'translate-x-[26px]' : 'translate-x-0.5'
-                                } shadow-sm`}
+                                className={`w-5 h-5 rounded-full bg-white absolute top-1 shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                                  active ? 'translate-x-[30px]' : 'translate-x-1'
+                                }`}
                               />
                             </button>
                           </div>
@@ -1040,14 +1038,12 @@ export default function SetupScreen({
                             </div>
                             <button
                               onClick={() => toggleRow(r.key)}
-                              className={`w-12 h-6 rounded-full relative transition-all duration-300 flex-shrink-0 ${
-                                active ? 'bg-[var(--hot)] shadow-[0_0_15px_var(--color-hot-soft)]' : 'bg-slate-700 shadow-[0_0_10px_rgba(255,255,255,0.15)]'
-                              }`}
+                              className={`w-14 h-7 rounded-full relative transition-all duration-300 flex-shrink-0 bg-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] border border-slate-700/50`}
                             >
                               <div
-                                className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform duration-300 ${
-                                  active ? 'translate-x-[26px]' : 'translate-x-0.5'
-                                } shadow-sm`}
+                                className={`w-5 h-5 rounded-full bg-white absolute top-1 shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                                  active ? 'translate-x-[30px]' : 'translate-x-1'
+                                }`}
                               />
                             </button>
                           </div>
