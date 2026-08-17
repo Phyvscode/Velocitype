@@ -29,12 +29,17 @@ function App() {
       : 0
   );
 
-  const [screen, setScreen] = useState<Screen>(() => {
+  const [screen, setScreenState] = useState<Screen>(() => {
     if (typeof window !== 'undefined' && window.history.state?.screen) {
       return window.history.state.screen as Screen;
     }
     return 'setup';
   });
+  const screenRef = useRef<Screen>(screen);
+  const setScreen = (newScreen: Screen) => {
+    screenRef.current = newScreen;
+    setScreenState(newScreen);
+  };
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
@@ -44,6 +49,15 @@ function App() {
         window.history.back();
         return;
       }
+      
+      if (screenRef.current === 'game' && stateIdx < historyIdxRef.current) {
+        // Trap them in the game on back navigation!
+        const nextIdx = historyIdxRef.current + 1;
+        window.history.pushState({ ...e.state, screen: 'game', idx: nextIdx }, '');
+        historyIdxRef.current = nextIdx;
+        return;
+      }
+      
       historyIdxRef.current = stateIdx;
 
       if (e.state && e.state.screen) {
