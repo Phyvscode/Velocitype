@@ -293,7 +293,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
         <div
           className={`relative w-full transition-colors duration-150 select-none font-mono tracking-wide ${
             (config as any).mode === 'file' || (config as any).mode === 'random-sentences'
-              ? 'max-w-5xl mx-auto text-left px-8 py-8 md:px-12 md:py-10 bg-[#15171e]/80 border border-slate-800/80 rounded-2xl shadow-xl'
+              ? 'max-w-5xl mx-auto text-left px-8 py-8 md:px-12 md:py-10 bg-[#15171e]/50 border border-slate-800/80 rounded-2xl shadow-xl translate-y-12'
               : 'max-w-7xl mx-auto text-center px-4 py-[clamp(10px,4vh,40px)]'
           } ${
             flash === 'correct'
@@ -377,12 +377,13 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
           <LiveKeyboard activeKeys={activeKeys} />
         </div>
         <div className="flex flex-col items-center gap-2 flex-none translate-y-[40px] ml-auto translate-x-24">
-          <span className={`text-2xl font-bold tabular-nums font-mono tracking-widest ${!(config as any).limitMode || (config as any).limitMode === 'time' ? (timeLeft <= 5 ? 'text-rose-400' : 'text-[var(--hot)]') : 'text-[var(--hot)]'}`}>{timeLeft.toFixed(2)}s</span>
           <HourglassAnimation 
             durationVal={(config as any).limitMode === 'words' ? ((config as any).limitValue || 20) : config.duration} 
             timeLeft={(config as any).limitMode === 'words' ? Math.max(0, ((config as any).limitValue || 20) - completedRef.current.length) : timeLeft} 
             isTyping={started} 
-          />
+          >
+            <span className={`text-3xl font-bold tabular-nums tracking-widest ${!(config as any).limitMode || (config as any).limitMode === 'time' ? (timeLeft <= 5 ? 'text-rose-400' : 'text-white') : 'text-white'}`}>{timeLeft.toFixed(2)}s</span>
+          </HourglassAnimation>
         </div>
       </footer>
 

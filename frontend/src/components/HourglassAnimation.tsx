@@ -5,11 +5,12 @@ interface Props {
   durationVal: number;
   timeLeft: number;
   isTyping?: boolean;
+  children?: React.ReactNode;
 }
 
 import { getAngleFromDuration, HOURS } from './ClockTimeSelector';
 
-export default function HourglassAnimation({ durationVal, timeLeft, isTyping }: Props) {
+export default function HourglassAnimation({ durationVal, timeLeft, isTyping, children }: Props) {
   const sceneRef = useRef<HTMLDivElement>(null);
   const curveLeftTop = useRef<SVGPathElement>(null);
   const curveLeftBottom = useRef<SVGPathElement>(null);
@@ -284,6 +285,12 @@ export default function HourglassAnimation({ durationVal, timeLeft, isTyping }: 
         <div className="hg-anim-dots">
           <span></span><span></span><span></span><span></span>
         </div>
+
+        {children && (
+          <div style={{ position: 'absolute', top: 510, left: 230, transform: 'translate(-50%, -50%)', zIndex: 20 }}>
+            {children}
+          </div>
+        )}
       </div>
     </div>
   );
