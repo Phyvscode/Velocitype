@@ -164,7 +164,7 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
           {mode === 'words' ? 'Number of Words' : 'Time Limit (seconds)'}
         </label>
         <div className="relative flex items-center justify-center w-48 h-16 bg-transparent border-2 border-[var(--hot)] rounded-2xl focus-within:ring-4 focus-within:ring-[var(--hot)]/20 transition-all overflow-hidden pr-10">
-          <div className="flex-1 flex items-center justify-center h-full pl-3">
+          <div className="flex-1 flex items-center justify-center h-full pl-4 pr-1">
             <input 
               type="number"
               min={mode === 'words' ? "5" : "10"}
@@ -178,11 +178,10 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
                 if (mode === 'time' && val < 10) val = 10;
                 setDurationInput(val.toString());
               }}
-              className="bg-transparent text-white caret-white text-4xl font-bold focus:outline-none text-right appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-              style={{ width: `${Math.max(2, displayVal.length + 0.2)}ch` }}
+              className="bg-transparent text-white caret-white text-4xl font-bold focus:outline-none text-right appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none w-20"
               placeholder={mode === 'words' ? "20" : "60"}
             />
-            <span className="text-[var(--hot)]/60 text-3xl font-bold pointer-events-none ml-1">
+            <span className="w-8 text-left text-[var(--hot)]/60 text-3xl font-bold pointer-events-none ml-1">
               {mode === 'words' ? 'w' : 's'}
             </span>
           </div>
@@ -192,7 +191,7 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
             <button 
               onMouseDown={(e) => { 
                 e.preventDefault(); 
-                setDurationInput((parseInt((durationVal || '0').toString(), 10) + (mode === 'words' ? 5 : 10)).toString()); 
+                setDurationInput((parseInt((durationVal || '0').toString(), 10) + 1).toString()); 
               }}
               className="flex-1 flex items-center justify-center text-[var(--hot)] hover:bg-[var(--hot)]/20 transition-colors"
             >
@@ -202,7 +201,7 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
             <button 
               onMouseDown={(e) => { 
                 e.preventDefault(); 
-                let v = parseInt((durationVal || '0').toString(), 10) - (mode === 'words' ? 5 : 10);
+                let v = parseInt((durationVal || '0').toString(), 10) - 1;
                 if (mode === 'words' && v < 5) v = 5;
                 if (mode === 'time' && v < 10) v = 10;
                 setDurationInput(v.toString()); 
