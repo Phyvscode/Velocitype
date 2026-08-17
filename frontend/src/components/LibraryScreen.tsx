@@ -55,13 +55,7 @@ export default function LibraryScreen({ onBack, onOpenAuth }: Props) {
     <div className="min-h-screen bg-background text-slate-100 px-4 py-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
-          >
-             Back
-          </button>
+        <div className="flex items-center justify-end mb-8">
           <div className="flex items-center gap-2 text-slate-300">
             
             <span className="font-semibold">Words Library</span>
