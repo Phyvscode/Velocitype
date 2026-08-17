@@ -23,7 +23,41 @@ type Screen = 'setup' | 'game' | 'results' | 'library' | 'lobby' | 'multiplayerG
 
 function App() {
   const { user, loading } = useAuth();
-  const [screen, setScreen] = useState<Screen>('setup');
+  const [screen, setScreen] = useState<Screen>(() => {
+    if (typeof window !== 'undefined' && window.history.state?.screen) {
+      return window.history.state.screen as Screen;
+    }
+    return 'setup';
+  });
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state && e.state.screen) {
+        setScreen(e.state.screen);
+      } else {
+        setScreen('setup');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    if (!window.history.state || !window.history.state.screen) {
+      window.history.replaceState({ ...window.history.state, screen: 'setup' }, '');
+    }
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigate = (newScreen: Screen) => {
+    if (newScreen !== screen) {
+      window.history.pushState({ ...window.history.state, screen: newScreen }, '');
+      if (document.startViewTransition && (newScreen === 'game' || screen === 'game')) {
+        document.startViewTransition(() => {
+          flushSync(() => setScreen(newScreen));
+        });
+      } else {
+        setScreen(newScreen);
+      }
+    }
+  };
+  
   const [config, setConfig] = useState<GameConfig | null>(null);
   const [lobbyCode, setLobbyCode] = useState<string | null>(null);
   const [typed, setTyped] = useState<TypedWord[]>([]);
@@ -80,28 +114,22 @@ function App() {
   const handleStart = (cfg: GameConfig) => {
     setConfig(cfg);
     setTyped([]);
-    if (document.startViewTransition) {
-      document.startViewTransition(() => {
-        flushSync(() => setScreen('game'));
-      });
-    } else {
-      setScreen('game');
-    }
+    navigate('game');
   };
 
   const handleFinish = (results: TypedWord[], finalTimeElapsed?: number) => {
     setTyped(results);
     setFinalTime(finalTimeElapsed);
-    setScreen('results');
+    navigate('results');
   };
 
   const handlePlayAgain = () => {
     setTyped([]);
-    setScreen('game');
+    navigate('game');
   };
 
   const handleHome = () => {
-    setScreen('setup');
+    navigate('setup');
   };
 
   const [fontLoaded, setFontLoaded] = useState(false);
@@ -125,7 +153,7 @@ function App() {
       {screen === 'setup' && (
         <SetupScreen
           onStart={handleStart}
-          onOpenLibrary={() => setScreen('library')}
+          onOpenLibrary={() => navigate('library')}
           onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
           onOpenAuth={() => openAuth('login')}
           onOpenFont={() => setIsFontModalOpen(true)}
@@ -134,7 +162,7 @@ function App() {
           onOpenBorder={() => setIsBorderModalOpen(true)}
           onLobbyJoined={(code) => {
             setLobbyCode(code);
-            setScreen('lobby');
+            navigate('lobby');
           }}
         />
       )}
@@ -142,8 +170,8 @@ function App() {
       {screen === 'lobby' && lobbyCode && (
         <LobbyScreen 
           lobbyCode={lobbyCode}
-          onLeave={() => { setLobbyCode(null); setScreen('setup'); }}
-          onGameStart={(cfg) => { setConfig(cfg); setScreen('multiplayerGame'); }}
+          onLeave={() => { setLobbyCode(null); navigate('setup'); }}
+          onGameStart={(cfg) => { setConfig(cfg); navigate('multiplayerGame'); }}
         />
       )}
 

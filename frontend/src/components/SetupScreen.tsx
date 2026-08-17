@@ -382,7 +382,35 @@ export default function SetupScreen({
   const [minLen, setMinLen] = useState<number | string>(2);
   const [maxLen, setMaxLen] = useState<number | string>(8);
   const [error, setError] = useState<string>('');
-  const [activeMode, setActiveMode] = useState<string | null>(null);
+  const [activeMode, setActiveMode] = useState<string | null>(() => {
+    if (typeof window !== 'undefined' && window.history.state?.activeMode) {
+      return window.history.state.activeMode as string;
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state && e.state.activeMode !== undefined) {
+        setActiveMode(e.state.activeMode);
+      } else {
+        setActiveMode(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    if (!window.history.state || window.history.state.activeMode === undefined) {
+      window.history.replaceState({ ...window.history.state, activeMode: null }, '');
+    }
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateMode = (mode: string | null) => {
+    if (mode !== activeMode) {
+      window.history.pushState({ ...window.history.state, activeMode: mode }, '');
+      setActiveMode(mode);
+    }
+  };
+
   const [sentenceTheme, setSentenceTheme] = useState<string>('');
 
   const [parsedDoc, setParsedDoc] = useState<ParsedDocument | null>(null);
@@ -654,7 +682,7 @@ export default function SetupScreen({
             
             <PortalButton
               active={activeMode === 'words'}
-              onClick={() => setActiveMode(activeMode === 'words' ? null : 'words')}
+              onClick={() => navigateMode(activeMode === 'words' ? null : 'words')}
               letter="W"
               label="Words"
               title="Words: Timed drills across 10k common words. 15s, 30s or 60s."
@@ -663,7 +691,7 @@ export default function SetupScreen({
             
             <PortalButton
               active={activeMode === 'file'}
-              onClick={() => setActiveMode(activeMode === 'file' ? null : 'file')}
+              onClick={() => navigateMode(activeMode === 'file' ? null : 'file')}
               letter="F"
               label="File"
               title="Sentences From File: Drop a .txt and train on your own corpus, line by line."
@@ -672,7 +700,7 @@ export default function SetupScreen({
             
             <PortalButton
               active={activeMode === 'random-sentences'}
-              onClick={() => setActiveMode(activeMode === 'random-sentences' ? null : 'random-sentences')}
+              onClick={() => navigateMode(activeMode === 'random-sentences' ? null : 'random-sentences')}
               letter="S"
               label="Sentences"
               title="Random Sentences: Punctuation, numbers and casing toggled exactly how you like."
@@ -681,7 +709,7 @@ export default function SetupScreen({
             
             <PortalButton
               active={activeMode === 'versus'}
-              onClick={() => setActiveMode(activeMode === 'versus' ? null : 'versus')}
+              onClick={() => navigateMode(activeMode === 'versus' ? null : 'versus')}
               letter="V"
               label="Versus"
               title="Versus: Race up to eight opponents live, with a shared word stream."
@@ -699,7 +727,7 @@ export default function SetupScreen({
 
             <PortalButton
               active={activeMode === 'graph'}
-              onClick={() => setActiveMode(activeMode === 'graph' ? null : 'graph')}
+              onClick={() => navigateMode(activeMode === 'graph' ? null : 'graph')}
               letter="G"
               label="Graph"
               title="Graph: View your typing statistics."
@@ -708,7 +736,7 @@ export default function SetupScreen({
 
             <PortalButton
               active={activeMode === 'customization'}
-              onClick={() => setActiveMode(activeMode === 'customization' ? null : 'customization')}
+              onClick={() => navigateMode(activeMode === 'customization' ? null : 'customization')}
               letter="C"
               label="Customization"
               title="Customization: Configure Fonts, Colors, and Backgrounds."
@@ -850,9 +878,6 @@ export default function SetupScreen({
       {activeMode && (
       <section className="w-full px-8 py-[clamp(3vh,5vh,6rem)] flex-1 grid grid-cols-[1fr_auto] gap-8 items-start">
           <div className="w-full max-w-4xl mr-auto animate-in fade-in slide-in-from-top-4 duration-500 mb-20">
-            <button onClick={() => setActiveMode(null)} className="mb-8 flex items-center gap-2 text-slate-400 hover:text-[var(--hot)] transition-colors font-mono text-sm uppercase tracking-widest group">
-              <span className="transition-transform group-hover:-translate-x-1">←</span> Back to Modes
-            </button>
             <div className="w-full rounded-lg p-[clamp(1rem,2vh,2.5rem)]">
             
             {activeMode === 'customization' && (
