@@ -3,8 +3,10 @@ const cn = (...classes: (string | undefined | null | false)[]) => classes.filter
 
 interface Props {
   durationVal: number;
+  durationRawInput?: string;
   setDurationInput: (val: string) => void;
   mode?: 'time' | 'words';
+  limitToggle?: React.ReactNode;
 }
 
 export const HOURS = [
@@ -36,7 +38,12 @@ export function getAngleFromDuration(dur: number) {
   return 0;
 }
 
-export default function ClockTimeSelector({ durationVal, setDurationInput, mode = 'time', limitToggle }: Props) {
+export default function ClockTimeSelector({ durationVal, durationRawInput, setDurationInput, mode = 'time', limitToggle }: Props) {
+  // Derive value for the input field: use raw input if available (to allow free typing), otherwise use fallback computed val
+  const displayVal = durationRawInput !== undefined ? durationRawInput : durationVal.toString();
+
+  // (The rest of the code down to the input)
+
   return (
     <div className={`flex flex-row items-center pt-4 pb-4 gap-12 ${mode === 'words' ? 'justify-center' : ''}`}>
       <style>{`
@@ -156,18 +163,54 @@ export default function ClockTimeSelector({ durationVal, setDurationInput, mode 
         <label className="text-sm text-slate-300 uppercase tracking-widest">
           {mode === 'words' ? 'Number of Words' : 'Time Limit (seconds)'}
         </label>
-        <div className="relative group">
-          <input 
-            type="number"
-            min={mode === 'words' ? "1" : "10"}
-            max={mode === 'words' ? "1000" : "3600"}
-            value={durationVal || ''}
-            onChange={(e) => setDurationInput(e.target.value)}
-            className="w-48 bg-transparent border-2 border-[var(--hot)] rounded-2xl py-3 px-4 text-white text-4xl font-bold focus:outline-none focus:ring-4 focus:ring-[var(--hot)]/20 transition-all text-center"
-            placeholder={mode === 'words' ? "20" : "60"}
-          />
-          <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--hot)]/60 text-2xl font-bold pointer-events-none">
-            {mode === 'words' ? 'w' : 's'}
+        <div className="relative flex items-center justify-center w-48 h-16 bg-transparent border-2 border-[var(--hot)] rounded-2xl focus-within:ring-4 focus-within:ring-[var(--hot)]/20 transition-all overflow-hidden pr-10">
+          <div className="flex-1 flex items-center justify-center h-full pl-3">
+            <input 
+              type="number"
+              min={mode === 'words' ? "5" : "10"}
+              max={mode === 'words' ? "1000" : "3600"}
+              value={displayVal}
+              onChange={(e) => setDurationInput(e.target.value)}
+              onBlur={() => {
+                let val = parseInt(displayVal, 10);
+                if (isNaN(val)) val = mode === 'words' ? 20 : 60;
+                if (mode === 'words' && val < 5) val = 5;
+                if (mode === 'time' && val < 10) val = 10;
+                setDurationInput(val.toString());
+              }}
+              className="bg-transparent text-white caret-white text-4xl font-bold focus:outline-none text-right appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              style={{ width: `${Math.max(2, displayVal.length + 0.2)}ch` }}
+              placeholder={mode === 'words' ? "20" : "60"}
+            />
+            <span className="text-[var(--hot)]/60 text-3xl font-bold pointer-events-none ml-1">
+              {mode === 'words' ? 'w' : 's'}
+            </span>
+          </div>
+
+          {/* Custom Arrows */}
+          <div className="absolute right-0 top-0 bottom-0 w-10 flex flex-col border-l-2 border-[var(--hot)]/30 bg-[var(--hot)]/5">
+            <button 
+              onMouseDown={(e) => { 
+                e.preventDefault(); 
+                setDurationInput((parseInt((durationVal || '0').toString(), 10) + (mode === 'words' ? 5 : 10)).toString()); 
+              }}
+              className="flex-1 flex items-center justify-center text-[var(--hot)] hover:bg-[var(--hot)]/20 transition-colors"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><polygon points="12,6 20,20 4,20"/></svg>
+            </button>
+            <div className="w-full h-[2px] bg-[var(--hot)]/30"></div>
+            <button 
+              onMouseDown={(e) => { 
+                e.preventDefault(); 
+                let v = parseInt((durationVal || '0').toString(), 10) - (mode === 'words' ? 5 : 10);
+                if (mode === 'words' && v < 5) v = 5;
+                if (mode === 'time' && v < 10) v = 10;
+                setDurationInput(v.toString()); 
+              }}
+              className="flex-1 flex items-center justify-center text-[var(--hot)] hover:bg-[var(--hot)]/20 transition-colors"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><polygon points="12,18 20,4 4,4"/></svg>
+            </button>
           </div>
         </div>
         <p className="text-xs text-slate-500 mt-2 max-w-[12rem] text-center">

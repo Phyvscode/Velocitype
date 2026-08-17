@@ -594,6 +594,7 @@ export default function SetupScreen({
       <section className="pt-2">
         <ClockTimeSelector 
           durationVal={limitMode === 'words' ? (parseInt(wordLimitInput || '20', 10) || 20) : durationVal} 
+          durationRawInput={limitMode === 'words' ? wordLimitInput : durationInput}
           setDurationInput={limitMode === 'words' && setWordLimitInput ? setWordLimitInput : setDurationInput}
           mode={limitMode || 'time'}
           limitToggle={
