@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { flushSync } from 'react-dom';
 
 import SetupScreen, { type GameConfig } from '@/components/SetupScreen';
@@ -23,6 +23,12 @@ type Screen = 'setup' | 'game' | 'results' | 'library' | 'lobby' | 'multiplayerG
 
 function App() {
   const { user, loading } = useAuth();
+  const historyIdxRef = useRef<number>(
+    typeof window !== 'undefined' && window.history.state?.idx !== undefined
+      ? window.history.state.idx
+      : 0
+  );
+
   const [screen, setScreen] = useState<Screen>(() => {
     if (typeof window !== 'undefined' && window.history.state?.screen) {
       return window.history.state.screen as Screen;
@@ -32,6 +38,14 @@ function App() {
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
+      const stateIdx = e.state?.idx ?? 0;
+      if (stateIdx > historyIdxRef.current) {
+        // Forward navigation detected! Prevent it.
+        window.history.back();
+        return;
+      }
+      historyIdxRef.current = stateIdx;
+
       if (e.state && e.state.screen) {
         setScreen(e.state.screen);
       } else {
@@ -39,15 +53,18 @@ function App() {
       }
     };
     window.addEventListener('popstate', handlePopState);
-    if (!window.history.state || !window.history.state.screen) {
-      window.history.replaceState({ ...window.history.state, screen: 'setup' }, '');
+    if (!window.history.state || window.history.state.idx === undefined) {
+      window.history.replaceState({ ...window.history.state, screen: 'setup', idx: 0 }, '');
     }
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const navigate = (newScreen: Screen) => {
     if (newScreen !== screen) {
-      window.history.pushState({ ...window.history.state, screen: newScreen }, '');
+      const nextIdx = historyIdxRef.current + 1;
+      window.history.pushState({ ...window.history.state, screen: newScreen, idx: nextIdx }, '');
+      historyIdxRef.current = nextIdx;
+      
       if (document.startViewTransition && (newScreen === 'game' || screen === 'game')) {
         document.startViewTransition(() => {
           flushSync(() => setScreen(newScreen));
@@ -57,7 +74,6 @@ function App() {
       }
     }
   };
-  
   const [config, setConfig] = useState<GameConfig | null>(null);
   const [lobbyCode, setLobbyCode] = useState<string | null>(null);
   const [typed, setTyped] = useState<TypedWord[]>([]);

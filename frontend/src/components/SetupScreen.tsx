@@ -382,6 +382,12 @@ export default function SetupScreen({
   const [minLen, setMinLen] = useState<number | string>(2);
   const [maxLen, setMaxLen] = useState<number | string>(8);
   const [error, setError] = useState<string>('');
+  const historyIdxRef = useRef<number>(
+    typeof window !== 'undefined' && window.history.state?.idx !== undefined
+      ? window.history.state.idx
+      : 0
+  );
+
   const [activeMode, setActiveMode] = useState<string | null>(() => {
     if (typeof window !== 'undefined' && window.history.state?.activeMode) {
       return window.history.state.activeMode as string;
@@ -391,6 +397,13 @@ export default function SetupScreen({
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
+      const stateIdx = e.state?.idx ?? 0;
+      if (stateIdx > historyIdxRef.current) {
+        // Ignore forward navigations (handled by App.tsx)
+        return;
+      }
+      historyIdxRef.current = stateIdx;
+
       if (e.state && e.state.activeMode !== undefined) {
         setActiveMode(e.state.activeMode);
       } else {
@@ -399,14 +412,16 @@ export default function SetupScreen({
     };
     window.addEventListener('popstate', handlePopState);
     if (!window.history.state || window.history.state.activeMode === undefined) {
-      window.history.replaceState({ ...window.history.state, activeMode: null }, '');
+      window.history.replaceState({ ...window.history.state, activeMode: null, idx: window.history.state?.idx ?? 0 }, '');
     }
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const navigateMode = (mode: string | null) => {
     if (mode !== activeMode) {
-      window.history.pushState({ ...window.history.state, activeMode: mode }, '');
+      const nextIdx = historyIdxRef.current + 1;
+      window.history.pushState({ ...window.history.state, activeMode: mode, idx: nextIdx }, '');
+      historyIdxRef.current = nextIdx;
       setActiveMode(mode);
     }
   };
