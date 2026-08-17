@@ -245,9 +245,6 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
     if (e.key === 'Backspace' && typed === '') {
       e.preventDefault();
     }
-    if (e.key === 'Escape') {
-      onQuit();
-    }
     // Fallback: some mobile keyboards only flush composed text on Enter.
     // If the word hasn't auto-advanced yet, force it through on Enter.
     if (e.key === 'Enter' && typed.length > 0) {

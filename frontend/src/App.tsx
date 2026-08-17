@@ -120,6 +120,20 @@ function App() {
     initializeActiveBgColor();
   }, []);
 
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // If the user is typing in an input field, let them blur it or escape naturally
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return;
+        }
+        window.history.back();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
 
 
   const openAuth = (mode: 'login' | 'signup' = 'signup') => {
