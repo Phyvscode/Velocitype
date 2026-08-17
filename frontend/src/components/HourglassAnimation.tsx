@@ -287,7 +287,7 @@ export default function HourglassAnimation({ durationVal, timeLeft, isTyping, ch
         </div>
 
         {children && (
-          <div style={{ position: 'absolute', top: 510, left: 230, transform: 'translate(-50%, -50%)', zIndex: 20 }}>
+          <div style={{ position: 'absolute', top: 400, left: 230, transform: 'translate(-50%, -50%)', zIndex: 20 }}>
             {children}
           </div>
         )}
