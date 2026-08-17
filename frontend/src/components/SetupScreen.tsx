@@ -177,23 +177,23 @@ export default function SetupScreen({
 
   const renderSpinner = (label: string, val: number | string, onInc: () => void, onDec: () => void) => (
     <div className="flex flex-col items-center gap-2">
-      <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-1">{label}</span>
+      <span className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{label}</span>
       <button
         onMouseDown={() => startSpin(onInc)} onMouseUp={stopSpin} onMouseLeave={stopSpin}
         onTouchStart={(e) => { e.preventDefault(); startSpin(onInc); }} onTouchEnd={stopSpin}
-        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:opacity-80 transition-opacity select-none"
       >
-        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,4 22,20 2,20"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,6 20,20 4,20"/></svg>
       </button>
-      <div className="flex items-center justify-center text-4xl font-mono font-bold text-white select-none py-2">
+      <div className="flex items-center justify-center text-4xl font-bold text-white select-none py-2">
         {val}
       </div>
       <button
         onMouseDown={() => startSpin(onDec)} onMouseUp={stopSpin} onMouseLeave={stopSpin}
         onTouchStart={(e) => { e.preventDefault(); startSpin(onDec); }} onTouchEnd={stopSpin}
-        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:text-white transition-colors select-none"
+        className="w-16 h-12 flex items-center justify-center text-[var(--hot)] hover:opacity-80 transition-opacity select-none"
       >
-        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,20 22,4 2,4"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12"><polygon points="12,18 20,4 4,4"/></svg>
       </button>
     </div>
   );

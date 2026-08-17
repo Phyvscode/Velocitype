@@ -153,7 +153,7 @@ export default function ClockTimeSelector({ durationVal, setDurationInput, mode 
             {limitToggle}
           </div>
         )}
-        <label className="text-sm font-mono text-slate-500 uppercase tracking-widest">
+        <label className="text-sm text-slate-300 uppercase tracking-widest">
           {mode === 'words' ? 'Number of Words' : 'Time Limit (seconds)'}
         </label>
         <div className="relative group">
@@ -163,10 +163,10 @@ export default function ClockTimeSelector({ durationVal, setDurationInput, mode 
             max={mode === 'words' ? "1000" : "3600"}
             value={durationVal || ''}
             onChange={(e) => setDurationInput(e.target.value)}
-            className="w-48 bg-[#0c0a1f] border-2 border-[var(--hot)] rounded-xl py-3 px-4 text-[var(--hot)] font-mono text-2xl font-bold focus:outline-none focus:ring-4 focus:ring-[var(--hot)]/20 transition-all text-center"
+            className="w-48 bg-transparent border-2 border-[var(--hot)] rounded-2xl py-3 px-4 text-white text-4xl font-bold focus:outline-none focus:ring-4 focus:ring-[var(--hot)]/20 transition-all text-center"
             placeholder={mode === 'words' ? "20" : "60"}
           />
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--hot)]/50 font-mono text-xl font-bold pointer-events-none">
+          <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--hot)]/60 text-2xl font-bold pointer-events-none">
             {mode === 'words' ? 'w' : 's'}
           </div>
         </div>
