@@ -36,7 +36,7 @@ export function getAngleFromDuration(dur: number) {
   return 0;
 }
 
-export default function ClockTimeSelector({ durationVal, setDurationInput, mode = 'time' }: Props) {
+export default function ClockTimeSelector({ durationVal, setDurationInput, mode = 'time', limitToggle }: Props) {
   return (
     <div className={`flex flex-row items-center pt-4 pb-4 gap-12 ${mode === 'words' ? 'justify-center' : ''}`}>
       <style>{`
@@ -147,7 +147,12 @@ export default function ClockTimeSelector({ durationVal, setDurationInput, mode 
         </div>
       </div>
       
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 relative">
+        {limitToggle && (
+          <div className="mb-2">
+            {limitToggle}
+          </div>
+        )}
         <label className="text-sm font-mono text-slate-500 uppercase tracking-widest">
           {mode === 'words' ? 'Number of Words' : 'Time Limit (seconds)'}
         </label>
