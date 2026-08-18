@@ -1157,6 +1157,7 @@ export default function SetupScreen({
                   </div>
                 </section>
               </div>
+            )}
             </div>
           </div>
           {['words', 'file', 'random-sentences'].includes(activeMode || '') && (
