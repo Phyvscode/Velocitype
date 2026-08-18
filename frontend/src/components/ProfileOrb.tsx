@@ -150,7 +150,7 @@ export function ProfileOrb({ onOpenAuth }: Props) {
               <span className="text-[var(--hot)]">{currentLang.label}</span>
             </button>
             {langOpen && (
-              <div className="absolute right-full top-0 mr-1 w-32 rounded-[5px] border border-slate-800 bg-slate-900/95 p-1 backdrop-blur-md shadow-2xl">
+              <div className="absolute right-full top-0 mr-1 w-36 max-h-[300px] overflow-y-auto rounded-[5px] border border-slate-800 bg-slate-900/95 p-1 backdrop-blur-md shadow-2xl custom-scrollbar">
                 {LANGUAGES.map((l) => (
                   <button
                     key={l.id}
