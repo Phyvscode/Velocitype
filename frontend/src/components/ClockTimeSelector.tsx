@@ -213,7 +213,6 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
                 setDurationInput(val.toString());
               }}
               className="bg-transparent text-white caret-white text-4xl font-bold focus:outline-none text-right w-20"
-              placeholder={mode === 'words' ? "20" : "60"}
             />
             <span className="w-8 text-left text-[var(--hot)]/60 text-3xl font-bold pointer-events-none ml-1">
               {mode === 'words' ? 'w' : 's'}
@@ -221,19 +220,18 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
           </div>
 
           {/* Custom Arrows */}
-          <div className="absolute right-0 top-0 bottom-0 w-12 flex flex-col border-l-2 border-[var(--hot)]/40">
+          <div className="absolute right-0 top-0 bottom-0 w-12 flex flex-col">
             <button 
               onMouseDown={() => startSpin(handleInc)} onMouseUp={stopSpin} onMouseLeave={stopSpin} onTouchStart={(e) => { e.preventDefault(); startSpin(handleInc); }} onTouchEnd={stopSpin}
-              className="flex-1 flex items-end justify-center text-[var(--hot)] hover:bg-[var(--hot)]/20 transition-colors pb-1"
+              className="flex-1 flex items-end justify-center text-[var(--hot)] hover:opacity-80 transition-opacity pb-0"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><polygon points="12,8 20,20 4,20"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8"><polygon points="12,8 20,20 4,20"/></svg>
             </button>
-            <div className="w-full h-[2px] bg-[var(--hot)]/40"></div>
             <button 
               onMouseDown={() => startSpin(handleDec)} onMouseUp={stopSpin} onMouseLeave={stopSpin} onTouchStart={(e) => { e.preventDefault(); startSpin(handleDec); }} onTouchEnd={stopSpin}
-              className="flex-1 flex items-start justify-center text-[var(--hot)] hover:bg-[var(--hot)]/20 transition-colors pt-1"
+              className="flex-1 flex items-start justify-center text-[var(--hot)] hover:opacity-80 transition-opacity pt-0"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><polygon points="12,16 20,4 4,4"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8"><polygon points="12,16 20,4 4,4"/></svg>
             </button>
           </div>
         </div>
