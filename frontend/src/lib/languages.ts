@@ -47,6 +47,19 @@ export const LANGUAGES = [
   { id: 'gujarati', label: 'Gujarati', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/gujarati.json' },
   { id: 'marathi', label: 'Marathi', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/marathi.json' },
   { id: 'punjabi', label: 'Punjabi', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/punjabi.json' },
+  { id: 'tamil', label: 'Tamil', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/tamil.json' },
+  { id: 'tanglish', label: 'Tanglish', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/tanglish.json' },
+  { id: 'tamil_old', label: 'Tamil Old', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/tamil_old.json' },
+  { id: 'telugu', label: 'Telugu', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/telugu.json' },
+  { id: 'kannada', label: 'Kannada', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/kannada.json' },
+  { id: 'malayalam', label: 'Malayalam', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/malayalam.json' },
+  { id: 'nepali', label: 'Nepali', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/nepali.json' },
+  { id: 'nepali_romanized', label: 'Nepali Romanized', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/nepali_romanized.json' },
+  { id: 'sinhala', label: 'Sinhala', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/sinhala.json' },
+  { id: 'urdu', label: 'Urdu', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/urdu.json' },
+  { id: 'urdu_roman', label: 'Urdu Roman', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/urdu_roman.json' },
+  { id: 'sindhi', label: 'Sindhi', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/sindhi.json' },
+  { id: 'santali', label: 'Santali', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/santali.json' },
 ];
 
 export function getLanguageUrl(id: string): string {
