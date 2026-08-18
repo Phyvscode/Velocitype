@@ -77,11 +77,11 @@ function buildDictionary(words: string[], minLen = 2, maxLen = 45): DictWord[] {
   const out: DictWord[] = [];
   for (const raw of words) {
     const lw = raw.toLowerCase();
-    if (!/^[a-z]+$/.test(lw)) continue; // skip anything with punctuation/numbers
+    if (/\s|\d/.test(lw)) continue; // skip anything with spaces or numbers
     if (lw.length < minLen || lw.length > maxLen) continue;
     if (seen.has(lw)) continue;
     seen.add(lw);
-    out.push({ word: lw, rows: rowsFor(lw) });
+    out.push({ word: raw, rows: rowsFor(lw) }); // preserve original case for non-english scripts if needed, though raw is fine. Actually, monkeytype words are usually already lowercase, but some languages (like German nouns) have capitalization.
   }
   return out;
 }
