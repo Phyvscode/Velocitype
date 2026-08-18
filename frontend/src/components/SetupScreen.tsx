@@ -745,20 +745,11 @@ export default function SetupScreen({
             />
             
             <PortalButton
-              active={false}
-              onClick={() => window.open('/casual', '_blank')}
-              letter="C"
-              label="Casual"
-              title="Casual Multiplayer: Race up to eight opponents live, with a shared word stream."
-              borderStyle={borderStyle}
-            />
-
-            <PortalButton
-              active={false}
-              onClick={() => window.open('/ranked', '_blank')}
-              letter="R"
-              label="Ranked"
-              title="Ranked Multiplayer: Compete in ranked matchmaking."
+              active={activeMode === 'versus'}
+              onClick={() => navigateMode(activeMode === 'versus' ? null : 'versus')}
+              letter="V"
+              label="Versus"
+              title="Versus: Race up to eight opponents live, with a shared word stream."
               borderStyle={borderStyle}
             />
 
@@ -1156,6 +1147,38 @@ export default function SetupScreen({
                     )}
                   </div>
                 </section>
+              </div>
+            )}
+
+            {activeMode === 'versus' && (
+              <div className="pt-8">
+                <div className="flex flex-col md:flex-row gap-6 w-full max-w-2xl mx-auto">
+                  <button
+                    onClick={() => window.open('/?page=casual', '_blank')}
+                    className="flex-1 group relative p-8 border border-slate-800 rounded-lg bg-slate-900/30 hover:bg-slate-800/50 hover:border-[var(--hot)] transition-all duration-300 text-left overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
+                      <svg viewBox="0 0 24 24" className="w-24 h-24 text-[var(--hot)]" fill="currentColor"><path d="M12 2L2 22h20L12 2zm0 6l5.5 11h-11L12 8z"/></svg>
+                    </div>
+                    <div className="relative z-10">
+                      <h3 className="font-display text-2xl tracking-widest text-[var(--hot)] uppercase mb-2">Casual</h3>
+                      <p className="font-mono text-xs text-slate-400 leading-relaxed uppercase tracking-widest">Create public or private lobbies to race against friends and strangers in a relaxed environment.</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => window.open('/?page=ranked', '_blank')}
+                    className="flex-1 group relative p-8 border border-slate-800 rounded-lg bg-slate-900/30 hover:bg-slate-800/50 hover:border-[var(--hot)] transition-all duration-300 text-left overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
+                      <svg viewBox="0 0 24 24" className="w-24 h-24 text-[var(--hot)]" fill="currentColor"><path d="M12 2L2 22h20L12 2zm0 4.5L16.5 17h-9L12 6.5z"/></svg>
+                    </div>
+                    <div className="relative z-10">
+                      <h3 className="font-display text-2xl tracking-widest text-[var(--hot)] uppercase mb-2">Ranked</h3>
+                      <p className="font-mono text-xs text-slate-400 leading-relaxed uppercase tracking-widest">Matchmake against players of similar skill, earn ELO, and climb the global leaderboards.</p>
+                    </div>
+                  </button>
+                </div>
               </div>
             )}
             </div>

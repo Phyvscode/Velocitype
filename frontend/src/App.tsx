@@ -204,11 +204,12 @@ function App() {
     );
   }
 
-  const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const page = searchParams.get('page');
 
   return (
     <div className="font-sans antialiased text-slate-100 bg-background h-[100dvh] w-full overflow-y-auto overflow-x-hidden relative">
-      {path === '/casual' && screen === 'setup' && (
+      {page === 'casual' && screen === 'setup' && (
         <div className="min-h-screen bg-transparent text-slate-100 flex flex-col items-center p-8">
           <header className="w-full flex flex-col items-center justify-center mb-12">
             <h1 className="text-7xl font-display tracking-widest text-white uppercase cursor-pointer" onClick={() => window.location.href = '/'}>Veloci<span className="text-[var(--hot)]">type</span></h1>
@@ -223,7 +224,7 @@ function App() {
         </div>
       )}
 
-      {path === '/ranked' && screen === 'setup' && (
+      {page === 'ranked' && screen === 'setup' && (
         <div className="min-h-screen bg-transparent text-slate-100 flex flex-col items-center p-8">
           <header className="w-full flex flex-col items-center justify-center mb-12">
             <h1 className="text-7xl font-display tracking-widest text-white uppercase cursor-pointer" onClick={() => window.location.href = '/'}>Veloci<span className="text-[var(--hot)]">type</span></h1>
@@ -235,7 +236,7 @@ function App() {
         </div>
       )}
 
-      {path !== '/casual' && path !== '/ranked' && screen === 'setup' && (
+      {page !== 'casual' && page !== 'ranked' && screen === 'setup' && (
         <SetupScreen
           onStart={handleStart}
           onOpenLibrary={() => navigate('library')}
