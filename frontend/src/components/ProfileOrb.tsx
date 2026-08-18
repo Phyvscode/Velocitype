@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
+import { LANGUAGES, getCurrentLanguage, setCurrentLanguage } from '@/lib/languages';
+import { resetDictionary } from '@/lib/words';
 
 type Props = {
   onOpenAuth: () => void;
@@ -9,6 +11,7 @@ type Props = {
 export function ProfileOrb({ onOpenAuth }: Props) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const orbRef = useRef<HTMLButtonElement>(null);
 
@@ -16,6 +19,15 @@ export function ProfileOrb({ onOpenAuth }: Props) {
   const signedIn = !!user;
 
   const [localAvatar, setLocalAvatar] = useState<string | null>(null);
+
+  // Subscribe to language changes so UI updates immediately
+  const [currentLangId, setCurrentLangId] = useState(getCurrentLanguage());
+  useEffect(() => {
+    const handleLangChange = () => setCurrentLangId(getCurrentLanguage());
+    window.addEventListener('languagechange', handleLangChange);
+    return () => window.removeEventListener('languagechange', handleLangChange);
+  }, []);
+  const currentLang = LANGUAGES.find((l) => l.id === currentLangId) || LANGUAGES[0];
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -127,6 +139,39 @@ export function ProfileOrb({ onOpenAuth }: Props) {
               {item}
             </button>
           ))}
+          <div className="relative">
+            <button
+              role="menuitem"
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setLangOpen(!langOpen); }}
+              className="flex justify-between w-full rounded-[3px] px-3 py-1.5 text-left text-[10px] uppercase tracking-[0.18em] text-slate-400 transition-colors hover:bg-slate-800 hover:text-[var(--hot)]"
+            >
+              <span>Language</span>
+              <span className="text-[var(--hot)]">{currentLang.label}</span>
+            </button>
+            {langOpen && (
+              <div className="absolute right-full top-0 mr-1 w-32 rounded-[5px] border border-slate-800 bg-slate-900/95 p-1 backdrop-blur-md shadow-2xl">
+                {LANGUAGES.map((l) => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentLanguage(l.id);
+                      resetDictionary();
+                      setLangOpen(false);
+                      setOpen(false);
+                    }}
+                    className={`block w-full rounded-[3px] px-3 py-1.5 text-left text-[10px] uppercase tracking-[0.18em] transition-colors ${
+                      currentLangId === l.id ? 'text-[var(--hot)] bg-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-[var(--hot)]'
+                    }`}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="my-1 h-px bg-slate-800/70" />
           <button
             role="menuitem"

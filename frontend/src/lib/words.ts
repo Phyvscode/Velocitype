@@ -97,16 +97,7 @@ let loadPromise: Promise<void> | null = null;
 // Two sources, intersected, so a word only makes it into the game if it's
 // BOTH well-known AND a validated real dictionary entry:
 //  - COMMON_WORDS_URL: Google's "10,000 most common English words" (from a
-//    trillion-word web corpus) — but on its own this includes web-common
-//    acronyms like "dsl" or "fda" that aren't actually words.
-//  - REAL_DICTIONARY_URL: a SCOWL-based spellcheck dictionary (250,000+
-//    entries) — a proper validated wordlist, but on its own includes many
-//    obscure/archaic entries nobody would recognize.
-// Intersecting the two keeps only words that are both familiar and real,
-// which matters a lot once the pool gets narrowed down to just the letters
-// on a given keyboard row.
-const REAL_DICTIONARY_URL =
-  'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/english_10k.json';
+import { getLanguageUrl, getCurrentLanguage } from './languages';
 
 const SEVERE_SWEARS = new Set([
   'fuck', 'fucking', 'fucker', 'fucks', 'faggot', 'faggots', 'bitch', 'bitches', 'bitching', 
@@ -116,12 +107,14 @@ const SEVERE_SWEARS = new Set([
   'motherfucker', 'motherfucking', 'asshole', 'assholes', 'bastard', 'bastards', 'twat', 'twats', 'wank', 'wanker'
 ]);
 
-const CACHE_KEY = 'velocitype_dictionary_cache_v6';
+function getCacheKey() {
+  return `velocitype_dictionary_cache_v7_${getCurrentLanguage()}`;
+}
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // re-fetch at most once a week
 
 function readCache(): string[] | null {
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(getCacheKey());
     if (!raw) return null;
     const parsed = JSON.parse(raw) as { words: string[]; ts: number };
     if (!parsed?.words?.length || Date.now() - parsed.ts > CACHE_TTL_MS) return null;
@@ -133,7 +126,7 @@ function readCache(): string[] | null {
 
 function writeCache(words: string[]): void {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ words, ts: Date.now() }));
+    localStorage.setItem(getCacheKey(), JSON.stringify({ words, ts: Date.now() }));
   } catch {
     // Storage full or unavailable — the dictionary still works in-memory.
   }
@@ -146,6 +139,13 @@ function parseWordList(text: string): Set<string> {
       .map((w) => w.trim().toLowerCase())
       .filter(Boolean)
   );
+}
+
+export function resetDictionary() {
+  DICTIONARY = buildDictionary(FALLBACK_WORDS);
+  dictionaryReady = false;
+  loadPromise = null;
+  loadDictionary();
 }
 
 // Fetches both word lists (or a cached intersection of them) and swaps the
@@ -162,7 +162,8 @@ export async function loadDictionary(): Promise<void> {
       let words = readCache();
 
       if (!words) {
-        const realRes = await fetch(REAL_DICTIONARY_URL);
+        const langUrl = getLanguageUrl(getCurrentLanguage());
+        const realRes = await fetch(langUrl);
         if (!realRes.ok) {
           throw new Error(`Dictionary fetch failed: ${realRes.status}`);
         }
