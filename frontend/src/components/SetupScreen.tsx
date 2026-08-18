@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 
 import type { RowKey } from '@/lib/words';
-import { filterWords } from '@/lib/words';
+import { filterWords, loadDictionary } from '@/lib/words';
 import { useAuth } from '@/contexts/AuthContext';
 import { parseFile, extractSentences, type ParsedDocument } from '@/lib/fileParser';
 import { generateSentences } from '@/lib/quotes';
@@ -549,6 +549,9 @@ export default function SetupScreen({
   };
 
   const handleStartRandomSentences = async () => {
+    // Ensure the selected language dictionary is fully loaded before filtering
+    await loadDictionary();
+
     if (activeMode === 'random-sentences' && rows.length > 0) {
       const available = filterWords(rows, 1, 15);
       if (available.length === 0) {
@@ -625,12 +628,16 @@ export default function SetupScreen({
     );
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (rows.length === 0) {
       setError('Select at least one key row.');
       setTimeout(() => setError(''), 3000);
       return;
     }
+    
+    // Ensure the selected language dictionary is fully loaded before filtering
+    await loadDictionary();
+
     const minL = Math.max(2, Math.min(45, parseInt(String(minLen), 10) || 3));
     const maxL = Math.max(minL, Math.min(45, parseInt(String(maxLen), 10) || 8));
     
