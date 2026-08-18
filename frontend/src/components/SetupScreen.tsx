@@ -945,7 +945,7 @@ export default function SetupScreen({
                   </section>
                 </div>
                 <section>
-                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-6">3. Set word length</h2>
+                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-6">3. Set letter length</h2>
                   <div className="flex items-center gap-10">
                     {/* Min Letters Spinner */}
                     {renderSpinner('Min', minLen, 
@@ -1116,7 +1116,7 @@ export default function SetupScreen({
                   </div>
                 </section>
                 <section>
-                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-6">3. Set word length</h2>
+                  <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-6">3. Set letter length</h2>
                   <div className="flex items-center gap-10">
                     {/* Min Letters Spinner */}
                     {renderSpinner('Min', minLen, 
