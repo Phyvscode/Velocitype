@@ -120,7 +120,7 @@ export function ProfileOrb({ onOpenAuth }: Props) {
       {open && (
         <div
           role="menu"
-          className="animate-rise relative z-50 w-44 mt-3 overflow-hidden rounded-[5px] border border-slate-800 bg-slate-900/95 p-1 backdrop-blur-md shadow-2xl"
+          className="animate-rise relative z-50 w-44 mt-3 rounded-[5px] border border-slate-800 bg-slate-900/95 p-1 backdrop-blur-md shadow-2xl"
         >
           <div className="px-3 py-2">
             <p className="font-display text-xs tracking-[0.06em] text-white">{name}</p>
