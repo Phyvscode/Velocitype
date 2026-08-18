@@ -649,6 +649,19 @@ export default function SetupScreen({
     }
     
     if (activeMode === 'words') {
+      // Chunk the single words into pseudo-sentences so they display as a continuous paragraph
+      const chunks: string[] = [];
+      const numChunks = 50; // plenty to shuffle through
+      const chunkSize = limitModeWords === 'words' ? (parseInt(wordLimitWords, 10) || 20) : 20;
+      
+      for (let i = 0; i < numChunks; i++) {
+        let chunk = [];
+        for (let j = 0; j < chunkSize; j++) {
+           chunk.push(available[Math.floor(Math.random() * available.length)]);
+        }
+        chunks.push(chunk.join(' '));
+      }
+
       onStart({
         mode: 'words',
         rows,
@@ -657,7 +670,8 @@ export default function SetupScreen({
         limitValue: limitModeWords === 'words' ? parseInt(wordLimitWords, 10) || 20 : undefined,
         minLen: minL,
         maxLen: maxL,
-        useVirtualKeyboard
+        useVirtualKeyboard,
+        customSentences: chunks
       } as any);
     }
   };

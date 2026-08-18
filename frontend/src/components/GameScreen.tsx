@@ -291,30 +291,24 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       {/* Centered single word / Paragraph box */}
       <main className="flex-1 min-h-0 w-full flex flex-col items-center justify-center overflow-visible">
         <div
-          className={`relative w-full transition-colors duration-150 select-none font-mono tracking-wide ${
-            (config as any).mode === 'file' || (config as any).mode === 'random-sentences'
-              ? 'max-w-5xl mx-auto text-left px-8 py-8 md:px-12 md:py-10 bg-[#15171e]/50 border border-slate-800/80 rounded-2xl shadow-xl translate-y-12'
-              : 'max-w-7xl mx-auto text-center px-4 py-[clamp(10px,4vh,40px)]'
-          } ${
+          className={`relative w-full transition-colors duration-150 select-none font-mono tracking-wide max-w-5xl mx-auto text-left px-8 py-8 md:px-12 md:py-10 bg-[#15171e]/50 border border-slate-800/80 rounded-2xl shadow-xl translate-y-12 ${
             flash === 'correct'
               ? 'text-emerald-400'
               : flash === 'wrong'
               ? 'text-rose-400'
               : 'text-slate-100'
           }`}
-          style={(config as any).mode === 'file' || (config as any).mode === 'random-sentences'
-            ? { fontSize: 'clamp(20px, 2.5vw, 32px)' }
-            : { whiteSpace: 'pre-wrap', fontSize: 'clamp(32px, min(8vw, 12vh), 120px)', lineHeight: 1.4, paddingBottom: '0.35em' }}
+          style={{ fontSize: 'clamp(20px, 2.5vw, 32px)' }}
         >
           {/* Inner scroll window with fade mask to hide clipped ascenders/descenders */}
           <div 
-            className={(config as any).mode === 'file' || (config as any).mode === 'random-sentences' ? 'overflow-hidden relative' : ''}
-            style={(config as any).mode === 'file' || (config as any).mode === 'random-sentences' ? { 
+            className="overflow-hidden relative"
+            style={{ 
               height: '3.2em', 
               lineHeight: 1.6,
               WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
               maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
-            } : {}}
+            }}
           >
             <div 
               className="transition-transform duration-200 ease-out relative"
