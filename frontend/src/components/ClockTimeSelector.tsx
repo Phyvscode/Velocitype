@@ -44,6 +44,11 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
 
   // Derive value for the input field: use raw input if available (to allow free typing), otherwise use fallback computed val
   const displayVal = durationRawInput !== undefined ? durationRawInput : durationVal.toString();
+  
+  const displayValRef = useRef(displayVal);
+  React.useEffect(() => {
+    displayValRef.current = displayVal;
+  }, [displayVal]);
 
   const startSpin = (fn: () => void) => {
     fn();
@@ -58,11 +63,14 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
   };
 
   const handleInc = () => {
-    setDurationInput((parseInt((displayVal || '0').toString(), 10) + 1).toString());
+    let v = parseInt((displayValRef.current || '0').toString(), 10) + 1;
+    if (mode === 'words' && v > 1000) v = 1000;
+    if (mode === 'time' && v > 3600) v = 3600;
+    setDurationInput(v.toString());
   };
 
   const handleDec = () => {
-    let v = parseInt((displayVal || '0').toString(), 10) - 1;
+    let v = parseInt((displayValRef.current || '0').toString(), 10) - 1;
     if (mode === 'words' && v < 5) v = 5;
     if (mode === 'time' && v < 10) v = 10;
     setDurationInput(v.toString());
