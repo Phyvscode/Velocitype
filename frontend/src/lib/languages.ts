@@ -108,6 +108,17 @@ export const LANGUAGES = [
   { id: 'yoruba', label: 'Yoruba', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/yoruba.json' },
   { id: 'zulu', label: 'Zulu', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/zulu.json' },
   { id: 'kabyle', label: 'Kabyle', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/kabyle.json' },
+  { id: 'hawaiian', label: 'Hawaiian', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/hawaiian.json' },
+  { id: 'maori', label: 'Maori', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/maori.json' },
+  { id: 'toki_pona', label: 'Toki Pona', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/toki_pona.json' },
+  { id: 'lojban', label: 'Lojban', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/lojban.json' },
+  { id: 'klingon', label: 'Klingon', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/klingon.json' },
+  { id: 'quenya', label: 'Quenya', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/quenya.json' },
+  { id: 'kokanu', label: 'Kokanu', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/kokanu.json' },
+  { id: 'likanu', label: 'Likanu', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/likanu.json' },
+  { id: 'viossa', label: 'Viossa', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/viossa.json' },
+  { id: 'pig_latin', label: 'Pig Latin', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/pig_latin.json' },
+  { id: 'yiddish', label: 'Yiddish', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/yiddish.json' },
 ];
 
 export function getLanguageUrl(id: string): string {
