@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');
 
 interface Props {
@@ -39,10 +39,34 @@ export function getAngleFromDuration(dur: number) {
 }
 
 export default function ClockTimeSelector({ durationVal, durationRawInput, setDurationInput, mode = 'time', limitToggle }: Props) {
+  const spinnerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const spinnerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Derive value for the input field: use raw input if available (to allow free typing), otherwise use fallback computed val
   const displayVal = durationRawInput !== undefined ? durationRawInput : durationVal.toString();
 
-  // (The rest of the code down to the input)
+  const startSpin = (fn: () => void) => {
+    fn();
+    spinnerTimeoutRef.current = setTimeout(() => {
+      spinnerTimerRef.current = setInterval(fn, 80);
+    }, 400);
+  };
+
+  const stopSpin = () => {
+    if (spinnerTimeoutRef.current) clearTimeout(spinnerTimeoutRef.current);
+    if (spinnerTimerRef.current) clearInterval(spinnerTimerRef.current);
+  };
+
+  const handleInc = () => {
+    setDurationInput((parseInt((displayVal || '0').toString(), 10) + 1).toString());
+  };
+
+  const handleDec = () => {
+    let v = parseInt((displayVal || '0').toString(), 10) - 1;
+    if (mode === 'words' && v < 5) v = 5;
+    if (mode === 'time' && v < 10) v = 10;
+    setDurationInput(v.toString());
+  };
 
   return (
     <div className={`flex flex-row items-center pt-4 pb-4 gap-12 ${mode === 'words' ? 'justify-center' : ''}`}>
@@ -163,8 +187,8 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
         <label className="text-sm text-slate-300 uppercase tracking-widest">
           {mode === 'words' ? 'Number of Words' : 'Time Limit (seconds)'}
         </label>
-        <div className="relative flex items-center justify-center w-48 h-16 bg-transparent border-2 border-[var(--hot)] rounded-2xl focus-within:ring-4 focus-within:ring-[var(--hot)]/20 transition-all overflow-hidden pr-10">
-          <div className="flex-1 flex items-center justify-center h-full pl-4 pr-1">
+        <div className="relative flex items-center justify-center w-48 h-16 bg-transparent border-2 border-[var(--hot)] rounded-2xl focus-within:ring-4 focus-within:ring-[var(--hot)]/20 transition-all overflow-hidden pr-12">
+          <div className="flex-1 flex items-center justify-center h-full pl-5 pr-1">
             <input 
               type="number"
               min={mode === 'words' ? "5" : "10"}
@@ -173,7 +197,7 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
               onChange={(e) => setDurationInput(e.target.value)}
               onBlur={() => {
                 let val = parseInt(displayVal, 10);
-                if (isNaN(val)) val = mode === 'words' ? 20 : 60;
+                if (isNaN(val)) val = mode === 'words' ? 5 : 10;
                 if (mode === 'words' && val < 5) val = 5;
                 if (mode === 'time' && val < 10) val = 10;
                 setDurationInput(val.toString());
@@ -187,28 +211,18 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
           </div>
 
           {/* Custom Arrows */}
-          <div className="absolute right-0 top-0 bottom-0 w-10 flex flex-col border-l-2 border-[var(--hot)]/30 bg-[var(--hot)]/5">
+          <div className="absolute right-0 top-0 bottom-0 w-12 flex flex-col items-center justify-center bg-transparent gap-1">
             <button 
-              onMouseDown={(e) => { 
-                e.preventDefault(); 
-                setDurationInput((parseInt((durationVal || '0').toString(), 10) + 1).toString()); 
-              }}
-              className="flex-1 flex items-center justify-center text-[var(--hot)] hover:bg-[var(--hot)]/20 transition-colors"
+              onMouseDown={() => startSpin(handleInc)} onMouseUp={stopSpin} onMouseLeave={stopSpin} onTouchStart={(e) => { e.preventDefault(); startSpin(handleInc); }} onTouchEnd={stopSpin}
+              className="flex-1 flex items-end justify-center text-[var(--hot)] hover:opacity-80 transition-opacity pb-1"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><polygon points="12,6 20,20 4,20"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8"><polygon points="12,6 20,20 4,20"/></svg>
             </button>
-            <div className="w-full h-[2px] bg-[var(--hot)]/30"></div>
             <button 
-              onMouseDown={(e) => { 
-                e.preventDefault(); 
-                let v = parseInt((durationVal || '0').toString(), 10) - 1;
-                if (mode === 'words' && v < 5) v = 5;
-                if (mode === 'time' && v < 10) v = 10;
-                setDurationInput(v.toString()); 
-              }}
-              className="flex-1 flex items-center justify-center text-[var(--hot)] hover:bg-[var(--hot)]/20 transition-colors"
+              onMouseDown={() => startSpin(handleDec)} onMouseUp={stopSpin} onMouseLeave={stopSpin} onTouchStart={(e) => { e.preventDefault(); startSpin(handleDec); }} onTouchEnd={stopSpin}
+              className="flex-1 flex items-start justify-center text-[var(--hot)] hover:opacity-80 transition-opacity pt-1"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><polygon points="12,18 20,4 4,4"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8"><polygon points="12,18 20,4 4,4"/></svg>
             </button>
           </div>
         </div>
