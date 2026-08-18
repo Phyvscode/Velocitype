@@ -745,11 +745,20 @@ export default function SetupScreen({
             />
             
             <PortalButton
-              active={activeMode === 'versus'}
-              onClick={() => navigateMode(activeMode === 'versus' ? null : 'versus')}
-              letter="V"
-              label="Versus"
-              title="Versus: Race up to eight opponents live, with a shared word stream."
+              active={false}
+              onClick={() => window.open('/casual', '_blank')}
+              letter="C"
+              label="Casual"
+              title="Casual Multiplayer: Race up to eight opponents live, with a shared word stream."
+              borderStyle={borderStyle}
+            />
+
+            <PortalButton
+              active={false}
+              onClick={() => window.open('/ranked', '_blank')}
+              letter="R"
+              label="Ranked"
+              title="Ranked Multiplayer: Compete in ranked matchmaking."
               borderStyle={borderStyle}
             />
 
@@ -774,7 +783,7 @@ export default function SetupScreen({
             <PortalButton
               active={activeMode === 'customization'}
               onClick={() => navigateMode(activeMode === 'customization' ? null : 'customization')}
-              letter="C"
+              letter="M"
               label="Customization"
               title="Customization: Configure Fonts, Colors, and Backgrounds."
               borderStyle={borderStyle}
@@ -1148,13 +1157,6 @@ export default function SetupScreen({
                   </div>
                 </section>
               </div>
-            )}
-
-            {activeMode === 'versus' && (
-              <div className="pt-4">
-                <VersusModeSetup onLobbyJoined={onLobbyJoined} />
-              </div>
-            )}
             </div>
           </div>
           {['words', 'file', 'random-sentences'].includes(activeMode || '') && (
