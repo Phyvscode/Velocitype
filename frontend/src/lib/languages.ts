@@ -95,6 +95,19 @@ export const LANGUAGES = [
   { id: 'pashto', label: 'Pashto', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/pashto.json' },
   { id: 'armenian', label: 'Armenian', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/armenian.json' },
   { id: 'georgian', label: 'Georgian', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/georgian.json' },
+  { id: 'afrikaans', label: 'Afrikaans', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/afrikaans.json' },
+  { id: 'amharic', label: 'Amharic', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/amharic.json' },
+  { id: 'bemba', label: 'Bemba', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/bemba.json' },
+  { id: 'hausa', label: 'Hausa', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/hausa.json' },
+  { id: 'kinyarwanda', label: 'Kinyarwanda', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/kinyarwanda.json' },
+  { id: 'malagasy', label: 'Malagasy', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/malagasy.json' },
+  { id: 'oromo', label: 'Oromo', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/oromo.json' },
+  { id: 'shona', label: 'Shona', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/shona.json' },
+  { id: 'swahili', label: 'Swahili', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/swahili.json' },
+  { id: 'xhosa', label: 'Xhosa', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/xhosa.json' },
+  { id: 'yoruba', label: 'Yoruba', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/yoruba.json' },
+  { id: 'zulu', label: 'Zulu', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/zulu.json' },
+  { id: 'kabyle', label: 'Kabyle', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/kabyle.json' },
 ];
 
 export function getLanguageUrl(id: string): string {
