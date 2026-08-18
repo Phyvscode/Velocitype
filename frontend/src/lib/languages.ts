@@ -60,6 +60,23 @@ export const LANGUAGES = [
   { id: 'urdu_roman', label: 'Urdu Roman', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/urdu_roman.json' },
   { id: 'sindhi', label: 'Sindhi', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/sindhi.json' },
   { id: 'santali', label: 'Santali', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/santali.json' },
+  { id: 'chinese_simplified', label: 'Chinese Simplified', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/chinese_simplified.json' },
+  { id: 'chinese_traditional', label: 'Chinese Traditional', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/chinese_traditional.json' },
+  { id: 'pinyin', label: 'Pinyin', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/pinyin.json' },
+  { id: 'jyutping', label: 'Jyutping', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/jyutping.json' },
+  { id: 'japanese_hiragana', label: 'Japanese Hiragana', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/japanese_hiragana.json' },
+  { id: 'japanese_katakana', label: 'Japanese Katakana', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/japanese_katakana.json' },
+  { id: 'japanese_romaji', label: 'Japanese Romaji', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/japanese_romaji.json' },
+  { id: 'korean', label: 'Korean', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/korean.json' },
+  { id: 'vietnamese', label: 'Vietnamese', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/vietnamese.json' },
+  { id: 'thai', label: 'Thai', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/thai.json' },
+  { id: 'khmer', label: 'Khmer', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/khmer.json' },
+  { id: 'indonesian', label: 'Indonesian', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/indonesian.json' },
+  { id: 'malay', label: 'Malay', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/malay.json' },
+  { id: 'filipino', label: 'Filipino', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/filipino.json' },
+  { id: 'mongolian', label: 'Mongolian', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/mongolian.json' },
+  { id: 'lao', label: 'Lao', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/lao.json' },
+  { id: 'myanmar', label: 'Myanmar/Burmese', url: 'https://raw.githubusercontent.com/monkeytypegame/monkeytype/master/frontend/static/languages/myanmar.json' },
 ];
 
 export function getLanguageUrl(id: string): string {
