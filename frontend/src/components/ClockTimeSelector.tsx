@@ -190,19 +190,29 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
         <div className="relative flex items-center justify-center w-48 h-16 bg-transparent border-2 border-[var(--hot)] rounded-2xl focus-within:ring-4 focus-within:ring-[var(--hot)]/20 transition-all overflow-hidden pr-12">
           <div className="flex-1 flex items-center justify-center h-full pl-5 pr-1">
             <input 
-              type="number"
-              min={mode === 'words' ? "5" : "10"}
-              max={mode === 'words' ? "1000" : "3600"}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={displayVal}
-              onChange={(e) => setDurationInput(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '');
+                setDurationInput(val);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur();
+                }
+              }}
               onBlur={() => {
                 let val = parseInt(displayVal, 10);
                 if (isNaN(val)) val = mode === 'words' ? 5 : 10;
                 if (mode === 'words' && val < 5) val = 5;
                 if (mode === 'time' && val < 10) val = 10;
+                if (mode === 'words' && val > 1000) val = 1000;
+                if (mode === 'time' && val > 3600) val = 3600;
                 setDurationInput(val.toString());
               }}
-              className="bg-transparent text-white caret-white text-4xl font-bold focus:outline-none text-right appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none w-20"
+              className="bg-transparent text-white caret-white text-4xl font-bold focus:outline-none text-right w-20"
               placeholder={mode === 'words' ? "20" : "60"}
             />
             <span className="w-8 text-left text-[var(--hot)]/60 text-3xl font-bold pointer-events-none ml-1">
@@ -211,18 +221,19 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
           </div>
 
           {/* Custom Arrows */}
-          <div className="absolute right-0 top-0 bottom-0 w-12 flex flex-col items-center justify-center bg-transparent gap-1">
+          <div className="absolute right-0 top-0 bottom-0 w-12 flex flex-col border-l-2 border-[var(--hot)]/40">
             <button 
               onMouseDown={() => startSpin(handleInc)} onMouseUp={stopSpin} onMouseLeave={stopSpin} onTouchStart={(e) => { e.preventDefault(); startSpin(handleInc); }} onTouchEnd={stopSpin}
-              className="flex-1 flex items-end justify-center text-[var(--hot)] hover:opacity-80 transition-opacity pb-1"
+              className="flex-1 flex items-end justify-center text-[var(--hot)] hover:bg-[var(--hot)]/20 transition-colors pb-1"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8"><polygon points="12,6 20,20 4,20"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><polygon points="12,8 20,20 4,20"/></svg>
             </button>
+            <div className="w-full h-[2px] bg-[var(--hot)]/40"></div>
             <button 
               onMouseDown={() => startSpin(handleDec)} onMouseUp={stopSpin} onMouseLeave={stopSpin} onTouchStart={(e) => { e.preventDefault(); startSpin(handleDec); }} onTouchEnd={stopSpin}
-              className="flex-1 flex items-start justify-center text-[var(--hot)] hover:opacity-80 transition-opacity pt-1"
+              className="flex-1 flex items-start justify-center text-[var(--hot)] hover:bg-[var(--hot)]/20 transition-colors pt-1"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8"><polygon points="12,18 20,4 4,4"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><polygon points="12,16 20,4 4,4"/></svg>
             </button>
           </div>
         </div>
