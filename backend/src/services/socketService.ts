@@ -219,8 +219,8 @@ export const initSocket = (httpServer: HttpServer) => {
       const lang = data.language || 'english';
       if (!rankedQueue[lang]) rankedQueue[lang] = [];
 
-      // Avoid duplicate queueing
-      rankedQueue[lang] = rankedQueue[lang].filter(p => p.userId !== data.userId);
+      // Avoid duplicate queueing (allow same userId if different socket for testing in multiple tabs)
+      rankedQueue[lang] = rankedQueue[lang].filter(p => p.id !== socket.id);
 
       const player: RankedPlayer = {
         id: socket.id,
