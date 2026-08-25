@@ -18,6 +18,7 @@ import { loadDictionary } from '@/lib/words';
 import LobbyScreen from '@/components/LobbyScreen';
 import MultiplayerGame from '@/components/MultiplayerGame';
 import VirtualKeyboardConnector from '@/components/VirtualKeyboardConnector';
+import RankedMode from '@/components/RankedMode';
 
 type Screen = 'setup' | 'game' | 'results' | 'library' | 'lobby' | 'multiplayerGame';
 
@@ -228,11 +229,8 @@ function App() {
         <div className="min-h-screen bg-transparent text-slate-100 flex flex-col items-center p-8">
           <header className="w-full flex flex-col items-center justify-center mb-12">
             <h1 className="text-7xl font-display tracking-widest text-white uppercase cursor-pointer" onClick={() => window.location.href = '/'}>Veloci<span className="text-[var(--hot)]">type</span></h1>
-            <h2 className="text-xl font-mono text-[var(--hot)] uppercase tracking-widest mt-4">Ranked Multiplayer</h2>
           </header>
-          <div className="w-full max-w-2xl text-center p-12 border border-slate-800 bg-slate-900/30">
-            <p className="font-mono text-xl uppercase tracking-widest text-[var(--hot)] animate-pulse">Coming Soon...</p>
-          </div>
+          <RankedMode />
         </div>
       )}
 

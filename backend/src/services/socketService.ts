@@ -32,6 +32,31 @@ interface Lobby {
 
 const lobbies: Record<string, Lobby> = {};
 
+// Ranked interfaces
+interface RankedPlayer {
+  id: string;
+  userId: string;
+  username: string;
+  elo: number;
+  ready: boolean;
+  score: number;
+  progress: number;
+  wpm: number;
+  finishedRound: boolean;
+}
+
+interface RankedMatch {
+  id: string;
+  language: string;
+  players: Record<string, RankedPlayer>; // Keyed by socket ID
+  sentences: string[];
+  currentRound: number; // 0 to 4
+  state: 'generating' | 'waiting_ready' | 'playing' | 'round_finished' | 'finished';
+}
+
+const rankedQueue: Record<string, RankedPlayer[]> = {}; // Keyed by language
+const rankedMatches: Record<string, RankedMatch> = {}; // Keyed by match ID
+
 function generateLobbyCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
@@ -50,7 +75,7 @@ export const initSocket = (httpServer: HttpServer) => {
   io.on('connection', (socket: Socket) => {
     console.log(`Socket connected: ${socket.id}`);
 
-    // Create a new lobby
+    // ----- CASUAL MODE LOBBIES -----
     socket.on('createLobby', (data: { userId: string; username: string; elo: number; isPublic: boolean; maxPlayers: number; config: GameConfig }) => {
       let code = generateLobbyCode();
       while (lobbies[code]) {
@@ -85,27 +110,19 @@ export const initSocket = (httpServer: HttpServer) => {
       }
     });
 
-    // Get public lobbies
     socket.on('getPublicLobbies', () => {
       socket.emit('publicLobbiesUpdated', getPublicLobbies());
     });
 
-    // Join a lobby
     socket.on('joinLobby', (data: { code: string; userId: string; username: string; elo: number }) => {
       const lobby = lobbies[data.code];
-      if (!lobby) {
-        return socket.emit('error', 'Lobby not found');
-      }
-      if (lobby.state !== 'waiting') {
-        return socket.emit('error', 'Game has already started');
-      }
-      if (lobby.players.length >= lobby.maxPlayers) {
-        return socket.emit('error', 'Lobby is full');
-      }
+      if (!lobby) return socket.emit('error', 'Lobby not found');
+      if (lobby.state !== 'waiting') return socket.emit('error', 'Game has already started');
+      if (lobby.players.length >= lobby.maxPlayers) return socket.emit('error', 'Lobby is full');
 
       const existingPlayer = lobby.players.find(p => p.userId === data.userId);
       if (existingPlayer) {
-         existingPlayer.id = socket.id; // Rejoin
+         existingPlayer.id = socket.id;
       } else {
         lobby.players.push({
           id: socket.id,
@@ -126,21 +143,17 @@ export const initSocket = (httpServer: HttpServer) => {
       }
     });
 
-    // Kick player
     socket.on('kickPlayer', (data: { code: string; targetId: string }) => {
       const lobby = lobbies[data.code];
       if (lobby && lobby.hostId === socket.id) {
         lobby.players = lobby.players.filter(p => p.id !== data.targetId);
         io.to(data.targetId).emit('kicked');
         const targetSocket = io.sockets.sockets.get(data.targetId);
-        if (targetSocket) {
-          targetSocket.leave(data.code);
-        }
+        if (targetSocket) targetSocket.leave(data.code);
         io.to(data.code).emit('lobbyUpdated', lobby);
       }
     });
 
-    // Leave lobby
     socket.on('leaveLobby', (code: string) => {
       const lobby = lobbies[code];
       if (lobby) {
@@ -161,7 +174,6 @@ export const initSocket = (httpServer: HttpServer) => {
       }
     });
 
-    // Start Game
     socket.on('startGame', (code: string) => {
       const lobby = lobbies[code];
       if (lobby && lobby.hostId === socket.id && lobby.state === 'waiting') {
@@ -172,7 +184,6 @@ export const initSocket = (httpServer: HttpServer) => {
       }
     });
 
-    // Update Progress
     socket.on('updateProgress', async (data: { code: string; progress: number; wpm: number; isFinished: boolean }) => {
       const lobby = lobbies[data.code];
       if (!lobby || lobby.state !== 'playing') return;
@@ -181,9 +192,7 @@ export const initSocket = (httpServer: HttpServer) => {
       if (player) {
         player.progress = data.progress;
         player.wpm = data.wpm;
-        if (data.isFinished && !player.isFinished) {
-          player.isFinished = true;
-        }
+        if (data.isFinished && !player.isFinished) player.isFinished = true;
 
         io.to(data.code).emit('playerProgress', { playerId: socket.id, progress: player.progress, wpm: player.wpm, isFinished: player.isFinished });
 
@@ -194,18 +203,171 @@ export const initSocket = (httpServer: HttpServer) => {
       }
     });
 
-    // Force end (time ran out)
     socket.on('timeUp', async (code: string) => {
       const lobby = lobbies[code];
       if (lobby && lobby.state === 'playing') {
-        // Just let the host trigger it, or whoever hits it first
         await handleGameEnd(lobby, io);
+      }
+    });
+
+    // ----- RANKED MODE -----
+    socket.on('joinRankedQueue', (data: { userId: string; username: string; elo: number; language: string }) => {
+      const lang = data.language || 'english';
+      if (!rankedQueue[lang]) rankedQueue[lang] = [];
+
+      // Avoid duplicate queueing
+      rankedQueue[lang] = rankedQueue[lang].filter(p => p.userId !== data.userId);
+
+      const player: RankedPlayer = {
+        id: socket.id,
+        userId: data.userId,
+        username: data.username,
+        elo: data.elo,
+        ready: false,
+        score: 0,
+        progress: 0,
+        wpm: 0,
+        finishedRound: false
+      };
+
+      rankedQueue[lang].push(player);
+      socket.emit('rankedQueueJoined');
+
+      // Check for match
+      if (rankedQueue[lang].length >= 2) {
+        const p1 = rankedQueue[lang].shift()!;
+        const p2 = rankedQueue[lang].shift()!;
+        
+        const matchId = `ranked_${generateLobbyCode()}`;
+        
+        const match: RankedMatch = {
+          id: matchId,
+          language: lang,
+          players: {
+            [p1.id]: p1,
+            [p2.id]: p2
+          },
+          sentences: [],
+          currentRound: 0,
+          state: 'generating'
+        };
+
+        rankedMatches[matchId] = match;
+
+        const p1Socket = io.sockets.sockets.get(p1.id);
+        const p2Socket = io.sockets.sockets.get(p2.id);
+        
+        if (p1Socket) p1Socket.join(matchId);
+        if (p2Socket) p2Socket.join(matchId);
+
+        // Tell p1 to generate sentences
+        if (p1Socket) {
+          p1Socket.emit('rankedMatchFound', { matchId, language: lang, role: 'host', opponent: p2 });
+        }
+        if (p2Socket) {
+          p2Socket.emit('rankedMatchFound', { matchId, language: lang, role: 'client', opponent: p1 });
+        }
+      }
+    });
+
+    socket.on('leaveRankedQueue', (data: { language: string }) => {
+      const lang = data.language || 'english';
+      if (rankedQueue[lang]) {
+        rankedQueue[lang] = rankedQueue[lang].filter(p => p.id !== socket.id);
+      }
+    });
+
+    socket.on('rankedMatchPayload', (data: { matchId: string; sentences: string[] }) => {
+      const match = rankedMatches[data.matchId];
+      if (match && match.state === 'generating') {
+        match.sentences = data.sentences;
+        match.state = 'waiting_ready';
+        io.to(data.matchId).emit('rankedMatchReady', { sentences: data.sentences });
+      }
+    });
+
+    socket.on('rankedReady', (data: { matchId: string }) => {
+      const match = rankedMatches[data.matchId];
+      if (match && match.state === 'waiting_ready') {
+        const player = match.players[socket.id];
+        if (player) {
+          player.ready = true;
+          io.to(data.matchId).emit('rankedPlayerReady', { playerId: socket.id });
+
+          const allReady = Object.values(match.players).every(p => p.ready);
+          if (allReady) {
+            match.state = 'playing';
+            // reset progress for the round
+            Object.values(match.players).forEach(p => {
+              p.progress = 0;
+              p.wpm = 0;
+              p.finishedRound = false;
+            });
+            io.to(data.matchId).emit('rankedRoundStart', { round: match.currentRound });
+          }
+        }
+      }
+    });
+
+    socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number }) => {
+      const match = rankedMatches[data.matchId];
+      if (match && match.state === 'playing') {
+        const player = match.players[socket.id];
+        if (player) {
+          player.progress = data.progress;
+          player.wpm = data.wpm;
+          socket.to(data.matchId).emit('rankedOpponentProgress', { progress: data.progress, wpm: data.wpm });
+        }
+      }
+    });
+
+    socket.on('rankedRoundFinished', async (data: { matchId: string }) => {
+      const match = rankedMatches[data.matchId];
+      if (match && match.state === 'playing') {
+        const player = match.players[socket.id];
+        if (player && !player.finishedRound) {
+          player.finishedRound = true;
+          
+          // First one to finish wins the round
+          const othersFinished = Object.values(match.players).some(p => p.id !== socket.id && p.finishedRound);
+          
+          if (!othersFinished) {
+            player.score += 1;
+            match.state = 'round_finished';
+            
+            const p1 = Object.values(match.players)[0];
+            const p2 = Object.values(match.players)[1];
+            
+            io.to(data.matchId).emit('rankedRoundEnd', { 
+              winnerId: socket.id, 
+              scores: { [p1.id]: p1.score, [p2.id]: p2.score } 
+            });
+
+            // Check if someone reached 3 points (Best of 5)
+            if (player.score >= 3 || match.currentRound >= 4) {
+              match.state = 'finished';
+              await handleRankedMatchEnd(match, io);
+            } else {
+              match.currentRound += 1;
+              match.state = 'waiting_ready';
+              Object.values(match.players).forEach(p => p.ready = false);
+              
+              // Automatically move to next round after 3 seconds
+              setTimeout(() => {
+                if (rankedMatches[match.id]) {
+                  io.to(data.matchId).emit('rankedNextRound', { round: match.currentRound });
+                }
+              }, 3000);
+            }
+          }
+        }
       }
     });
 
     socket.on('disconnect', () => {
       console.log(`Socket disconnected: ${socket.id}`);
-      // Find any lobbies the player is in and remove them
+      
+      // Cleanup Casual
       for (const code of Object.keys(lobbies)) {
         const lobby = lobbies[code];
         const isPlayer = lobby.players.some(p => p.id === socket.id);
@@ -222,6 +384,29 @@ export const initSocket = (httpServer: HttpServer) => {
             io.to(code).emit('lobbyUpdated', lobby);
           }
           io.emit('publicLobbiesUpdated', getPublicLobbies());
+        }
+      }
+
+      // Cleanup Ranked Queue
+      for (const lang of Object.keys(rankedQueue)) {
+        rankedQueue[lang] = rankedQueue[lang].filter(p => p.id !== socket.id);
+      }
+
+      // Cleanup Ranked Matches (if a player disconnects, they forfeit)
+      for (const matchId of Object.keys(rankedMatches)) {
+        const match = rankedMatches[matchId];
+        if (match.players[socket.id] && match.state !== 'finished') {
+          match.state = 'finished';
+          
+          const remainingPlayer = Object.values(match.players).find(p => p.id !== socket.id);
+          if (remainingPlayer) {
+            io.to(matchId).emit('rankedOpponentDisconnected');
+            // Give remaining player the win
+            remainingPlayer.score = 3;
+            handleRankedMatchEnd(match, io).catch(console.error);
+          } else {
+            delete rankedMatches[matchId];
+          }
         }
       }
     });
@@ -244,18 +429,12 @@ async function handleGameEnd(lobby: Lobby, io: Server) {
   if (lobby.state === 'finished') return;
   lobby.state = 'finished';
 
-  // Calculate winner based on WPM
   const sortedPlayers = [...lobby.players].sort((a, b) => b.wpm - a.wpm);
   
   if (sortedPlayers.length > 1) {
     const winner = sortedPlayers[0];
-    
-    // Update ELOs in MongoDB
     try {
-      // Winner gets +5
       await User.findByIdAndUpdate(winner.userId, { $inc: { elo: 5 } });
-      
-      // Losers get -3, minimum 10
       for (let i = 1; i < sortedPlayers.length; i++) {
         const loser = sortedPlayers[i];
         const dbUser = await User.findById(loser.userId);
@@ -279,9 +458,49 @@ async function handleGameEnd(lobby: Lobby, io: Server) {
     }))
   });
 
-  // Clean up lobby after 10 seconds
   setTimeout(() => {
     delete lobbies[lobby.id];
     io.emit('publicLobbiesUpdated', getPublicLobbies());
   }, 10000);
+}
+
+async function handleRankedMatchEnd(match: RankedMatch, io: Server) {
+  const p1 = Object.values(match.players)[0];
+  const p2 = Object.values(match.players)[1];
+
+  let winner, loser;
+  if (p1.score > p2.score) {
+    winner = p1;
+    loser = p2;
+  } else {
+    winner = p2;
+    loser = p1;
+  }
+
+  const eloGain = 15;
+  const eloLoss = 10;
+
+  try {
+    await User.findByIdAndUpdate(winner.userId, { $inc: { elo: eloGain } });
+    const loserDoc = await User.findById(loser.userId);
+    if (loserDoc) {
+      loserDoc.elo = Math.max(10, loserDoc.elo - eloLoss);
+      await loserDoc.save();
+    }
+  } catch (err) {
+    console.error('Failed to update Ranked ELOs:', err);
+  }
+
+  io.to(match.id).emit('rankedMatchFinished', {
+    winnerId: winner.id,
+    scores: { [p1.id]: p1.score, [p2.id]: p2.score },
+    eloChanges: {
+      [winner.id]: eloGain,
+      [loser.id]: -eloLoss
+    }
+  });
+
+  setTimeout(() => {
+    delete rankedMatches[match.id];
+  }, 5000);
 }
