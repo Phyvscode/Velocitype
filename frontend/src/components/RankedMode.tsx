@@ -99,7 +99,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
   }
 
   return (
-    <div id={isOpponent ? "opponent-area" : undefined} className={`flex-1 p-4 md:p-8 flex flex-col relative ${isOpponent ? 'bg-slate-900/40 border-l border-white' : 'border-r border-transparent'}`}>
+    <div id={isOpponent ? "opponent-area" : undefined} className={`flex-1 p-4 md:p-8 flex flex-col relative ${isOpponent ? 'bg-slate-900/40' : ''}`}>
       {isOpponent && oppStyle && <style>{oppStyle}</style>}
       <div className="flex justify-between items-end mb-4 md:mb-8">
         <span className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">{label}</span>
@@ -347,23 +347,36 @@ export default function RankedMode({ onBack }: Props) {
 
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (gameState !== 'playing' || !matchData || !socket) return;
-    const val = e.target.value;
+    let val = e.target.value;
     const target = sentences[currentRound];
     
-    // Allow typing only if it matches so far
-    if (target.startsWith(val)) {
-      setTypedText(val);
-      
-      const progress = (val.length / target.length) * 100;
-      const timeElapsed = (Date.now() - (startTime || Date.now())) / 60000;
-      const words = val.length / 5;
-      const wpm = timeElapsed > 0 ? Math.round(words / timeElapsed) : 0;
-      
-      setMyProgress(progress);
-      setMyWpm(wpm);
-      
-      socket.emit('updateRankedProgress', { matchId: matchData.matchId, progress, wpm, typedText: val, activeKeys: Array.from(activeKeys) });
+    if (val.length > target.length) {
+      val = val.slice(0, target.length);
     }
+
+    setTypedText(val);
+    
+    // Only count correct characters for progress and WPM
+    let correctCount = 0;
+    for (let i = 0; i < val.length; i++) {
+      if (val[i] === target[i]) correctCount++;
+    }
+
+    const progress = (correctCount / target.length) * 100;
+    const timeElapsed = (Date.now() - (startTime || Date.now())) / 60000;
+    const words = correctCount / 5;
+    const wpm = timeElapsed > 0 ? Math.round(words / timeElapsed) : 0;
+    
+    setMyProgress(progress);
+    setMyWpm(wpm);
+    
+    socket.emit('updateRankedProgress', { 
+      matchId: matchData.matchId, 
+      progress, 
+      wpm, 
+      typedText: val, 
+      activeKeys: Array.from(activeKeys) 
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -528,8 +541,11 @@ export default function RankedMode({ onBack }: Props) {
 
         {/* Center Divider - with timer shifted down */}
         <div className="hidden md:block absolute left-1/2 top-0 bottom-0 -translate-x-1/2 z-30 pointer-events-none flex flex-col justify-end pb-32">
+          {/* Explicit white separator line */}
+          <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/50 -translate-x-1/2 z-20 pointer-events-none" />
+          
           {gameState === 'playing' && (
-            <div className="bg-background border border-slate-700 rounded-full w-24 h-24 flex flex-col items-center justify-center font-display text-3xl text-slate-100 shadow-lg shadow-black z-30 pointer-events-auto">
+            <div className="bg-background border-2 border-white rounded-full w-24 h-24 flex flex-col items-center justify-center font-display text-3xl text-slate-100 shadow-[0_0_20px_rgba(255,255,255,0.1)] z-30 pointer-events-auto relative">
               {timeLeft}
               <span className="text-xs text-[var(--hot)] font-mono mt-1">SEC</span>
             </div>
