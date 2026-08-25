@@ -60,11 +60,12 @@ export default function RankedMode({ onBack }: Props) {
         if (langObj) {
           // Preload language dictionary
           await loadDictionary(langObj.url);
-          // Generate 9 random sentences (max rounds for first to 5 is 9)
+          // Generate 9 massive blocks of text (one for each round)
           const s = [];
           for (let i = 0; i < 9; i++) {
-             const res = await generateSentences('', ['top'], 3, 10, 5, '');
-             s.push(res[0]); 
+             // Generate a very long text (around 300 words) so it easily lasts 60 seconds
+             const res = await generateSentences('', ['top', 'home', 'bottom'], 2, 10, 300, '');
+             s.push(res.join(' ')); 
           }
           socket.emit('rankedMatchPayload', { matchId: data.matchId, sentences: s });
         }
@@ -81,6 +82,7 @@ export default function RankedMode({ onBack }: Props) {
     const onRoundStart = (data: { round: number }) => {
       setGameState('playing');
       setCurrentRound(data.round);
+      setTimeLeft(60);
       setTypedText('');
       setStartTime(Date.now());
       setMyProgress(0);
@@ -162,6 +164,21 @@ export default function RankedMode({ onBack }: Props) {
     socket.emit('rankedReady', { matchId: matchData.matchId });
   };
 
+  // Timer state
+  const [timeLeft, setTimeLeft] = useState(60);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (gameState === 'playing' && timeLeft > 0) {
+      timerRef.current = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
+    } else if (gameState !== 'playing') {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [timeLeft, gameState]);
+
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (gameState !== 'playing' || !matchData || !socket) return;
     const val = e.target.value;
@@ -180,10 +197,6 @@ export default function RankedMode({ onBack }: Props) {
       setMyWpm(wpm);
       
       socket.emit('updateRankedProgress', { matchId: matchData.matchId, progress, wpm });
-
-      if (val === target) {
-        socket.emit('rankedRoundFinished', { matchId: matchData.matchId });
-      }
     }
   };
 
@@ -254,25 +267,30 @@ export default function RankedMode({ onBack }: Props) {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col h-[70vh] border border-slate-800 rounded bg-slate-900/30 overflow-hidden relative">
+    <div className="w-screen h-[100dvh] flex flex-col bg-background overflow-hidden relative">
       
       {/* Top Bar / Scoreboard */}
-      <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-950/50">
-        <div className="flex items-center gap-4">
+      <div className="flex justify-between items-center p-6 border-b border-slate-800 bg-slate-950/50">
+        <div className="flex items-center gap-6">
           <div>
-            <div className="font-mono text-sm text-[var(--hot)] uppercase tracking-widest">{user.username}</div>
-            <div className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">ELO: {(user as any).elo || 10}</div>
+            <div className="font-mono text-lg text-[var(--hot)] uppercase tracking-widest">{user.username}</div>
+            <div className="font-mono text-xs text-slate-500 uppercase tracking-widest mt-1">ELO: {(user as any).elo || 10}</div>
           </div>
           {renderDots(myScore)}
         </div>
         
-        <div className="font-display text-xl text-slate-400 uppercase tracking-widest">Round {currentRound + 1}</div>
+        <div className="text-center">
+          <div className="font-display text-2xl text-slate-400 uppercase tracking-widest">Round {currentRound + 1}</div>
+          {gameState === 'playing' && (
+            <div className="font-mono text-xl text-slate-200 mt-2">{timeLeft}s</div>
+          )}
+        </div>
 
-        <div className="flex items-center gap-4 text-right">
+        <div className="flex items-center gap-6 text-right">
           {renderDots(oppScore)}
           <div>
-            <div className="font-mono text-sm text-rose-400 uppercase tracking-widest">{matchData.opponent.username}</div>
-            <div className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">ELO: {matchData.opponent.elo}</div>
+            <div className="font-mono text-lg text-rose-400 uppercase tracking-widest">{matchData.opponent.username}</div>
+            <div className="font-mono text-xs text-slate-500 uppercase tracking-widest mt-1">ELO: {matchData.opponent.elo}</div>
           </div>
         </div>
       </div>

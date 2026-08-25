@@ -229,20 +229,7 @@ function App() {
       )}
 
       {screen === 'ranked' && (
-        <div className="min-h-screen bg-transparent text-slate-100 flex flex-col items-center p-8">
-          <header className="w-full flex flex-col items-center justify-center mb-12 relative">
-            <div className="absolute left-8 top-1/2 -translate-y-1/2">
-               <button 
-                onClick={() => navigate('setup')} 
-                className="text-[var(--hot)] hover:text-white font-mono text-sm tracking-widest uppercase transition-colors"
-              >
-                &larr; Back
-              </button>
-            </div>
-            <h1 className="text-7xl font-display tracking-widest text-white uppercase cursor-pointer" onClick={() => navigate('setup')}>Veloci<span className="text-[var(--hot)]">type</span></h1>
-          </header>
-          <RankedMode onBack={() => navigate('setup')} />
-        </div>
+        <RankedMode onBack={() => navigate('setup')} />
       )}
 
       {screen === 'setup' && (
