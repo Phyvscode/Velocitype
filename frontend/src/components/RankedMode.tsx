@@ -73,13 +73,11 @@ export default function RankedMode() {
         if (langObj) {
           // Preload language dictionary
           await loadDictionary(langObj.url);
-          // Generate 5 random sentences (max rounds)
-          // We will use 5 sentences, one for each round
+          // Generate 9 random sentences (max rounds for first to 5 is 9)
           const s = [];
-          for (let i = 0; i < 5; i++) {
-             // Let's generate short sentences (min 4, max 8 words) for quick rounds
+          for (let i = 0; i < 9; i++) {
              const res = await generateSentences('', ['top'], 3, 10, 5, '');
-             s.push(res[0]); // Take first generated sentence
+             s.push(res[0]); 
           }
           newSocket.emit('rankedMatchPayload', { matchId: data.matchId, sentences: s });
         }
@@ -239,11 +237,11 @@ export default function RankedMode() {
   const myScore = scores[socket!.id] || 0;
   const oppScore = scores[matchData.opponent.id] || 0;
 
-  // Dots for Best of 5 (Need 3 to win)
+  // Dots for First to 5
   const renderDots = (score: number) => {
     return (
       <div className="flex gap-2">
-        {[0, 1, 2].map(i => (
+        {[0, 1, 2, 3, 4].map(i => (
           <div key={i} className={`w-3 h-3 rounded-full border ${i < score ? 'bg-[var(--hot)] border-[var(--hot)]' : 'border-slate-700 bg-transparent'}`} />
         ))}
       </div>

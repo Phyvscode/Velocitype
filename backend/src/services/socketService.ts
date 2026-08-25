@@ -343,8 +343,8 @@ export const initSocket = (httpServer: HttpServer) => {
               scores: { [p1.id]: p1.score, [p2.id]: p2.score } 
             });
 
-            // Check if someone reached 3 points (Best of 5)
-            if (player.score >= 3 || match.currentRound >= 4) {
+            // Check if someone reached 5 points
+            if (player.score >= 5) {
               match.state = 'finished';
               await handleRankedMatchEnd(match, io);
             } else {
