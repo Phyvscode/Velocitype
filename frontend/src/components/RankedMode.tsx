@@ -123,11 +123,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
         </div>
       </div>
       
-      <div className="h-1 bg-slate-800 w-full rounded-full overflow-hidden mt-4 mb-4">
-        <div className={`h-full transition-all duration-200 ${isOpponent ? 'bg-rose-400' : 'bg-[var(--hot)]'}`} style={{ width: `${progress}%` }} />
-      </div>
-
-      <div className="w-full max-w-[600px] mx-auto opacity-50 transform scale-[0.6] origin-bottom md:scale-75">
+      <div className="w-full max-w-[600px] mx-auto transform scale-[0.6] origin-bottom md:scale-75 mt-auto pt-8">
         <LiveKeyboard activeKeys={activeKeys} />
       </div>
     </div>
