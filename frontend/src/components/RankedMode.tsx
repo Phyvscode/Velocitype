@@ -10,7 +10,13 @@ interface RankedMatchData {
   matchId: string;
   language: string;
   role: 'host' | 'client';
-  opponent: { id: string; username: string; elo: number };
+  opponent: { 
+    id: string; 
+    username: string; 
+    elo: number;
+    colorTheme?: any;
+    fontFamily?: string;
+  };
 }
 
 interface RankedMatchState {
@@ -31,9 +37,11 @@ interface RankedPlayerAreaProps {
   activeKeys: Set<string>;
   gameState: string;
   isOpponent?: boolean;
+  colorTheme?: any;
+  fontFamily?: string;
 }
 
-function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent }: RankedPlayerAreaProps) {
+function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily }: RankedPlayerAreaProps) {
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
@@ -63,11 +71,39 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
     }
   }, [typedText, targetText]);
 
+  // Extract opponent colors if available
+  let oppPrimaryHex = '#fbbf24';
+  let oppStyle = '';
+  if (isOpponent && colorTheme) {
+    const hexes = colorTheme.value.match(/#[0-9a-fA-F]{6}/g) || ['#f59e0b'];
+    oppPrimaryHex = hexes[0];
+    const cssRules = colorTheme.isGradient ? `
+      #opponent-area span {
+        background-image: ${colorTheme.value} !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        color: transparent !important;
+      }
+    ` : `
+      #opponent-area span {
+        color: ${colorTheme.value} !important;
+      }
+    `;
+    oppStyle = `
+      #opponent-area {
+        --hot: ${oppPrimaryHex};
+        font-family: "${fontFamily || 'Inter'}", sans-serif !important;
+      }
+      ${cssRules}
+    `;
+  }
+
   return (
-    <div className={`flex-1 p-4 md:p-8 flex flex-col relative ${isOpponent ? 'bg-slate-900/20' : ''}`}>
+    <div id={isOpponent ? "opponent-area" : undefined} className={`flex-1 p-4 md:p-8 flex flex-col relative ${isOpponent ? 'bg-slate-900/40 border-l border-white' : 'border-r border-transparent'}`}>
+      {isOpponent && oppStyle && <style>{oppStyle}</style>}
       <div className="flex justify-between items-end mb-4 md:mb-8">
         <span className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">{label}</span>
-        <span className={`font-mono text-sm uppercase tracking-widest ${isOpponent ? 'text-rose-400' : 'text-[var(--hot)]'}`}>{wpm} WPM</span>
+        <span className="font-mono text-sm uppercase tracking-widest" style={{ color: isOpponent ? oppPrimaryHex : 'var(--hot)' }}>{wpm} WPM</span>
       </div>
 
       <div className="flex-1 relative flex flex-col justify-center overflow-visible">
@@ -93,26 +129,36 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
             >
               {/* Caret */}
               <span
-                className={`absolute -translate-y-1/2 w-[3px] h-[1em] rounded-full pointer-events-none transition-all duration-150 ease-out animate-caret ${isOpponent ? 'bg-rose-400' : 'bg-[var(--hot)]'}`}
+                className="absolute -translate-y-1/2 w-[3px] h-[1em] rounded-full pointer-events-none transition-all duration-150 ease-out animate-caret"
                 style={{
                   left: `${caretLeft}px`,
                   top: `${caretTop}px`,
-                  opacity: gameState === 'playing' ? 1 : 0
+                  opacity: gameState === 'playing' ? 1 : 0,
+                  backgroundColor: isOpponent ? oppPrimaryHex : 'var(--hot)'
                 }}
               />
 
               {targetText.split('').map((char, i) => {
                 let color = 'text-slate-500';
                 if (i < typedText.length) {
-                  color = typedText[i] === char ? (isOpponent ? 'text-rose-300' : 'text-[var(--hot)]') : (isOpponent ? 'text-purple-500 underline' : 'text-rose-500 underline');
+                  // We don't apply classes for correct opponent text, we rely on the injected #opponent-area span css!
+                  // Except for mistakes, which we style specifically.
+                  color = typedText[i] === char ? 'correct-char' : 'text-rose-500 underline exclude-theme';
                 } else if (i === typedText.length) {
-                  color = 'text-slate-100';
+                  color = 'text-slate-100 exclude-theme';
                 }
+                
+                // For the local player, we apply the normal theme class
+                if (!isOpponent && color === 'correct-char') {
+                  color = 'text-[var(--hot)]';
+                }
+
                 return (
                   <span 
                     key={i} 
                     ref={el => letterRefs.current[i] = el}
                     className={`transition-colors ${color}`}
+                    style={isOpponent && color === 'correct-char' ? {} : undefined} // will use scoped styles
                   >
                     {char}
                   </span>
@@ -261,11 +307,14 @@ export default function RankedMode({ onBack }: Props) {
 
   const handleJoinQueue = () => {
     if (!socket || !user) return;
+    setQueueing(true);
     socket.emit('joinRankedQueue', { 
       userId: user.id, 
       username: user.username, 
-      elo: (user as any).elo || 10, 
-      language 
+      elo: (user as any).elo || 10,
+      language,
+      colorTheme: user.colorTheme,
+      fontFamily: user.fontFamily
     });
   };
 
@@ -473,10 +522,12 @@ export default function RankedMode({ onBack }: Props) {
           activeKeys={oppActiveKeys}
           gameState={gameState}
           isOpponent
+          colorTheme={matchData.opponent.colorTheme}
+          fontFamily={matchData.opponent.fontFamily}
         />
 
-        {/* Center Divider (Placed last to render on top of progress bars) */}
-        <div className="hidden md:block absolute left-1/2 top-0 bottom-0 -translate-x-1/2 z-30 pointer-events-none flex flex-col justify-center">
+        {/* Center Divider - with timer shifted down */}
+        <div className="hidden md:block absolute left-1/2 top-0 bottom-0 -translate-x-1/2 z-30 pointer-events-none flex flex-col justify-end pb-32">
           {gameState === 'playing' && (
             <div className="bg-background border border-slate-700 rounded-full w-24 h-24 flex flex-col items-center justify-center font-display text-3xl text-slate-100 shadow-lg shadow-black z-30 pointer-events-auto">
               {timeLeft}
