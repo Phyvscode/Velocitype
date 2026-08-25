@@ -41,10 +41,51 @@ export default function RankedMode({ onBack }: Props) {
   const [matchWinner, setMatchWinner] = useState<string | null>(null);
   const [eloChanges, setEloChanges] = useState<Record<string, number>>({});
 
-  // Typing state
   const [typedText, setTypedText] = useState('');
   const [startTime, setStartTime] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Caret / Scrolling state
+  const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const [caretLeft, setCaretLeft] = useState(0);
+  const [caretTop, setCaretTop] = useState(0);
+  const [scrollLines, setScrollLines] = useState(0);
+
+  const updateCaretPosition = () => {
+    if (!matchData) return;
+    const targetText = sentences[currentRound] || '';
+    const nextIndex = Math.min(typedText.length, targetText.length - 1);
+    
+    let currentLine = 0;
+    let lastTop = letterRefs.current[0]?.offsetTop || 0;
+    for (let i = 1; i <= nextIndex; i++) {
+      const el = letterRefs.current[i];
+      if (el && el.offsetTop > lastTop + 10) {
+        currentLine++;
+        lastTop = el.offsetTop;
+      }
+    }
+    setScrollLines(currentLine);
+
+    const nextEl = letterRefs.current[nextIndex];
+    if (nextEl) {
+      if (typedText.length >= targetText.length) {
+        setCaretLeft(nextEl.offsetLeft + nextEl.offsetWidth);
+      } else {
+        setCaretLeft(nextEl.offsetLeft);
+      }
+      setCaretTop(nextEl.offsetTop + nextEl.offsetHeight / 2);
+    }
+  };
+
+  useEffect(() => {
+    updateCaretPosition();
+  }, [typedText, sentences, currentRound, matchData]);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateCaretPosition);
+    return () => window.removeEventListener('resize', updateCaretPosition);
+  }, [updateCaretPosition]);
 
   useEffect(() => {
     if (!user || !socket || !isConnected) return;
@@ -267,7 +308,15 @@ export default function RankedMode({ onBack }: Props) {
   };
 
   return (
-    <div className="w-screen h-[100dvh] flex flex-col bg-background overflow-hidden relative">
+    <div 
+      className="w-screen h-[100dvh] flex flex-col bg-background overflow-hidden relative"
+      onMouseDown={(e) => {
+        const t = e.target as HTMLElement;
+        if (t.closest('button, select')) return;
+        e.preventDefault();
+        inputRef.current?.focus();
+      }}
+    >
       
       {/* Top Bar / Scoreboard */}
       <div className="flex justify-between items-center p-6 border-b border-slate-800 bg-slate-950/50">
@@ -281,9 +330,6 @@ export default function RankedMode({ onBack }: Props) {
         
         <div className="text-center">
           <div className="font-display text-2xl text-slate-400 uppercase tracking-widest">Round {currentRound + 1}</div>
-          {gameState === 'playing' && (
-            <div className="font-mono text-xl text-slate-200 mt-2">{timeLeft}s</div>
-          )}
         </div>
 
         <div className="flex items-center gap-6 text-right">
@@ -298,7 +344,14 @@ export default function RankedMode({ onBack }: Props) {
       {/* Split Screen Area */}
       <div className="flex-1 flex flex-col md:flex-row relative">
         {/* Center Divider */}
-        <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-slate-800 -translate-x-1/2 z-10" />
+        <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-slate-800 -translate-x-1/2 z-10">
+          {gameState === 'playing' && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border border-slate-700 rounded-full w-20 h-20 flex flex-col items-center justify-center font-display text-2xl text-slate-100 shadow-lg shadow-black/50 z-20">
+              {timeLeft}
+              <span className="text-[10px] text-[var(--hot)] font-mono">SEC</span>
+            </div>
+          )}
+        </div>
 
         {/* My Side (Left) */}
         <div className="flex-1 p-8 flex flex-col relative">
@@ -307,17 +360,56 @@ export default function RankedMode({ onBack }: Props) {
             <span className="font-mono text-sm text-[var(--hot)] uppercase tracking-widest">{myWpm} WPM</span>
           </div>
 
-          <div className="flex-1 relative">
-            <div className="font-mono text-2xl leading-relaxed text-slate-600 break-words whitespace-pre-wrap">
-              {targetText.split('').map((char, i) => {
-                let color = 'text-slate-600';
-                if (i < typedText.length) {
-                  color = typedText[i] === char ? 'text-[var(--hot)]' : 'text-rose-500 underline bg-rose-500/10';
-                } else if (i === typedText.length && gameState === 'playing') {
-                  color = 'text-slate-100 bg-slate-800';
-                }
-                return <span key={i} className={color}>{char}</span>;
-              })}
+          <div className="flex-1 relative flex flex-col justify-center overflow-visible">
+            <div 
+              className="relative w-full transition-colors duration-150 select-none font-mono tracking-wide text-left"
+              style={{ fontSize: 'clamp(16px, 2vw, 24px)' }}
+            >
+              <div 
+                className="overflow-hidden relative"
+                style={{ 
+                  height: '4.8em', // Show ~3 lines
+                  lineHeight: 1.6,
+                  WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
+                  maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
+                }}
+              >
+                <div 
+                  className="transition-transform duration-200 ease-out relative"
+                  style={{
+                    transform: `translateY(calc(-${scrollLines} * 1.6em))`,
+                    whiteSpace: 'pre-wrap'
+                  }}
+                >
+                  {/* Caret */}
+                  <span
+                    className="absolute -translate-y-1/2 w-[3px] h-[1em] bg-[var(--hot)] rounded-full pointer-events-none transition-all duration-150 ease-out animate-caret"
+                    style={{
+                      left: `${caretLeft}px`,
+                      top: `${caretTop}px`,
+                      opacity: gameState === 'playing' ? 1 : 0
+                    }}
+                  />
+
+                  {targetText.split('').map((char, i) => {
+                    let color = 'text-slate-500';
+                    if (i < typedText.length) {
+                      color = typedText[i] === char ? 'text-[var(--hot)]' : 'text-rose-500 underline';
+                    } else if (i === typedText.length) {
+                      color = 'text-slate-100';
+                    }
+                    return (
+                      <span 
+                        key={i} 
+                        ref={el => letterRefs.current[i] = el}
+                        className={`transition-colors ${color}`}
+                      >
+                        {char}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
             
             {/* Hidden Input */}
