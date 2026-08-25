@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { LANGUAGES } from '@/lib/languages';
 import { loadDictionary } from '@/lib/words';
@@ -17,10 +17,13 @@ interface RankedMatchState {
   scores: Record<string, number>;
 }
 
-export default function RankedMode() {
+interface Props {
+  onBack: () => void;
+}
+
+export default function RankedMode({ onBack }: Props) {
   const { user } = useAuth();
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const { socket, isConnected } = useSocket();
   const [language, setLanguage] = useState('english');
   const [queueing, setQueueing] = useState(false);
   const [matchData, setMatchData] = useState<RankedMatchData | null>(null);
@@ -44,26 +47,10 @@ export default function RankedMode() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !socket || !isConnected) return;
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
-    const newSocket = io(backendUrl);
-
-    newSocket.on('connect', () => {
-      setIsConnected(true);
-      setSocket(newSocket);
-    });
-
-    newSocket.on('disconnect', () => {
-      setIsConnected(false);
-      setQueueing(false);
-    });
-
-    newSocket.on('rankedQueueJoined', () => {
-      setQueueing(true);
-    });
-
-    newSocket.on('rankedMatchFound', async (data: RankedMatchData) => {
+    const onQueueJoined = () => setQueueing(true);
+    const onMatchFound = async (data: RankedMatchData) => {
       setQueueing(false);
       setMatchData(data);
       
@@ -79,19 +66,19 @@ export default function RankedMode() {
              const res = await generateSentences('', ['top'], 3, 10, 5, '');
              s.push(res[0]); 
           }
-          newSocket.emit('rankedMatchPayload', { matchId: data.matchId, sentences: s });
+          socket.emit('rankedMatchPayload', { matchId: data.matchId, sentences: s });
         }
       }
-    });
+    };
 
-    newSocket.on('rankedMatchReady', (data: { sentences: string[] }) => {
+    const onMatchReady = (data: { sentences: string[] }) => {
       setSentences(data.sentences);
       setGameState('waiting_ready');
       setCurrentRound(0);
       setAmIReady(false);
-    });
+    };
 
-    newSocket.on('rankedRoundStart', (data: { round: number }) => {
+    const onRoundStart = (data: { round: number }) => {
       setGameState('playing');
       setCurrentRound(data.round);
       setTypedText('');
@@ -101,39 +88,57 @@ export default function RankedMode() {
       setOppProgress(0);
       setOppWpm(0);
       setTimeout(() => inputRef.current?.focus(), 100);
-    });
+    };
 
-    newSocket.on('rankedOpponentProgress', (data: { progress: number; wpm: number }) => {
+    const onOpponentProgress = (data: { progress: number; wpm: number }) => {
       setOppProgress(data.progress);
       setOppWpm(data.wpm);
-    });
+    };
 
-    newSocket.on('rankedRoundEnd', (data: { winnerId: string; scores: Record<string, number> }) => {
+    const onRoundEnd = (data: { winnerId: string; scores: Record<string, number> }) => {
       setGameState('round_finished');
       setScores(data.scores);
-    });
+    };
 
-    newSocket.on('rankedNextRound', (data: { round: number }) => {
+    const onNextRound = (data: { round: number }) => {
       setGameState('waiting_ready');
       setCurrentRound(data.round);
       setAmIReady(false);
-    });
+    };
 
-    newSocket.on('rankedMatchFinished', (data: { winnerId: string; scores: Record<string, number>; eloChanges: Record<string, number> }) => {
+    const onMatchFinished = (data: { winnerId: string; scores: Record<string, number>; eloChanges: Record<string, number> }) => {
       setGameState('match_finished');
       setMatchWinner(data.winnerId);
       setScores(data.scores);
       setEloChanges(data.eloChanges);
-    });
+    };
 
-    newSocket.on('rankedOpponentDisconnected', () => {
+    const onOpponentDisconnected = () => {
       alert('Opponent disconnected. You win by default!');
-    });
+    };
+
+    socket.on('rankedQueueJoined', onQueueJoined);
+    socket.on('rankedMatchFound', onMatchFound);
+    socket.on('rankedMatchReady', onMatchReady);
+    socket.on('rankedRoundStart', onRoundStart);
+    socket.on('rankedOpponentProgress', onOpponentProgress);
+    socket.on('rankedRoundEnd', onRoundEnd);
+    socket.on('rankedNextRound', onNextRound);
+    socket.on('rankedMatchFinished', onMatchFinished);
+    socket.on('rankedOpponentDisconnected', onOpponentDisconnected);
 
     return () => {
-      newSocket.disconnect();
+      socket.off('rankedQueueJoined', onQueueJoined);
+      socket.off('rankedMatchFound', onMatchFound);
+      socket.off('rankedMatchReady', onMatchReady);
+      socket.off('rankedRoundStart', onRoundStart);
+      socket.off('rankedOpponentProgress', onOpponentProgress);
+      socket.off('rankedRoundEnd', onRoundEnd);
+      socket.off('rankedNextRound', onNextRound);
+      socket.off('rankedMatchFinished', onMatchFinished);
+      socket.off('rankedOpponentDisconnected', onOpponentDisconnected);
     };
-  }, [user]);
+  }, [user, socket, isConnected]);
 
   const handleJoinQueue = () => {
     if (!socket || !user) return;

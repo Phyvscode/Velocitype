@@ -33,6 +33,8 @@ interface Props {
   onOpenColor: () => void;
   onOpenUiColor: () => void;
   onOpenBorder: () => void;
+  onOpenCasual: () => void;
+  onOpenRanked: () => void;
   onLobbyJoined: (code: string) => void;
 }
 
@@ -152,6 +154,8 @@ export default function SetupScreen({
   onOpenColor,
   onOpenUiColor,
   onOpenBorder,
+  onOpenCasual,
+  onOpenRanked,
   onLobbyJoined,
 }: Props) {
   const [typedText, setTypedText] = useState('');
@@ -1154,7 +1158,7 @@ export default function SetupScreen({
               <div className="pt-8">
                 <div className="flex flex-col md:flex-row gap-6 w-full max-w-2xl mx-auto">
                   <button
-                    onClick={() => window.open('/?page=casual', '_blank')}
+                    onClick={onOpenCasual}
                     className="flex-1 group relative p-8 border border-slate-800 rounded-lg bg-slate-900/30 hover:bg-slate-800/50 hover:border-[var(--hot)] transition-all duration-300 text-left overflow-hidden"
                   >
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
@@ -1167,7 +1171,7 @@ export default function SetupScreen({
                   </button>
 
                   <button
-                    onClick={() => window.open('/?page=ranked', '_blank')}
+                    onClick={onOpenRanked}
                     className="flex-1 group relative p-8 border border-slate-800 rounded-lg bg-slate-900/30 hover:bg-slate-800/50 hover:border-[var(--hot)] transition-all duration-300 text-left overflow-hidden"
                   >
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">

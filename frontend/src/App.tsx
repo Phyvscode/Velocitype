@@ -20,7 +20,7 @@ import MultiplayerGame from '@/components/MultiplayerGame';
 import VirtualKeyboardConnector from '@/components/VirtualKeyboardConnector';
 import RankedMode from '@/components/RankedMode';
 
-type Screen = 'setup' | 'game' | 'results' | 'library' | 'lobby' | 'multiplayerGame';
+type Screen = 'setup' | 'game' | 'results' | 'library' | 'lobby' | 'multiplayerGame' | 'casual' | 'ranked';
 
 function App() {
   const { user, loading } = useAuth();
@@ -205,18 +205,21 @@ function App() {
     );
   }
 
-  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
-  const page = searchParams.get('page');
-
   return (
     <div className="font-sans antialiased text-slate-100 bg-background h-[100dvh] w-full overflow-y-auto overflow-x-hidden relative">
-      {page === 'casual' && screen === 'setup' && (
+      {screen === 'casual' && (
         <div className="min-h-screen bg-transparent text-slate-100 flex flex-col items-center p-8">
           <header className="w-full flex flex-col items-center justify-center mb-12">
-            <h1 className="text-7xl font-display tracking-widest text-white uppercase cursor-pointer" onClick={() => window.location.href = '/'}>Veloci<span className="text-[var(--hot)]">type</span></h1>
+            <h1 className="text-7xl font-display tracking-widest text-white uppercase cursor-pointer" onClick={() => navigate('setup')}>Veloci<span className="text-[var(--hot)]">type</span></h1>
             <h2 className="text-xl font-mono text-[var(--hot)] uppercase tracking-widest mt-4">Casual Multiplayer</h2>
           </header>
-          <div className="w-full max-w-2xl">
+          <div className="w-full max-w-2xl relative">
+            <button 
+              onClick={() => navigate('setup')} 
+              className="absolute -top-12 left-0 text-[var(--hot)] hover:text-white font-mono text-sm tracking-widest uppercase transition-colors"
+            >
+              &larr; Back
+            </button>
             <VersusModeSetup onLobbyJoined={(code) => {
               setLobbyCode(code);
               navigate('lobby');
@@ -225,16 +228,24 @@ function App() {
         </div>
       )}
 
-      {page === 'ranked' && screen === 'setup' && (
+      {screen === 'ranked' && (
         <div className="min-h-screen bg-transparent text-slate-100 flex flex-col items-center p-8">
-          <header className="w-full flex flex-col items-center justify-center mb-12">
-            <h1 className="text-7xl font-display tracking-widest text-white uppercase cursor-pointer" onClick={() => window.location.href = '/'}>Veloci<span className="text-[var(--hot)]">type</span></h1>
+          <header className="w-full flex flex-col items-center justify-center mb-12 relative">
+            <div className="absolute left-8 top-1/2 -translate-y-1/2">
+               <button 
+                onClick={() => navigate('setup')} 
+                className="text-[var(--hot)] hover:text-white font-mono text-sm tracking-widest uppercase transition-colors"
+              >
+                &larr; Back
+              </button>
+            </div>
+            <h1 className="text-7xl font-display tracking-widest text-white uppercase cursor-pointer" onClick={() => navigate('setup')}>Veloci<span className="text-[var(--hot)]">type</span></h1>
           </header>
-          <RankedMode />
+          <RankedMode onBack={() => navigate('setup')} />
         </div>
       )}
 
-      {page !== 'casual' && page !== 'ranked' && screen === 'setup' && (
+      {screen === 'setup' && (
         <SetupScreen
           onStart={handleStart}
           onOpenLibrary={() => navigate('library')}
@@ -244,6 +255,8 @@ function App() {
           onOpenColor={() => setIsColorModalOpen(true)} 
           onOpenUiColor={() => setIsUiColorModalOpen(true)}
           onOpenBorder={() => setIsBorderModalOpen(true)}
+          onOpenCasual={() => navigate('casual')}
+          onOpenRanked={() => navigate('ranked')}
           onLobbyJoined={(code) => {
             setLobbyCode(code);
             navigate('lobby');
