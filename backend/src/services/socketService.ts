@@ -361,14 +361,19 @@ export const initSocket = (httpServer: HttpServer) => {
       }
     });
 
-    socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number }) => {
+    socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number; typedText?: string; activeKeys?: string[] }) => {
       const match = rankedMatches[data.matchId];
       if (match && match.state === 'playing') {
         const player = match.players[socket.id];
         if (player) {
           player.progress = data.progress;
           player.wpm = data.wpm;
-          socket.to(data.matchId).emit('rankedOpponentProgress', { progress: data.progress, wpm: data.wpm });
+          socket.to(data.matchId).emit('rankedOpponentProgress', { 
+            progress: data.progress, 
+            wpm: data.wpm, 
+            typedText: data.typedText, 
+            activeKeys: data.activeKeys 
+          });
         }
       }
     });

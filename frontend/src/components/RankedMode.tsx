@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LANGUAGES } from '@/lib/languages';
 import { loadDictionary } from '@/lib/words';
 import { generateSentences } from '@/lib/quotes';
+import LiveKeyboard, { getKeyLabel } from '@/components/LiveKeyboard';
 
 interface RankedMatchData {
   matchId: string;
@@ -19,6 +20,118 @@ interface RankedMatchState {
 
 interface Props {
   onBack: () => void;
+}
+
+interface RankedPlayerAreaProps {
+  label: string;
+  wpm: number;
+  progress: number;
+  targetText: string;
+  typedText: string;
+  activeKeys: Set<string>;
+  gameState: string;
+  isOpponent?: boolean;
+}
+
+function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent }: RankedPlayerAreaProps) {
+  const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const [caretLeft, setCaretLeft] = useState(0);
+  const [caretTop, setCaretTop] = useState(0);
+  const [scrollLines, setScrollLines] = useState(0);
+
+  useEffect(() => {
+    const nextIndex = Math.min(typedText.length, targetText.length - 1);
+    let currentLine = 0;
+    let lastTop = letterRefs.current[0]?.offsetTop || 0;
+    for (let i = 1; i <= nextIndex; i++) {
+      const el = letterRefs.current[i];
+      if (el && el.offsetTop > lastTop + 10) {
+        currentLine++;
+        lastTop = el.offsetTop;
+      }
+    }
+    setScrollLines(currentLine);
+
+    const nextEl = letterRefs.current[nextIndex];
+    if (nextEl) {
+      if (typedText.length >= targetText.length) {
+        setCaretLeft(nextEl.offsetLeft + nextEl.offsetWidth);
+      } else {
+        setCaretLeft(nextEl.offsetLeft);
+      }
+      setCaretTop(nextEl.offsetTop + nextEl.offsetHeight / 2);
+    }
+  }, [typedText, targetText]);
+
+  return (
+    <div className={`flex-1 p-4 md:p-8 flex flex-col relative ${isOpponent ? 'bg-slate-900/20' : ''}`}>
+      <div className="flex justify-between items-end mb-4 md:mb-8">
+        <span className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">{label}</span>
+        <span className={`font-mono text-sm uppercase tracking-widest ${isOpponent ? 'text-rose-400' : 'text-[var(--hot)]'}`}>{wpm} WPM</span>
+      </div>
+
+      <div className="flex-1 relative flex flex-col justify-center overflow-visible">
+        <div 
+          className="relative w-full transition-colors duration-150 select-none font-mono tracking-wide text-left"
+          style={{ fontSize: 'clamp(14px, 1.8vw, 24px)' }}
+        >
+          <div 
+            className="overflow-hidden relative"
+            style={{ 
+              height: '4.8em',
+              lineHeight: 1.6,
+              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
+              maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
+            }}
+          >
+            <div 
+              className="transition-transform duration-200 ease-out relative"
+              style={{
+                transform: `translateY(calc(-${scrollLines} * 1.6em))`,
+                whiteSpace: 'pre-wrap'
+              }}
+            >
+              {/* Caret */}
+              <span
+                className={`absolute -translate-y-1/2 w-[3px] h-[1em] rounded-full pointer-events-none transition-all duration-150 ease-out animate-caret ${isOpponent ? 'bg-rose-400' : 'bg-[var(--hot)]'}`}
+                style={{
+                  left: `${caretLeft}px`,
+                  top: `${caretTop}px`,
+                  opacity: gameState === 'playing' ? 1 : 0
+                }}
+              />
+
+              {targetText.split('').map((char, i) => {
+                let color = 'text-slate-500';
+                if (i < typedText.length) {
+                  color = typedText[i] === char ? (isOpponent ? 'text-rose-300' : 'text-[var(--hot)]') : (isOpponent ? 'text-purple-500 underline' : 'text-rose-500 underline');
+                } else if (i === typedText.length) {
+                  color = 'text-slate-100';
+                }
+                return (
+                  <span 
+                    key={i} 
+                    ref={el => letterRefs.current[i] = el}
+                    className={`transition-colors ${color}`}
+                  >
+                    {char}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="h-1 bg-slate-800 w-full rounded-full overflow-hidden mt-4 mb-4">
+        <div className={`h-full transition-all duration-200 ${isOpponent ? 'bg-rose-400' : 'bg-[var(--hot)]'}`} style={{ width: `${progress}%` }} />
+      </div>
+
+      <div className="w-full max-w-[600px] mx-auto opacity-50 transform scale-[0.6] origin-bottom md:scale-75">
+        <LiveKeyboard activeKeys={activeKeys} />
+      </div>
+    </div>
+  );
 }
 
 export default function RankedMode({ onBack }: Props) {
@@ -42,50 +155,13 @@ export default function RankedMode({ onBack }: Props) {
   const [eloChanges, setEloChanges] = useState<Record<string, number>>({});
 
   const [typedText, setTypedText] = useState('');
+  const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
   const [startTime, setStartTime] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Caret / Scrolling state
-  const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const [caretLeft, setCaretLeft] = useState(0);
-  const [caretTop, setCaretTop] = useState(0);
-  const [scrollLines, setScrollLines] = useState(0);
-
-  const updateCaretPosition = () => {
-    if (!matchData) return;
-    const targetText = sentences[currentRound] || '';
-    const nextIndex = Math.min(typedText.length, targetText.length - 1);
-    
-    let currentLine = 0;
-    let lastTop = letterRefs.current[0]?.offsetTop || 0;
-    for (let i = 1; i <= nextIndex; i++) {
-      const el = letterRefs.current[i];
-      if (el && el.offsetTop > lastTop + 10) {
-        currentLine++;
-        lastTop = el.offsetTop;
-      }
-    }
-    setScrollLines(currentLine);
-
-    const nextEl = letterRefs.current[nextIndex];
-    if (nextEl) {
-      if (typedText.length >= targetText.length) {
-        setCaretLeft(nextEl.offsetLeft + nextEl.offsetWidth);
-      } else {
-        setCaretLeft(nextEl.offsetLeft);
-      }
-      setCaretTop(nextEl.offsetTop + nextEl.offsetHeight / 2);
-    }
-  };
-
-  useEffect(() => {
-    updateCaretPosition();
-  }, [typedText, sentences, currentRound, matchData]);
-
-  useEffect(() => {
-    window.addEventListener('resize', updateCaretPosition);
-    return () => window.removeEventListener('resize', updateCaretPosition);
-  }, [updateCaretPosition]);
+  // Opponent typing state
+  const [oppTypedText, setOppTypedText] = useState('');
+  const [oppActiveKeys, setOppActiveKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user || !socket || !isConnected) return;
@@ -133,9 +209,11 @@ export default function RankedMode({ onBack }: Props) {
       setTimeout(() => inputRef.current?.focus(), 100);
     };
 
-    const onOpponentProgress = (data: { progress: number; wpm: number }) => {
+    const onOpponentProgress = (data: { progress: number; wpm: number; typedText?: string; activeKeys?: string[] }) => {
       setOppProgress(data.progress);
       setOppWpm(data.wpm);
+      if (data.typedText !== undefined) setOppTypedText(data.typedText);
+      if (data.activeKeys) setOppActiveKeys(new Set(data.activeKeys));
     };
 
     const onRoundEnd = (data: { winnerId: string; scores: Record<string, number> }) => {
@@ -147,6 +225,8 @@ export default function RankedMode({ onBack }: Props) {
       setGameState('waiting_ready');
       setCurrentRound(data.round);
       setAmIReady(false);
+      setOppTypedText('');
+      setOppActiveKeys(new Set());
     };
 
     const onMatchFinished = (data: { winnerId: string; scores: Record<string, number>; eloChanges: Record<string, number> }) => {
@@ -237,8 +317,28 @@ export default function RankedMode({ onBack }: Props) {
       setMyProgress(progress);
       setMyWpm(wpm);
       
-      socket.emit('updateRankedProgress', { matchId: matchData.matchId, progress, wpm });
+      socket.emit('updateRankedProgress', { matchId: matchData.matchId, progress, wpm, typedText: val, activeKeys: Array.from(activeKeys) });
     }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const key = getKeyLabel(e);
+    setActiveKeys(prev => {
+      const next = new Set(prev);
+      next.add(key);
+      socket?.emit('updateRankedProgress', { matchId: matchData?.matchId, progress: myProgress, wpm: myWpm, typedText, activeKeys: Array.from(next) });
+      return next;
+    });
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const key = getKeyLabel(e);
+    setActiveKeys(prev => {
+      const next = new Set(prev);
+      next.delete(key);
+      socket?.emit('updateRankedProgress', { matchId: matchData?.matchId, progress: myProgress, wpm: myWpm, typedText, activeKeys: Array.from(next) });
+      return next;
+    });
   };
 
   if (!user) {
@@ -354,98 +454,40 @@ export default function RankedMode({ onBack }: Props) {
         </div>
 
         {/* My Side (Left) */}
-        <div className="flex-1 p-8 flex flex-col relative">
-          <div className="flex justify-between items-end mb-8">
-            <span className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">Your Area</span>
-            <span className="font-mono text-sm text-[var(--hot)] uppercase tracking-widest">{myWpm} WPM</span>
-          </div>
-
-          <div className="flex-1 relative flex flex-col justify-center overflow-visible">
-            <div 
-              className="relative w-full transition-colors duration-150 select-none font-mono tracking-wide text-left"
-              style={{ fontSize: 'clamp(16px, 2vw, 24px)' }}
-            >
-              <div 
-                className="overflow-hidden relative"
-                style={{ 
-                  height: '4.8em', // Show ~3 lines
-                  lineHeight: 1.6,
-                  WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
-                  maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
-                }}
-              >
-                <div 
-                  className="transition-transform duration-200 ease-out relative"
-                  style={{
-                    transform: `translateY(calc(-${scrollLines} * 1.6em))`,
-                    whiteSpace: 'pre-wrap'
-                  }}
-                >
-                  {/* Caret */}
-                  <span
-                    className="absolute -translate-y-1/2 w-[3px] h-[1em] bg-[var(--hot)] rounded-full pointer-events-none transition-all duration-150 ease-out animate-caret"
-                    style={{
-                      left: `${caretLeft}px`,
-                      top: `${caretTop}px`,
-                      opacity: gameState === 'playing' ? 1 : 0
-                    }}
-                  />
-
-                  {targetText.split('').map((char, i) => {
-                    let color = 'text-slate-500';
-                    if (i < typedText.length) {
-                      color = typedText[i] === char ? 'text-[var(--hot)]' : 'text-rose-500 underline';
-                    } else if (i === typedText.length) {
-                      color = 'text-slate-100';
-                    }
-                    return (
-                      <span 
-                        key={i} 
-                        ref={el => letterRefs.current[i] = el}
-                        className={`transition-colors ${color}`}
-                      >
-                        {char}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-            
-            {/* Hidden Input */}
-            <input 
-              ref={inputRef}
-              type="text"
-              value={typedText}
-              onChange={handleTyping}
-              disabled={gameState !== 'playing'}
-              className="absolute opacity-0 -z-10"
-              autoFocus
-            />
-          </div>
-          
-          <div className="h-1 bg-slate-800 w-full rounded-full overflow-hidden mt-4">
-            <div className="h-full bg-[var(--hot)] transition-all duration-200" style={{ width: `${myProgress}%` }} />
-          </div>
-        </div>
+        <RankedPlayerArea
+          label="Your Area"
+          wpm={myWpm}
+          progress={myProgress}
+          targetText={targetText}
+          typedText={typedText}
+          activeKeys={activeKeys}
+          gameState={gameState}
+        />
+        
+        {/* Hidden Input for me */}
+        <input 
+          ref={inputRef}
+          type="text"
+          value={typedText}
+          onChange={handleTyping}
+          onKeyDown={handleKeyDown}
+          onKeyUp={handleKeyUp}
+          disabled={gameState !== 'playing'}
+          className="absolute opacity-0 -z-10"
+          autoFocus
+        />
 
         {/* Opponent Side (Right) */}
-        <div className="flex-1 p-8 flex flex-col relative bg-slate-900/20">
-          <div className="flex justify-between items-end mb-8">
-            <span className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">Opponent Area</span>
-            <span className="font-mono text-sm text-rose-400 uppercase tracking-widest">{oppWpm} WPM</span>
-          </div>
-
-          <div className="flex-1 flex flex-col justify-center items-center opacity-50">
-            {/* We don't show the exact opponent text, just their progress clearly */}
-            <div className="w-full text-center space-y-4">
-              <span className="font-display text-4xl text-rose-400">{Math.round(oppProgress)}%</span>
-              <div className="h-2 bg-slate-800 w-full rounded-full overflow-hidden shadow-inner">
-                <div className="h-full bg-rose-400 transition-all duration-300" style={{ width: `${oppProgress}%` }} />
-              </div>
-            </div>
-          </div>
-        </div>
+        <RankedPlayerArea
+          label="Opponent Area"
+          wpm={oppWpm}
+          progress={oppProgress}
+          targetText={targetText}
+          typedText={oppTypedText}
+          activeKeys={oppActiveKeys}
+          gameState={gameState}
+          isOpponent
+        />
       </div>
 
       {/* Overlays */}
