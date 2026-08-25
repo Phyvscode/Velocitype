@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { getStoredBgColor } from '@/lib/colors';
 import { LANGUAGES } from '@/lib/languages';
 import { loadDictionary } from '@/lib/words';
 import { generateSentences } from '@/lib/quotes';
@@ -16,6 +17,8 @@ interface RankedMatchData {
     elo: number;
     colorTheme?: any;
     fontFamily?: string;
+  bgTheme?: any;
+    bgTheme?: any;
   };
 }
 
@@ -39,15 +42,18 @@ interface RankedPlayerAreaProps {
   isOpponent?: boolean;
   colorTheme?: any;
   fontFamily?: string;
+  bgTheme?: any;
+    bgTheme?: any;
 }
 
-function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily }: RankedPlayerAreaProps) {
+function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme }: RankedPlayerAreaProps) {
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
   const [scrollLines, setScrollLines] = useState(0);
 
-  useEffect(() => {
+  const updateCaretPosition = useCallback(() => {
+    if (letterRefs.current.length === 0 || !targetText) return;
     const nextIndex = Math.min(typedText.length, targetText.length - 1);
     let currentLine = 0;
     let lastTop = letterRefs.current[0]?.offsetTop || 0;
@@ -71,6 +77,15 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
     }
   }, [typedText, targetText]);
 
+  useLayoutEffect(() => {
+    updateCaretPosition();
+  }, [updateCaretPosition]);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateCaretPosition);
+    return () => window.removeEventListener('resize', updateCaretPosition);
+  }, [updateCaretPosition]);
+
   // Extract opponent colors if available
   let oppPrimaryHex = '#fbbf24';
   let oppStyle = '';
@@ -78,25 +93,47 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
     const hexes = colorTheme.value.match(/#[0-9a-fA-F]{6}/g) || ['#f59e0b'];
     oppPrimaryHex = hexes[0];
     const cssRules = colorTheme.isGradient ? `
-      #opponent-area span {
+      #opponent-area span.text-slate-500 {
+        /* Un-typed letters stay slate */
+      }
+      #opponent-area span:not(.text-slate-500):not(.exclude-theme) {
         background-image: ${colorTheme.value} !important;
         -webkit-background-clip: text !important;
         -webkit-text-fill-color: transparent !important;
         color: transparent !important;
       }
     ` : `
-      #opponent-area span {
+      #opponent-area span:not(.text-slate-500):not(.exclude-theme) {
         color: ${colorTheme.value} !important;
       }
     `;
+    const bgRules = bgTheme ? (bgTheme.isGradient ? `background: ${bgTheme.value} !important; background-attachment: fixed !important;` : `background: ${bgTheme.value} !important;`) : '';
+    
     oppStyle = `
       #opponent-area {
         --hot: ${oppPrimaryHex};
+        ${bgRules}
+      }
+      #opponent-area, #opponent-area * {
         font-family: "${fontFamily || 'Inter'}", sans-serif !important;
       }
       ${cssRules}
     `;
   }
+
+  // Inject font stylesheet if needed
+  useEffect(() => {
+    if (isOpponent && fontFamily) {
+      const linkId = `opponent-font-${fontFamily.replace(/\s+/g, '-')}`;
+      if (!document.getElementById(linkId)) {
+        const linkEl = document.createElement('link');
+        linkEl.id = linkId;
+        linkEl.rel = 'stylesheet';
+        linkEl.href = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(/\s+/g, '+')}:wght@400;500;600;700;800&display=swap`;
+        document.head.appendChild(linkEl);
+      }
+    }
+  }, [isOpponent, fontFamily]);
 
   return (
     <div id={isOpponent ? "opponent-area" : undefined} className={`flex-1 p-4 md:p-8 flex flex-col relative ${isOpponent ? 'bg-slate-900/40' : ''}`}>
@@ -108,7 +145,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
 
       <div className="flex-1 relative flex flex-col justify-center overflow-visible">
         <div 
-          className="relative w-full transition-colors duration-150 select-none font-mono tracking-wide text-left"
+          className="relative w-full select-none font-mono tracking-wide text-left"
           style={{ fontSize: 'clamp(14px, 1.8vw, 24px)' }}
         >
           <div 
@@ -129,7 +166,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
             >
               {/* Caret */}
               <span
-                className="absolute -translate-y-1/2 w-[3px] h-[1em] rounded-full pointer-events-none transition-all duration-150 ease-out animate-caret"
+                className="absolute -translate-y-1/2 w-[3px] h-[1em] rounded-full pointer-events-none transition-all duration-150 ease-out animate-caret exclude-theme"
                 style={{
                   left: `${caretLeft}px`,
                   top: `${caretTop}px`,
@@ -157,7 +194,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
                   <span 
                     key={i} 
                     ref={el => letterRefs.current[i] = el}
-                    className={`transition-colors ${color}`}
+                    className={`${color}`}
                     style={isOpponent && color === 'correct-char' ? {} : undefined} // will use scoped styles
                   >
                     {char}
@@ -314,7 +351,8 @@ export default function RankedMode({ onBack }: Props) {
       elo: (user as any).elo || 10,
       language,
       colorTheme: user.colorTheme,
-      fontFamily: user.fontFamily
+      fontFamily: user.fontFamily,
+      bgTheme: getStoredBgColor()
     });
   };
 
@@ -537,6 +575,7 @@ export default function RankedMode({ onBack }: Props) {
           isOpponent
           colorTheme={matchData.opponent.colorTheme}
           fontFamily={matchData.opponent.fontFamily}
+          bgTheme={matchData.opponent.bgTheme}
         />
 
         {/* Center Divider - with timer shifted down */}

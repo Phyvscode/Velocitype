@@ -45,6 +45,7 @@ interface RankedPlayer {
   finishedRound: boolean;
   colorTheme?: any;
   fontFamily?: string;
+  bgTheme?: any;
 }
 
 interface RankedMatch {
@@ -214,7 +215,7 @@ export const initSocket = (httpServer: HttpServer) => {
     });
 
     // ----- RANKED MODE -----
-    socket.on('joinRankedQueue', (data: { userId: string; username: string; elo: number; language: string; colorTheme?: any; fontFamily?: string }) => {
+    socket.on('joinRankedQueue', (data: { userId: string; username: string; elo: number; language: string; colorTheme?: any; fontFamily?: string; bgTheme?: any }) => {
       const lang = data.language || 'english';
       if (!rankedQueue[lang]) rankedQueue[lang] = [];
 
@@ -232,7 +233,8 @@ export const initSocket = (httpServer: HttpServer) => {
         wpm: 0,
         finishedRound: false,
         colorTheme: data.colorTheme,
-        fontFamily: data.fontFamily
+        fontFamily: data.fontFamily,
+        bgTheme: data.bgTheme
       };
 
       rankedQueue[lang].push(player);
