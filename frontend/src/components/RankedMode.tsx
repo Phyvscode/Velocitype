@@ -443,16 +443,6 @@ export default function RankedMode({ onBack }: Props) {
 
       {/* Split Screen Area */}
       <div className="flex-1 flex flex-col md:flex-row relative">
-        {/* Center Divider */}
-        <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-slate-800 -translate-x-1/2 z-10">
-          {gameState === 'playing' && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border border-slate-700 rounded-full w-20 h-20 flex flex-col items-center justify-center font-display text-2xl text-slate-100 shadow-lg shadow-black/50 z-20">
-              {timeLeft}
-              <span className="text-[10px] text-[var(--hot)] font-mono">SEC</span>
-            </div>
-          )}
-        </div>
-
         {/* My Side (Left) */}
         <RankedPlayerArea
           label="Your Area"
@@ -488,6 +478,16 @@ export default function RankedMode({ onBack }: Props) {
           gameState={gameState}
           isOpponent
         />
+
+        {/* Center Divider (Placed last to render on top of progress bars) */}
+        <div className="hidden md:block absolute left-1/2 top-0 bottom-0 -translate-x-1/2 z-30 pointer-events-none flex flex-col justify-center">
+          {gameState === 'playing' && (
+            <div className="bg-background border border-slate-700 rounded-full w-24 h-24 flex flex-col items-center justify-center font-display text-3xl text-slate-100 shadow-lg shadow-black z-30 pointer-events-auto">
+              {timeLeft}
+              <span className="text-xs text-[var(--hot)] font-mono mt-1">SEC</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Overlays */}

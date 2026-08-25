@@ -37,6 +37,15 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
+    // Case-insensitive username check
+    const usernameExists = await User.findOne({ 
+      username: { $regex: new RegExp(`^${username}$`, 'i') } 
+    });
+    
+    if (usernameExists) {
+      return res.status(400).json({ message: 'This username is already taken. Please choose another one.' });
+    }
+
     const user = await User.create({
       username,
       email,
@@ -146,9 +155,26 @@ export const googleAuth = async (req: Request, res: Response): Promise<Response>
         await user.save();
       }
     } else {
-      // Create new user
+      // Create new user, ensure unique username
+      let desiredUsername = name || email.split('@')[0];
+      let isUnique = false;
+      let counter = 0;
+      let finalUsername = desiredUsername;
+
+      while (!isUnique) {
+        const existing = await User.findOne({ 
+          username: { $regex: new RegExp(`^${finalUsername}$`, 'i') } 
+        });
+        if (!existing) {
+          isUnique = true;
+        } else {
+          counter++;
+          finalUsername = `${desiredUsername}${counter}`;
+        }
+      }
+
       user = await User.create({
-        username: name || email.split('@')[0],
+        username: finalUsername,
         email,
         googleId,
         authProvider: 'google',
