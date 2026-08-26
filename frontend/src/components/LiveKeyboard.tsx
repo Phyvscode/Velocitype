@@ -17,7 +17,7 @@ export const getKeyLabel = (e: KeyboardEvent | React.KeyboardEvent) => {
   if (e.key === "Alt") return "LALT";
 
   return e.key.toUpperCase();
-};
+};3
 
 interface LiveKeyboardProps {
   activeKeys: Set<string>;

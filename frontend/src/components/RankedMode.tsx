@@ -259,8 +259,8 @@ export default function RankedMode({ onBack }: Props) {
           // Generate 9 massive blocks of text (one for each round)
           const s = [];
           for (let i = 0; i < 9; i++) {
-             // Generate a very long text (around 300 words) so it easily lasts 60 seconds
-             const res = await generateSentences('', ['top', 'home', 'bottom'], 2, 10, 300, '');
+             // Generate enough text for a 60 second round (around 30 sentences ~ 150-200 words)
+             const res = await generateSentences('', ['top', 'home', 'bottom'], 3, 12, 30, '');
              s.push(res.join(' ')); 
           }
           socket.emit('rankedMatchPayload', { matchId: data.matchId, sentences: s });
