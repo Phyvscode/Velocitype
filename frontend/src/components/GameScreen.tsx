@@ -300,9 +300,9 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       {/* Centered single word / Paragraph box */}
       <main className={`flex-1 min-h-0 w-full flex flex-col items-${(config as any).mode !== 'words' ? (layoutConfig.boxAlign === 'left' ? 'start' : layoutConfig.boxAlign === 'right' ? 'end' : 'center') : 'center'} justify-center overflow-visible`}>
         <div
-          className={`relative w-full transition-colors duration-150 select-none font-mono tracking-wide mx-auto px-8 py-8 md:px-12 md:py-10 translate-y-12 ${
+          className={`relative w-full transition-colors duration-150 select-none font-mono tracking-wide mx-auto px-8 py-8 md:px-12 md:py-10 ${
             (config as any).mode === 'words' 
-              ? 'max-w-5xl text-center' 
+              ? 'translate-y-12 max-w-5xl text-center' 
               : `${layoutConfig.textAlign === 'center' ? 'text-center' : layoutConfig.textAlign === 'right' ? 'text-right' : 'text-left'} ${layoutConfig.showBox ? 'bg-[#15171e]/50 border border-slate-800/80 rounded-2xl shadow-xl' : ''}`
           } ${
             flash === 'correct'
@@ -313,7 +313,8 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
           }`}
           style={{ 
             fontSize: (config as any).mode !== 'words' ? `${layoutConfig.fontSize}px` : 'clamp(20px, 2.5vw, 32px)',
-            maxWidth: (config as any).mode !== 'words' ? `${layoutConfig.maxChars}ch` : undefined
+            maxWidth: (config as any).mode !== 'words' ? `${layoutConfig.maxChars}ch` : undefined,
+            transform: (config as any).mode !== 'words' ? `translate(${layoutConfig.boxOffsetX || 0}px, ${layoutConfig.boxOffsetY || 0}px)` : undefined
           }}
         >
           {/* Inner scroll window with fade mask to hide clipped ascenders/descenders */}

@@ -16,6 +16,34 @@ export default function ConfigureModal({ onClose }: Props) {
     window.dispatchEvent(new Event('layoutConfigChanged'));
   }, [config]);
 
+  // Dragging state
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+  const dragStartOffset = useRef({ x: 0, y: 0 });
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setIsDragging(true);
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    dragStartOffset.current = { x: config.boxOffsetX || 0, y: config.boxOffsetY || 0 };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const dx = e.clientX - dragStartPos.current.x;
+    const dy = e.clientY - dragStartPos.current.y;
+    setConfig({
+      ...config,
+      boxOffsetX: dragStartOffset.current.x + dx,
+      boxOffsetY: dragStartOffset.current.y + dy
+    });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    setIsDragging(false);
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+  };
+
   // Preview dummy text
   const dummyText = "this is a preview of the sentences mode layout configuration. you can adjust the sliders to change how the game looks. the keyboard will also resize.";
   const typedText = "this is a preview of ";
@@ -32,12 +60,17 @@ export default function ConfigureModal({ onClose }: Props) {
           <div className={`flex-1 min-h-0 w-full flex flex-col items-${config.boxAlign === 'left' ? 'start' : config.boxAlign === 'right' ? 'end' : 'center'} justify-center p-8`}>
             
             <div
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
               className={`relative transition-colors duration-150 select-none font-mono tracking-wide ${config.textAlign === 'center' ? 'text-center' : config.textAlign === 'right' ? 'text-right' : 'text-left'} ${
                 config.showBox ? 'bg-[#15171e]/50 border border-slate-800/80 rounded-2xl shadow-xl px-8 py-8 md:px-12 md:py-10' : ''
-              }`}
+              } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
               style={{ 
                 fontSize: `${config.fontSize}px`,
                 maxWidth: `${config.maxChars}ch`,
+                transform: `translate(${config.boxOffsetX || 0}px, ${config.boxOffsetY || 0}px)`,
                 width: '100%'
               }}
             >
@@ -138,6 +171,34 @@ export default function ConfigureModal({ onClose }: Props) {
               type="range" min="0.4" max="1.5" step="0.05" 
               value={config.keyboardScale}
               onChange={e => setConfig({...config, keyboardScale: parseFloat(e.target.value)})}
+              className="accent-[var(--hot)]"
+            />
+          </div>
+
+          {/* Position X */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-mono text-slate-400 uppercase tracking-widest flex justify-between">
+              <span>X Offset</span>
+              <span className="text-[var(--hot)]">{config.boxOffsetX || 0}px</span>
+            </label>
+            <input 
+              type="range" min="-800" max="800" step="10" 
+              value={config.boxOffsetX || 0}
+              onChange={e => setConfig({...config, boxOffsetX: parseInt(e.target.value)})}
+              className="accent-[var(--hot)]"
+            />
+          </div>
+
+          {/* Position Y */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-mono text-slate-400 uppercase tracking-widest flex justify-between">
+              <span>Y Offset</span>
+              <span className="text-[var(--hot)]">{config.boxOffsetY || 0}px</span>
+            </label>
+            <input 
+              type="range" min="-800" max="800" step="10" 
+              value={config.boxOffsetY || 0}
+              onChange={e => setConfig({...config, boxOffsetY: parseInt(e.target.value)})}
               className="accent-[var(--hot)]"
             />
           </div>
