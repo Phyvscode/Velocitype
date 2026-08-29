@@ -6,6 +6,7 @@ import type { GameConfig } from './SetupScreen';
 import LiveKeyboard, { getKeyLabel } from './LiveKeyboard';
 import HourglassAnimation from './HourglassAnimation';
 import VirtualKeyboardConnector from './VirtualKeyboardConnector';
+import { getLayoutConfig, LayoutConfig } from '@/lib/layoutConfig';
 
 export interface TypedWord {
   word: string;
@@ -32,6 +33,14 @@ function shuffle<T>(arr: T[]): T[] {
 
 export default function GameScreen({ config, onFinish, onQuit, onProgress, hideHeader }: Props) {
   const { rows, duration, minLen, maxLen, customSentences } = config;
+  const [layoutConfig, setLayoutConfig] = useState<LayoutConfig>(getLayoutConfig());
+  
+  useEffect(() => {
+    const handleLayoutChange = () => setLayoutConfig(getLayoutConfig());
+    window.addEventListener('layoutConfigChanged', handleLayoutChange);
+    return () => window.removeEventListener('layoutConfigChanged', handleLayoutChange);
+  }, []);
+
   const pool = useMemo(() => customSentences && customSentences.length > 0 ? customSentences : filterWords(rows as RowKey[], minLen, maxLen), [rows, minLen, maxLen, customSentences]);
 
   // A shuffled queue of all pool words; when exhausted, reshuffle for a fresh cycle.
@@ -289,12 +298,12 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       )}
 
       {/* Centered single word / Paragraph box */}
-      <main className="flex-1 min-h-0 w-full flex flex-col items-center justify-center overflow-visible">
+      <main className={`flex-1 min-h-0 w-full flex flex-col items-${(config as any).mode !== 'words' ? (layoutConfig.boxAlign === 'left' ? 'start' : layoutConfig.boxAlign === 'right' ? 'end' : 'center') : 'center'} justify-center overflow-visible`}>
         <div
-          className={`relative w-full transition-colors duration-150 select-none font-mono tracking-wide max-w-5xl mx-auto px-8 py-8 md:px-12 md:py-10 translate-y-12 ${
+          className={`relative w-full transition-colors duration-150 select-none font-mono tracking-wide mx-auto px-8 py-8 md:px-12 md:py-10 translate-y-12 ${
             (config as any).mode === 'words' 
-              ? 'text-center' 
-              : 'text-left bg-[#15171e]/50 border border-slate-800/80 rounded-2xl shadow-xl'
+              ? 'max-w-5xl text-center' 
+              : `${layoutConfig.textAlign === 'center' ? 'text-center' : layoutConfig.textAlign === 'right' ? 'text-right' : 'text-left'} ${layoutConfig.showBox ? 'bg-[#15171e]/50 border border-slate-800/80 rounded-2xl shadow-xl' : ''}`
           } ${
             flash === 'correct'
               ? 'text-emerald-400'
@@ -302,13 +311,16 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
               ? 'text-rose-400'
               : 'text-slate-100'
           }`}
-          style={{ fontSize: 'clamp(20px, 2.5vw, 32px)' }}
+          style={{ 
+            fontSize: (config as any).mode !== 'words' ? `${layoutConfig.fontSize}px` : 'clamp(20px, 2.5vw, 32px)',
+            maxWidth: (config as any).mode !== 'words' ? `${layoutConfig.maxChars}ch` : undefined
+          }}
         >
           {/* Inner scroll window with fade mask to hide clipped ascenders/descenders */}
           <div 
             className="overflow-hidden relative"
             style={{ 
-              height: '3.2em', 
+              height: (config as any).mode !== 'words' ? `${layoutConfig.numLines * 1.6}em` : '3.2em', 
               lineHeight: 1.6,
               WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
               maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
@@ -371,7 +383,10 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       />
 
       <footer className="w-full max-w-7xl mx-auto flex-none px-4 sm:px-12 pb-8 pt-4 flex items-center justify-between min-h-0">
-        <div className="w-full max-w-[800px] perspective-[1200px] translate-y-[120px] -translate-x-24">
+        <div 
+          className="w-full max-w-[800px] perspective-[1200px] translate-y-[120px] -translate-x-24 transition-transform duration-300"
+          style={{ transform: `scale(${layoutConfig.keyboardScale})`, transformOrigin: 'bottom left' }}
+        >
           <LiveKeyboard activeKeys={activeKeys} />
         </div>
         <div className="flex flex-col items-center gap-2 flex-none translate-y-[40px] ml-auto translate-x-24">

@@ -11,6 +11,7 @@ import FontModal from '@/components/FontModal';
 import ColorModal from '@/components/ColorModal';
 import BgColorModal from '@/components/BgColorModal';
 import BorderModal from '@/components/BorderModal';
+import ConfigureModal from '@/components/ConfigureModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { initializeActiveFont } from '@/lib/fonts';
 import { initializeActiveColor, initializeActiveBgColor } from '@/lib/colors';
@@ -107,6 +108,7 @@ function App() {
   const [isColorModalOpen, setIsColorModalOpen] = useState<boolean>(false);
   const [isUiColorModalOpen, setIsUiColorModalOpen] = useState<boolean>(false);
   const [isBorderModalOpen, setIsBorderModalOpen] = useState<boolean>(false);
+  const [isConfigureModalOpen, setIsConfigureModalOpen] = useState<boolean>(false);
   const [dictReady, setDictReady] = useState<boolean>(false);
 
   // Load the full word dictionary (thousands of real words) before any
@@ -242,6 +244,7 @@ function App() {
           onOpenColor={() => setIsColorModalOpen(true)} 
           onOpenUiColor={() => setIsUiColorModalOpen(true)}
           onOpenBorder={() => setIsBorderModalOpen(true)}
+          onOpenConfigure={() => setIsConfigureModalOpen(true)}
           onOpenCasual={() => navigate('casual')}
           onOpenRanked={() => navigate('ranked')}
           onLobbyJoined={(code) => {
@@ -301,6 +304,7 @@ function App() {
       <ColorModal isOpen={isColorModalOpen} onClose={() => setIsColorModalOpen(false)} />
       <BgColorModal isOpen={isUiColorModalOpen} onClose={() => setIsUiColorModalOpen(false)} />
       <BorderModal isOpen={isBorderModalOpen} onClose={() => setIsBorderModalOpen(false)} />
+      {isConfigureModalOpen && <ConfigureModal onClose={() => setIsConfigureModalOpen(false)} />}
       {useVirtualKeyboard && <VirtualKeyboardConnector />}
     </div>
   );
