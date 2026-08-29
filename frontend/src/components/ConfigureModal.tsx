@@ -21,15 +21,9 @@ export default function ConfigureModal({ onClose }: Props) {
   const typedText = "this is a preview of ";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      
-      {/* Modal */}
-      <div className="relative w-full max-w-6xl h-[85vh] bg-slate-900 border border-slate-700 rounded-lg shadow-2xl flex flex-col md:flex-row overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+      {/* Full Screen Container */}
+      <div className="relative w-full h-full flex flex-col md:flex-row overflow-hidden">
         
         {/* Left Side: Preview Area */}
         <div className="flex-1 flex flex-col relative overflow-hidden bg-background">
