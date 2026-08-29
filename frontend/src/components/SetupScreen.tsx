@@ -155,6 +155,7 @@ export default function SetupScreen({
   onOpenColor,
   onOpenUiColor,
   onOpenBorder,
+  onOpenConfigure,
   onOpenCasual,
   onOpenRanked,
   onLobbyJoined,
@@ -915,7 +916,7 @@ export default function SetupScreen({
                 <button onClick={onOpenColor} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Colors</button>
                 <button onClick={onOpenUiColor} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Background</button>
                 <button onClick={onOpenBorder} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Border</button>
-                <button onClick={props.onOpenConfigure} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Configure</button>
+                <button onClick={onOpenConfigure} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Configure</button>
               </div>
             )}
             
