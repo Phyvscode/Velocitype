@@ -17,30 +17,59 @@ export default function ConfigureModal({ onClose }: Props) {
   }, [config]);
 
   // Dragging state
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartPos = useRef({ x: 0, y: 0 });
-  const dragStartOffset = useRef({ x: 0, y: 0 });
+  // Dragging state for Box
+  const [isDraggingBox, setIsDraggingBox] = useState(false);
+  const dragStartPosBox = useRef({ x: 0, y: 0 });
+  const dragStartOffsetBox = useRef({ x: 0, y: 0 });
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    setIsDragging(true);
-    dragStartPos.current = { x: e.clientX, y: e.clientY };
-    dragStartOffset.current = { x: config.boxOffsetX || 0, y: config.boxOffsetY || 0 };
+  const handlePointerDownBox = (e: React.PointerEvent) => {
+    setIsDraggingBox(true);
+    dragStartPosBox.current = { x: e.clientX, y: e.clientY };
+    dragStartOffsetBox.current = { x: config.boxOffsetX || 0, y: config.boxOffsetY || 0 };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    const dx = e.clientX - dragStartPos.current.x;
-    const dy = e.clientY - dragStartPos.current.y;
+  const handlePointerMoveBox = (e: React.PointerEvent) => {
+    if (!isDraggingBox) return;
+    const dx = e.clientX - dragStartPosBox.current.x;
+    const dy = e.clientY - dragStartPosBox.current.y;
     setConfig({
       ...config,
-      boxOffsetX: dragStartOffset.current.x + dx,
-      boxOffsetY: dragStartOffset.current.y + dy
+      boxOffsetX: dragStartOffsetBox.current.x + dx,
+      boxOffsetY: dragStartOffsetBox.current.y + dy
     });
   };
 
-  const handlePointerUp = (e: React.PointerEvent) => {
-    setIsDragging(false);
+  const handlePointerUpBox = (e: React.PointerEvent) => {
+    setIsDraggingBox(false);
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+  };
+
+  // Dragging state for Keyboard
+  const [isDraggingKb, setIsDraggingKb] = useState(false);
+  const dragStartPosKb = useRef({ x: 0, y: 0 });
+  const dragStartOffsetKb = useRef({ x: 0, y: 0 });
+
+  const handlePointerDownKb = (e: React.PointerEvent) => {
+    setIsDraggingKb(true);
+    dragStartPosKb.current = { x: e.clientX, y: e.clientY };
+    dragStartOffsetKb.current = { x: config.keyboardOffsetX || 0, y: config.keyboardOffsetY || 0 };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMoveKb = (e: React.PointerEvent) => {
+    if (!isDraggingKb) return;
+    const dx = e.clientX - dragStartPosKb.current.x;
+    const dy = e.clientY - dragStartPosKb.current.y;
+    setConfig({
+      ...config,
+      keyboardOffsetX: dragStartOffsetKb.current.x + dx,
+      keyboardOffsetY: dragStartOffsetKb.current.y + dy
+    });
+  };
+
+  const handlePointerUpKb = (e: React.PointerEvent) => {
+    setIsDraggingKb(false);
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
   };
 
@@ -60,13 +89,13 @@ export default function ConfigureModal({ onClose }: Props) {
           <div className={`flex-1 min-h-0 w-full flex flex-col items-${config.boxAlign === 'left' ? 'start' : config.boxAlign === 'right' ? 'end' : 'center'} justify-center p-8`}>
             
             <div
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              className={`relative transition-colors duration-150 select-none font-mono tracking-wide ${config.textAlign === 'center' ? 'text-center' : config.textAlign === 'right' ? 'text-right' : 'text-left'} ${
-                config.showBox ? 'bg-[#15171e]/50 border border-slate-800/80 rounded-2xl shadow-xl px-8 py-8 md:px-12 md:py-10' : ''
-              } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+              onPointerDown={handlePointerDownBox}
+              onPointerMove={handlePointerMoveBox}
+              onPointerUp={handlePointerUpBox}
+              onPointerCancel={handlePointerUpBox}
+              className={`relative transition-colors duration-150 select-none font-mono tracking-wide px-8 py-8 md:px-12 md:py-10 ${config.textAlign === 'center' ? 'text-center' : config.textAlign === 'right' ? 'text-right' : 'text-left'} ${
+                config.showBox ? 'bg-[#15171e]/50 border border-slate-800/80 rounded-2xl shadow-xl' : 'border border-transparent'
+              } ${isDraggingBox ? 'cursor-grabbing' : 'cursor-grab'}`}
               style={{ 
                 fontSize: `${config.fontSize}px`,
                 maxWidth: `${config.maxChars}ch`,
@@ -102,12 +131,23 @@ export default function ConfigureModal({ onClose }: Props) {
               </div>
             </div>
 
-            <div 
-              className="w-full mt-auto pt-8 transition-transform duration-300"
-              style={{ transform: `scale(${config.keyboardScale})`, transformOrigin: 'bottom center' }}
-            >
-              <LiveKeyboard activeKeys={new Set(['S', 'P', 'A', 'C', 'E'])} />
-            </div>
+            {config.showKeyboard && (
+              <div 
+                onPointerDown={handlePointerDownKb}
+                onPointerMove={handlePointerMoveKb}
+                onPointerUp={handlePointerUpKb}
+                onPointerCancel={handlePointerUpKb}
+                className={`w-full mt-auto pt-8 ${isDraggingKb ? 'cursor-grabbing' : 'cursor-grab'}`}
+                style={{ 
+                  transform: `translate(${config.keyboardOffsetX || 0}px, ${config.keyboardOffsetY || 0}px) scale(${config.keyboardScale})`, 
+                  transformOrigin: 'bottom center' 
+                }}
+              >
+                <div className="pointer-events-none">
+                  <LiveKeyboard activeKeys={new Set(['S', 'P', 'A', 'C', 'E'])} />
+                </div>
+              </div>
+            )}
 
           </div>
         </div>
@@ -245,6 +285,19 @@ export default function ConfigureModal({ onClose }: Props) {
                 className="w-4 h-4 accent-[var(--hot)]"
               />
               <span className="text-sm font-mono text-slate-300 uppercase tracking-widest">Show Box Background</span>
+            </label>
+          </div>
+
+          {/* Show Keyboard Toggle */}
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input 
+                type="checkbox"
+                checked={config.showKeyboard ?? true}
+                onChange={e => setConfig({...config, showKeyboard: e.target.checked})}
+                className="w-4 h-4 accent-[var(--hot)]"
+              />
+              <span className="text-sm font-mono text-slate-300 uppercase tracking-widest">Show Live Keyboard</span>
             </label>
           </div>
 

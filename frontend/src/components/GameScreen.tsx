@@ -303,7 +303,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
           className={`relative w-full transition-colors duration-150 select-none font-mono tracking-wide mx-auto px-8 py-8 md:px-12 md:py-10 ${
             (config as any).mode === 'words' 
               ? 'translate-y-12 max-w-5xl text-center' 
-              : `${layoutConfig.textAlign === 'center' ? 'text-center' : layoutConfig.textAlign === 'right' ? 'text-right' : 'text-left'} ${layoutConfig.showBox ? 'bg-[#15171e]/50 border border-slate-800/80 rounded-2xl shadow-xl' : ''}`
+              : `${layoutConfig.textAlign === 'center' ? 'text-center' : layoutConfig.textAlign === 'right' ? 'text-right' : 'text-left'} ${layoutConfig.showBox ? 'bg-[#15171e]/50 border border-slate-800/80 rounded-2xl shadow-xl' : 'border border-transparent'}`
           } ${
             flash === 'correct'
               ? 'text-emerald-400'
@@ -384,12 +384,17 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       />
 
       <footer className="w-full max-w-7xl mx-auto flex-none px-4 sm:px-12 pb-8 pt-4 flex items-center justify-between min-h-0">
-        <div 
-          className="w-full max-w-[800px] perspective-[1200px] translate-y-[120px] -translate-x-24 transition-transform duration-300"
-          style={{ transform: `scale(${layoutConfig.keyboardScale})`, transformOrigin: 'bottom left' }}
-        >
-          <LiveKeyboard activeKeys={activeKeys} />
-        </div>
+        {layoutConfig.showKeyboard !== false ? (
+          <div 
+            className="w-full max-w-[800px] perspective-[1200px] translate-y-[120px] -translate-x-24 transition-transform duration-300"
+            style={{ 
+              transform: `translate(${layoutConfig.keyboardOffsetX || 0}px, ${layoutConfig.keyboardOffsetY || 0}px) scale(${layoutConfig.keyboardScale})`, 
+              transformOrigin: 'bottom left' 
+            }}
+          >
+            <LiveKeyboard activeKeys={activeKeys} />
+          </div>
+        ) : <div className="w-full max-w-[800px]" />}
         <div className="flex flex-col items-center gap-2 flex-none translate-y-[40px] ml-auto translate-x-24">
           <HourglassAnimation 
             durationVal={(config as any).limitMode === 'words' ? ((config as any).limitValue || 20) : config.duration} 

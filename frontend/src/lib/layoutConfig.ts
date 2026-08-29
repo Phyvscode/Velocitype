@@ -8,6 +8,9 @@ export interface LayoutConfig {
   keyboardScale: number;
   boxOffsetX: number;
   boxOffsetY: number;
+  keyboardOffsetX: number;
+  keyboardOffsetY: number;
+  showKeyboard: boolean;
 }
 
 const DEFAULT_CONFIG: LayoutConfig = {
@@ -20,6 +23,9 @@ const DEFAULT_CONFIG: LayoutConfig = {
   keyboardScale: 0.75,
   boxOffsetX: 0,
   boxOffsetY: 0,
+  keyboardOffsetX: 0,
+  keyboardOffsetY: 0,
+  showKeyboard: true,
 };
 
 const STORAGE_KEY = 'velocitype_layout_config';
