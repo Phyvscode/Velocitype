@@ -86,8 +86,7 @@ export default function ConfigureModal({ onClose }: Props) {
         <div className="flex-1 flex flex-col relative overflow-hidden bg-background">
           <div className="absolute top-4 left-4 text-xs font-mono text-slate-500 uppercase tracking-widest z-10">Preview</div>
           
-          <div className={`flex-1 min-h-0 w-full flex flex-col items-${config.boxAlign === 'left' ? 'start' : config.boxAlign === 'right' ? 'end' : 'center'} justify-center p-8`}>
-            
+          <main className={`flex-1 min-h-0 w-full flex flex-col items-${config.boxAlign === 'left' ? 'start' : config.boxAlign === 'right' ? 'end' : 'center'} justify-center overflow-visible`}>
             <div
               onPointerDown={handlePointerDownBox}
               onPointerMove={handlePointerMoveBox}
@@ -130,17 +129,19 @@ export default function ConfigureModal({ onClose }: Props) {
                 </div>
               </div>
             </div>
+          </main>
 
+          <footer className="w-full max-w-7xl mx-auto flex-none px-4 sm:px-12 pb-8 pt-4 flex items-center justify-between min-h-0">
             {config.showKeyboard && (
               <div 
                 onPointerDown={handlePointerDownKb}
                 onPointerMove={handlePointerMoveKb}
                 onPointerUp={handlePointerUpKb}
                 onPointerCancel={handlePointerUpKb}
-                className={`w-full mt-auto pt-8 ${isDraggingKb ? 'cursor-grabbing' : 'cursor-grab'}`}
+                className={`w-full max-w-[800px] perspective-[1200px] translate-y-[120px] -translate-x-24 transition-transform duration-300 ${isDraggingKb ? 'cursor-grabbing' : 'cursor-grab'}`}
                 style={{ 
                   transform: `translate(${config.keyboardOffsetX || 0}px, ${config.keyboardOffsetY || 0}px) scale(${config.keyboardScale})`, 
-                  transformOrigin: 'bottom center' 
+                  transformOrigin: 'bottom left' 
                 }}
               >
                 <div className="pointer-events-none">
@@ -148,8 +149,11 @@ export default function ConfigureModal({ onClose }: Props) {
                 </div>
               </div>
             )}
-
-          </div>
+            <div className="flex flex-col items-center gap-2 flex-none translate-y-[40px] ml-auto translate-x-24">
+               {/* Dummy Hourglass placeholder to maintain flex spacing */}
+               <div className="w-[80px] h-[80px] opacity-20 border-2 border-dashed border-slate-500 rounded-full flex items-center justify-center text-xs">Timer</div>
+            </div>
+          </footer>
         </div>
 
         {/* Right Side: Controls */}
