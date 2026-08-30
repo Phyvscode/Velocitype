@@ -138,9 +138,9 @@ export default function ConfigureModal({ onClose }: Props) {
                 onPointerMove={handlePointerMoveKb}
                 onPointerUp={handlePointerUpKb}
                 onPointerCancel={handlePointerUpKb}
-                className={`w-full max-w-[800px] perspective-[1200px] translate-y-[120px] -translate-x-24 transition-transform duration-300 ${isDraggingKb ? 'cursor-grabbing' : 'cursor-grab'}`}
+                className={`w-full max-w-[800px] perspective-[1200px] ${isDraggingKb ? 'cursor-grabbing' : 'transition-transform duration-300 cursor-grab'}`}
                 style={{ 
-                  transform: `translate(${config.keyboardOffsetX || 0}px, ${config.keyboardOffsetY || 0}px) scale(${config.keyboardScale})`, 
+                  transform: `translate(calc(-6rem + ${config.keyboardOffsetX || 0}px), calc(120px + ${config.keyboardOffsetY || 0}px)) scale(${config.keyboardScale})`, 
                   transformOrigin: 'bottom left' 
                 }}
               >

@@ -386,9 +386,9 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
       <footer className="w-full max-w-7xl mx-auto flex-none px-4 sm:px-12 pb-8 pt-4 flex items-center justify-between min-h-0">
         {layoutConfig.showKeyboard !== false ? (
           <div 
-            className="w-full max-w-[800px] perspective-[1200px] translate-y-[120px] -translate-x-24 transition-transform duration-300"
+            className="w-full max-w-[800px] perspective-[1200px] transition-transform duration-300"
             style={{ 
-              transform: `translate(${layoutConfig.keyboardOffsetX || 0}px, ${layoutConfig.keyboardOffsetY || 0}px) scale(${layoutConfig.keyboardScale})`, 
+              transform: `translate(calc(-6rem + ${layoutConfig.keyboardOffsetX || 0}px), calc(120px + ${layoutConfig.keyboardOffsetY || 0}px)) scale(${layoutConfig.keyboardScale})`, 
               transformOrigin: 'bottom left' 
             }}
           >
