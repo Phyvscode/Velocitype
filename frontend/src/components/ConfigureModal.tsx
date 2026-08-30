@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getLayoutConfig, saveLayoutConfig, LayoutConfig } from '@/lib/layoutConfig';
+import { getLayoutConfig, saveLayoutConfig, LayoutConfig, DEFAULT_CONFIG } from '@/lib/layoutConfig';
 import LiveKeyboard from './LiveKeyboard';
 
 interface Props {
@@ -328,6 +328,15 @@ export default function ConfigureModal({ onClose }: Props) {
               />
               <span className="text-sm font-mono text-slate-300 uppercase tracking-widest">Show Live Keyboard</span>
             </label>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-slate-800">
+            <button 
+              onClick={() => setConfig(DEFAULT_CONFIG)}
+              className="w-full py-2.5 text-xs font-mono uppercase tracking-widest text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 rounded transition-colors"
+            >
+              Reset to Defaults
+            </button>
           </div>
 
         </div>

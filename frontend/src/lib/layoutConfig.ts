@@ -13,7 +13,7 @@ export interface LayoutConfig {
   showKeyboard: boolean;
 }
 
-const DEFAULT_CONFIG: LayoutConfig = {
+export const DEFAULT_CONFIG: LayoutConfig = {
   fontSize: 28,
   maxChars: 70,
   boxAlign: 'center',
