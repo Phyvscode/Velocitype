@@ -160,7 +160,12 @@ export default function ConfigureModal({ onClose }: Props) {
         <div className="w-full md:w-80 bg-slate-950 border-l border-slate-800 p-6 flex flex-col gap-6 overflow-y-auto">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-xl font-display text-[var(--hot)] uppercase tracking-widest">Layout</h2>
-            <button onClick={onClose} className="text-slate-400 hover:text-white">&times;</button>
+            <button 
+              onClick={onClose} 
+              className="text-slate-400 hover:text-white uppercase text-xs font-mono tracking-widest flex items-center gap-1.5 transition-colors"
+            >
+              <span className="text-sm">&larr;</span> Back
+            </button>
           </div>
 
           {/* Font Size */}
