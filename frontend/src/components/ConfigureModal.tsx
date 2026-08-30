@@ -73,6 +73,8 @@ export default function ConfigureModal({ onClose }: Props) {
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
   };
 
+  const [showSidebar, setShowSidebar] = useState(false);
+
   // Preview dummy text
   const dummyText = "this is a preview of the sentences mode layout configuration. you can adjust the sliders to change how the game looks. the keyboard will also resize.";
   const typedText = "this is a preview of ";
@@ -84,7 +86,24 @@ export default function ConfigureModal({ onClose }: Props) {
         
         {/* Left Side: Preview Area */}
         <div className="flex-1 flex flex-col relative overflow-hidden bg-background">
-          <div className="absolute top-4 left-4 text-xs font-mono text-slate-500 uppercase tracking-widest z-10">Preview</div>
+          <div className="absolute top-4 left-4 z-10 flex items-center gap-4">
+            <button onClick={onClose} className="text-xs font-mono text-slate-400 hover:text-white uppercase tracking-widest flex items-center gap-1.5 transition-colors">
+              <span className="text-sm">&larr;</span> Back
+            </button>
+            <span className="text-xs font-mono text-slate-600 uppercase tracking-widest pointer-events-none">|</span>
+            <span className="text-xs font-mono text-slate-500 uppercase tracking-widest pointer-events-none">Preview</span>
+          </div>
+          
+          {!showSidebar && (
+            <div className="absolute top-4 right-4 z-10">
+              <button 
+                onClick={() => setShowSidebar(true)} 
+                className="text-xs font-mono text-[var(--hot)] hover:text-[var(--hot)]/80 uppercase tracking-widest flex items-center gap-2 border border-[var(--hot)] px-4 py-2 bg-[var(--hot)]/10 transition-colors"
+              >
+                Layout Configurations
+              </button>
+            </div>
+          )}
           
           <main className={`flex-1 min-h-0 w-full flex flex-col items-${config.boxAlign === 'left' ? 'start' : config.boxAlign === 'right' ? 'end' : 'center'} justify-center overflow-visible`}>
             <div
@@ -157,16 +176,17 @@ export default function ConfigureModal({ onClose }: Props) {
         </div>
 
         {/* Right Side: Controls */}
-        <div className="w-full md:w-80 bg-slate-950 border-l border-slate-800 p-6 flex flex-col gap-6 overflow-y-auto">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl font-display text-[var(--hot)] uppercase tracking-widest">Layout</h2>
-            <button 
-              onClick={onClose} 
-              className="text-slate-400 hover:text-white uppercase text-xs font-mono tracking-widest flex items-center gap-1.5 transition-colors"
-            >
-              <span className="text-sm">&larr;</span> Back
-            </button>
-          </div>
+        {showSidebar && (
+          <div className="w-full md:w-80 bg-slate-950 border-l border-slate-800 p-6 flex flex-col gap-6 overflow-y-auto">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl font-display text-[var(--hot)] uppercase tracking-widest">Layout</h2>
+              <button 
+                onClick={() => setShowSidebar(false)} 
+                className="text-slate-400 hover:text-white transition-colors text-2xl leading-none"
+              >
+                &times;
+              </button>
+            </div>
 
           {/* Font Size */}
           <div className="flex flex-col gap-2">
@@ -311,6 +331,7 @@ export default function ConfigureModal({ onClose }: Props) {
           </div>
 
         </div>
+        )}
       </div>
     </div>
   );
