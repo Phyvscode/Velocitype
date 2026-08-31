@@ -205,9 +205,9 @@ export default function ConfigureModal() {
                 </div>
               </div>
             )}
-            <div className="flex flex-col items-center gap-2 flex-none translate-y-[40px] ml-auto translate-x-24">
-               {/* Dummy Hourglass placeholder to maintain flex spacing */}
-               <div className="w-[80px] h-[80px] opacity-20 border-2 border-dashed border-slate-500 rounded-full flex items-center justify-center text-xs">Timer</div>
+            <div className="flex flex-col items-center gap-2 flex-none translate-y-[40px] ml-auto translate-x-24 pointer-events-none">
+               {/* Dummy Hourglass placeholder to maintain flex spacing perfectly identical to GameScreen */}
+               <div className="w-[345px] h-[480px] opacity-20 border-2 border-dashed border-slate-500 rounded-[120px] flex items-center justify-center text-xs">Timer</div>
             </div>
           </footer>
         </div>
