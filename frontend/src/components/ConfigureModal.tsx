@@ -164,10 +164,10 @@ export default function ConfigureModal() {
                   height: `${config.numLines * 1.6}em`, 
                   lineHeight: 1.6,
                   WebkitMaskImage: config.numLines === 1 
-                    ? 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)' 
+                    ? 'linear-gradient(to right, black 0%, black 90%, transparent 100%)' 
                     : 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
                   maskImage: config.numLines === 1 
-                    ? 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)' 
+                    ? 'linear-gradient(to right, black 0%, black 90%, transparent 100%)' 
                     : 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
                 }}
               >

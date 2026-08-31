@@ -340,10 +340,10 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
               height: (config as any).mode !== 'words' ? `${layoutConfig.numLines * 1.6}em` : '3.2em', 
               lineHeight: 1.6,
               WebkitMaskImage: layoutConfig.numLines === 1 
-                ? 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)' 
+                ? 'linear-gradient(to right, black 0%, black 90%, transparent 100%)' 
                 : 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
               maskImage: layoutConfig.numLines === 1 
-                ? 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)' 
+                ? 'linear-gradient(to right, black 0%, black 90%, transparent 100%)' 
                 : 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
             }}
           >
