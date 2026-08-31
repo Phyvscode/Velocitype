@@ -163,11 +163,15 @@ export default function ConfigureModal() {
                 style={{ 
                   height: `${config.numLines * 1.6}em`, 
                   lineHeight: 1.6,
-                  WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
-                  maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
+                  WebkitMaskImage: config.numLines === 1 
+                    ? 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)' 
+                    : 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
+                  maskImage: config.numLines === 1 
+                    ? 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)' 
+                    : 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
                 }}
               >
-                <div className="relative" style={{ whiteSpace: 'pre-wrap' }}>
+                <div className="relative" style={{ whiteSpace: config.numLines === 1 ? 'nowrap' : 'pre-wrap' }}>
                   {/* Fake Caret */}
                   <span
                     className="absolute -translate-y-1/2 w-[3px] h-[1em] bg-[var(--hot)] rounded-full animate-caret"

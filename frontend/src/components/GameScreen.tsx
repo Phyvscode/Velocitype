@@ -75,36 +75,51 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   const [caretTop, setCaretTop] = useState(0);
 
   const [scrollLines, setScrollLines] = useState(0);
+  const [scrollX, setScrollX] = useState(0);
 
   const updateCaretPosition = useCallback(() => {
     const nextIndex = Math.min(typed.length, currentWord.length - 1);
     
-    // Compute line index accurately by tracking offsetTop changes up to the NEXT character
-    let currentLine = 0;
-    let lastTop = letterRefs.current[0]?.offsetTop || 0;
-    for (let i = 1; i <= nextIndex; i++) {
-      const el = letterRefs.current[i];
-      if (el && el.offsetTop > lastTop + 10) { // +10 threshold to ignore sub-pixel rounding
-        currentLine++;
-        lastTop = el.offsetTop;
+    if (layoutConfig.numLines > 1) {
+      // Compute line index accurately by tracking offsetTop changes up to the NEXT character
+      let currentLine = 0;
+      let lastTop = letterRefs.current[0]?.offsetTop || 0;
+      for (let i = 1; i <= nextIndex; i++) {
+        const el = letterRefs.current[i];
+        if (el && el.offsetTop > lastTop + 10) { // +10 threshold to ignore sub-pixel rounding
+          currentLine++;
+          lastTop = el.offsetTop;
+        }
       }
+      setScrollLines(currentLine);
     }
-
-    setScrollLines(currentLine);
 
     const nextEl = letterRefs.current[nextIndex];
     if (nextEl) {
       // Position caret at the left edge of the character we are ABOUT to type.
       // This ensures it wraps to the next line immediately when a word wraps.
       // If we've typed everything, position it at the right edge of the last character.
-      if (typed.length >= currentWord.length) {
-        setCaretLeft(nextEl.offsetLeft + nextEl.offsetWidth);
-      } else {
-        setCaretLeft(nextEl.offsetLeft);
-      }
+      const targetLeft = typed.length >= currentWord.length ? nextEl.offsetLeft + nextEl.offsetWidth : nextEl.offsetLeft;
+      setCaretLeft(targetLeft);
       setCaretTop(nextEl.offsetTop + nextEl.offsetHeight / 2);
+
+      if (layoutConfig.numLines === 1) {
+        const maskDiv = nextEl.parentElement?.parentElement;
+        const containerWidth = maskDiv ? maskDiv.clientWidth : 800;
+        setScrollX(prev => {
+          const thresholdRight = prev + containerWidth * 0.7;
+          if (targetLeft > thresholdRight) {
+            return targetLeft - containerWidth * 0.7;
+          }
+          const thresholdLeft = prev + containerWidth * 0.1;
+          if (targetLeft < thresholdLeft) {
+            return Math.max(0, targetLeft - containerWidth * 0.1);
+          }
+          return prev;
+        });
+      }
     }
-  }, [typed, currentWord]);
+  }, [typed, currentWord, layoutConfig.numLines]);
 
   useLayoutEffect(() => {
     updateCaretPosition();
@@ -324,15 +339,21 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
             style={{ 
               height: (config as any).mode !== 'words' ? `${layoutConfig.numLines * 1.6}em` : '3.2em', 
               lineHeight: 1.6,
-              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
-              maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
+              WebkitMaskImage: layoutConfig.numLines === 1 
+                ? 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)' 
+                : 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
+              maskImage: layoutConfig.numLines === 1 
+                ? 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)' 
+                : 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
             }}
           >
             <div 
               className="transition-transform duration-200 ease-out relative"
               style={{
-                transform: `translateY(calc(-${scrollLines} * 1.6em))`,
-                whiteSpace: 'pre-wrap'
+                transform: layoutConfig.numLines === 1 
+                  ? `translateX(-${scrollX}px)` 
+                  : `translateY(calc(-${scrollLines} * 1.6em))`,
+                whiteSpace: layoutConfig.numLines === 1 ? 'nowrap' : 'pre-wrap'
               }}
             >
               {/* Smooth Fluid Caret Bar */}
