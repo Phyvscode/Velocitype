@@ -69,6 +69,33 @@ export default function ConfigureModal() {
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
   };
 
+  const [isDraggingQuit, setIsDraggingQuit] = useState(false);
+  const dragStartPosQuit = useRef({ x: 0, y: 0 });
+  const dragStartOffsetQuit = useRef({ x: 0, y: 0 });
+
+  const handlePointerDownQuit = (e: React.PointerEvent) => {
+    setIsDraggingQuit(true);
+    dragStartPosQuit.current = { x: e.clientX, y: e.clientY };
+    dragStartOffsetQuit.current = { x: config.quitOffsetX || 0, y: config.quitOffsetY || 0 };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMoveQuit = (e: React.PointerEvent) => {
+    if (!isDraggingQuit) return;
+    const dx = e.clientX - dragStartPosQuit.current.x;
+    const dy = e.clientY - dragStartPosQuit.current.y;
+    setConfig({
+      ...config,
+      quitOffsetX: dragStartOffsetQuit.current.x + dx,
+      quitOffsetY: dragStartOffsetQuit.current.y + dy
+    });
+  };
+
+  const handlePointerUpQuit = (e: React.PointerEvent) => {
+    setIsDraggingQuit(false);
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+  };
+
   const [showSidebar, setShowSidebar] = useState(false);
 
   // Preview dummy text
@@ -77,11 +104,10 @@ export default function ConfigureModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
-      {/* Full Screen Container */}
-      <div className="relative w-full h-full flex flex-col md:flex-row overflow-hidden">
+      <div className="relative w-full h-full overflow-hidden">
         
         {/* Left Side: Preview Area */}
-        <div className="flex-1 flex flex-col relative overflow-hidden bg-background">
+        <div className="absolute inset-0 flex flex-col overflow-hidden bg-background">
           
           {!showSidebar && (
             <div className="absolute top-4 right-4 z-10">
@@ -93,6 +119,26 @@ export default function ConfigureModal() {
               </button>
             </div>
           )}
+
+          <header className="w-full flex-none px-4 sm:px-8 py-[clamp(8px,2vh,24px)] flex items-center justify-between pointer-events-auto">
+            <div className="w-full max-w-7xl mx-auto flex items-center justify-between">
+              <div 
+                className={`relative ${isDraggingQuit ? 'cursor-grabbing' : 'cursor-grab'}`}
+                style={{ 
+                  transform: `translate(${config.quitOffsetX || 0}px, ${config.quitOffsetY || 0}px)`,
+                  touchAction: 'none'
+                }}
+                onPointerDown={handlePointerDownQuit}
+                onPointerMove={handlePointerMoveQuit}
+                onPointerUp={handlePointerUpQuit}
+                onPointerCancel={handlePointerUpQuit}
+              >
+                <div className="text-sm font-mono text-slate-400 uppercase tracking-widest pointer-events-none">
+                  &larr; Quit
+                </div>
+              </div>
+            </div>
+          </header>
           
           <main className={`flex-1 min-h-0 w-full flex flex-col ${config.boxAlign === 'left' ? 'items-start' : config.boxAlign === 'right' ? 'items-end' : 'items-center'} justify-center overflow-visible`}>
             <div
@@ -166,7 +212,7 @@ export default function ConfigureModal() {
 
         {/* Right Side: Controls */}
         {showSidebar && (
-          <div className="w-full md:w-80 bg-slate-950 border-l border-slate-800 p-6 flex flex-col gap-6 overflow-y-auto">
+          <div className="absolute right-0 top-0 bottom-0 z-50 w-full md:w-80 bg-transparent p-6 flex flex-col gap-6 overflow-y-auto pointer-events-auto">
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-xl font-display text-[var(--hot)] uppercase tracking-widest">Layout</h2>
               <button 

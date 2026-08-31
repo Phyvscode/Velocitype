@@ -288,6 +288,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
             <button
               onClick={onQuit}
               className="text-sm font-mono text-slate-400 hover:text-[var(--hot)] transition-colors uppercase tracking-widest z-50 relative"
+              style={{ transform: `translate(${layoutConfig.quitOffsetX || 0}px, ${layoutConfig.quitOffsetY || 0}px)` }}
             >
               &larr; Quit
             </button>
