@@ -2,11 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getLayoutConfig, saveLayoutConfig, LayoutConfig, DEFAULT_CONFIG } from '@/lib/layoutConfig';
 import LiveKeyboard from './LiveKeyboard';
 
-interface Props {
-  onClose: () => void;
-}
-
-export default function ConfigureModal({ onClose }: Props) {
+export default function ConfigureModal() {
   const [config, setConfig] = useState<LayoutConfig>(getLayoutConfig());
 
   useEffect(() => {
@@ -86,11 +82,6 @@ export default function ConfigureModal({ onClose }: Props) {
         
         {/* Left Side: Preview Area */}
         <div className="flex-1 flex flex-col relative overflow-hidden bg-background">
-          <div className="absolute top-4 left-4 z-10 flex items-center gap-4">
-            <button onClick={onClose} className="text-xs font-mono text-slate-400 hover:text-white uppercase tracking-widest flex items-center gap-1.5 transition-colors">
-              <span className="text-sm">&larr;</span> Back
-            </button>
-          </div>
           
           {!showSidebar && (
             <div className="absolute top-4 right-4 z-10">

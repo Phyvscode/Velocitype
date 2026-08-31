@@ -21,7 +21,7 @@ import MultiplayerGame from '@/components/MultiplayerGame';
 import VirtualKeyboardConnector from '@/components/VirtualKeyboardConnector';
 import RankedMode from '@/components/RankedMode';
 
-type Screen = 'setup' | 'game' | 'results' | 'library' | 'lobby' | 'multiplayerGame' | 'casual' | 'ranked';
+type Screen = 'setup' | 'game' | 'results' | 'library' | 'lobby' | 'multiplayerGame' | 'casual' | 'ranked' | 'configure';
 
 function App() {
   const { user, loading } = useAuth();
@@ -108,7 +108,6 @@ function App() {
   const [isColorModalOpen, setIsColorModalOpen] = useState<boolean>(false);
   const [isUiColorModalOpen, setIsUiColorModalOpen] = useState<boolean>(false);
   const [isBorderModalOpen, setIsBorderModalOpen] = useState<boolean>(false);
-  const [isConfigureModalOpen, setIsConfigureModalOpen] = useState<boolean>(false);
   const [dictReady, setDictReady] = useState<boolean>(false);
 
   // Load the full word dictionary (thousands of real words) before any
@@ -244,7 +243,7 @@ function App() {
           onOpenColor={() => setIsColorModalOpen(true)} 
           onOpenUiColor={() => setIsUiColorModalOpen(true)}
           onOpenBorder={() => setIsBorderModalOpen(true)}
-          onOpenConfigure={() => setIsConfigureModalOpen(true)}
+          onOpenConfigure={() => navigate('configure')}
           onOpenCasual={() => navigate('casual')}
           onOpenRanked={() => navigate('ranked')}
           onLobbyJoined={(code) => {
@@ -304,7 +303,7 @@ function App() {
       <ColorModal isOpen={isColorModalOpen} onClose={() => setIsColorModalOpen(false)} />
       <BgColorModal isOpen={isUiColorModalOpen} onClose={() => setIsUiColorModalOpen(false)} />
       <BorderModal isOpen={isBorderModalOpen} onClose={() => setIsBorderModalOpen(false)} />
-      {isConfigureModalOpen && <ConfigureModal onClose={() => setIsConfigureModalOpen(false)} />}
+      {screen === 'configure' && <ConfigureModal />}
       {useVirtualKeyboard && <VirtualKeyboardConnector />}
     </div>
   );
