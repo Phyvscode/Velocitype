@@ -314,7 +314,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
           }`}
           style={{ 
             fontSize: (config as any).mode !== 'words' ? `${layoutConfig.fontSize}px` : 'clamp(20px, 2.5vw, 32px)',
-            maxWidth: (config as any).mode !== 'words' ? `${layoutConfig.maxChars}ch` : undefined,
+            maxWidth: (config as any).mode !== 'words' ? `min(100%, ${layoutConfig.maxChars}ch)` : undefined,
             transform: (config as any).mode !== 'words' ? `translate(${layoutConfig.boxOffsetX || 0}px, ${layoutConfig.boxOffsetY || 0}px)` : undefined
           }}
         >

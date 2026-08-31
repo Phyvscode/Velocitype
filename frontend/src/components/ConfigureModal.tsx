@@ -137,6 +137,9 @@ export default function ConfigureModal() {
                   &larr; Quit
                 </div>
               </div>
+              <div className="flex items-center gap-4 text-[clamp(18px,2vw,24px)] font-bold tabular-nums opacity-0 pointer-events-none">
+                00:00
+              </div>
             </div>
           </header>
           
@@ -146,14 +149,13 @@ export default function ConfigureModal() {
               onPointerMove={handlePointerMoveBox}
               onPointerUp={handlePointerUpBox}
               onPointerCancel={handlePointerUpBox}
-              className={`relative transition-colors duration-150 select-none font-mono tracking-wide px-8 py-8 md:px-12 md:py-10 ${config.textAlign === 'center' ? 'text-center' : config.textAlign === 'right' ? 'text-right' : 'text-left'} ${
+              className={`relative w-full transition-colors duration-150 select-none font-mono tracking-wide px-8 py-8 md:px-12 md:py-10 ${config.textAlign === 'center' ? 'text-center' : config.textAlign === 'right' ? 'text-right' : 'text-left'} ${
                 config.showBox ? 'bg-[#15171e]/50 border border-slate-800/80 rounded-2xl shadow-xl' : 'border border-transparent'
               } ${isDraggingBox ? 'cursor-grabbing' : 'cursor-grab'}`}
               style={{ 
                 fontSize: `${config.fontSize}px`,
-                maxWidth: `${config.maxChars}ch`,
-                transform: `translate(${config.boxOffsetX || 0}px, ${config.boxOffsetY || 0}px)`,
-                width: '100%'
+                maxWidth: `min(100%, ${config.maxChars}ch)`,
+                transform: `translate(${config.boxOffsetX || 0}px, ${config.boxOffsetY || 0}px)`
               }}
             >
               <div 
