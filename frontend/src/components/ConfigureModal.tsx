@@ -90,8 +90,6 @@ export default function ConfigureModal({ onClose }: Props) {
             <button onClick={onClose} className="text-xs font-mono text-slate-400 hover:text-white uppercase tracking-widest flex items-center gap-1.5 transition-colors">
               <span className="text-sm">&larr;</span> Back
             </button>
-            <span className="text-xs font-mono text-slate-600 uppercase tracking-widest pointer-events-none">|</span>
-            <span className="text-xs font-mono text-slate-500 uppercase tracking-widest pointer-events-none">Preview</span>
           </div>
           
           {!showSidebar && (
