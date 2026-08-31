@@ -200,7 +200,7 @@ export default function ConfigureModal() {
                   transformOrigin: 'bottom left' 
                 }}
               >
-                <div className="pointer-events-none">
+                <div className="pointer-events-none" style={{ transformStyle: 'preserve-3d' }}>
                   <LiveKeyboard activeKeys={new Set(['S', 'P', 'A', 'C', 'E'])} />
                 </div>
               </div>
