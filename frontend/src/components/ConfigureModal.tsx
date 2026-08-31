@@ -105,7 +105,7 @@ export default function ConfigureModal({ onClose }: Props) {
             </div>
           )}
           
-          <main className={`flex-1 min-h-0 w-full flex flex-col items-${config.boxAlign === 'left' ? 'start' : config.boxAlign === 'right' ? 'end' : 'center'} justify-center overflow-visible`}>
+          <main className={`flex-1 min-h-0 w-full flex flex-col ${config.boxAlign === 'left' ? 'items-start' : config.boxAlign === 'right' ? 'items-end' : 'items-center'} justify-center overflow-visible`}>
             <div
               onPointerDown={handlePointerDownBox}
               onPointerMove={handlePointerMoveBox}
