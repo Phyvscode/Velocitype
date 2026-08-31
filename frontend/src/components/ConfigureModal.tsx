@@ -244,6 +244,34 @@ export default function ConfigureModal({ onClose }: Props) {
             />
           </div>
 
+          {/* Position X */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-mono text-slate-400 uppercase tracking-widest flex justify-between">
+              <span>X Offset</span>
+              <span className="text-[var(--hot)]">{config.boxOffsetX || 0}px</span>
+            </label>
+            <input 
+              type="range" min="-800" max="800" step="10" 
+              value={config.boxOffsetX || 0}
+              onChange={e => setConfig({...config, boxOffsetX: parseInt(e.target.value)})}
+              className="accent-[var(--hot)]"
+            />
+          </div>
+
+          {/* Position Y */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-mono text-slate-400 uppercase tracking-widest flex justify-between">
+              <span>Y Offset</span>
+              <span className="text-[var(--hot)]">{config.boxOffsetY || 0}px</span>
+            </label>
+            <input 
+              type="range" min="-800" max="800" step="10" 
+              value={config.boxOffsetY || 0}
+              onChange={e => setConfig({...config, boxOffsetY: parseInt(e.target.value)})}
+              className="accent-[var(--hot)]"
+            />
+          </div>
+
           {/* Box Alignment */}
           <div className="flex flex-col gap-2 mt-2">
             <label className="text-xs font-mono text-slate-400 uppercase tracking-widest">Container Alignment</label>
