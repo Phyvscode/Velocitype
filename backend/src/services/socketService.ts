@@ -33,6 +33,8 @@ interface Lobby {
 const lobbies: Record<string, Lobby> = {};
 
 // Ranked interfaces
+export type RankedAbility = 'longer_words' | 'scribberish' | 'no_color_change' | 'word_shuffle' | 'opponent_mistakes' | 'time_stop' | 'screen_flash' | 'none';
+
 interface RankedPlayer {
   id: string;
   userId: string;
@@ -46,6 +48,9 @@ interface RankedPlayer {
   colorTheme?: any;
   fontFamily?: string;
   bgTheme?: any;
+  abilityChoices?: RankedAbility[];
+  selectedAbility?: RankedAbility;
+  activeAbility?: RankedAbility;
 }
 
 interface RankedMatch {
@@ -53,9 +58,11 @@ interface RankedMatch {
   language: string;
   players: Record<string, RankedPlayer>; // Keyed by socket ID
   sentences: string[];
-  currentRound: number; // 0 to 8
-  state: 'generating' | 'waiting_ready' | 'playing' | 'round_finished' | 'finished';
+  currentRound: number;
+  state: 'generating' | 'waiting_ready' | 'playing' | 'round_finished' | 'ability_selection' | 'finished';
   roundTimer?: NodeJS.Timeout;
+  abilitySelectionTimer?: NodeJS.Timeout;
+  extraTime?: number;
 }
 
 const rankedQueue: Record<string, RankedPlayer[]> = {}; // Keyed by language
@@ -315,10 +322,18 @@ export const initSocket = (httpServer: HttpServer) => {
             io.to(data.matchId).emit('rankedRoundStart', { round: match.currentRound, duration: 60 });
             
             const roundIndex = match.currentRound;
+            match.extraTime = 0;
 
-            match.roundTimer = setTimeout(async () => {
+            const handleRoundEnd = async () => {
               // Ensure we are still in the same round and game hasn't ended via disconnect
               if (rankedMatches[match.id] && match.state === 'playing' && match.currentRound === roundIndex) {
+                if (match.extraTime && match.extraTime > 0) {
+                  const extra = match.extraTime;
+                  match.extraTime = 0;
+                  match.roundTimer = setTimeout(handleRoundEnd, extra);
+                  return;
+                }
+
                 match.state = 'round_finished';
                 
                 const playersList = Object.values(match.players);
@@ -344,30 +359,95 @@ export const initSocket = (httpServer: HttpServer) => {
                   scores: { [playersList[0].id]: playersList[0].score, [playersList[1].id]: playersList[1].score } 
                 });
 
-                // Check if someone reached 5 points
-                if (roundWinner.score >= 5) {
+                // Check if someone reached 3 points (Best of 5)
+                if (roundWinner.score >= 3) {
                   match.state = 'finished';
                   await handleRankedMatchEnd(match, io);
                 } else {
-                  match.currentRound += 1;
-                  match.state = 'waiting_ready';
-                  Object.values(match.players).forEach(p => p.ready = false);
-                  
-                  // Automatically move to next round after 3 seconds
+                  match.state = 'ability_selection';
+                  Object.values(match.players).forEach(p => {
+                    p.ready = false;
+                    p.selectedAbility = undefined;
+                    
+                    // Generate 3 random choices
+                    const abilities: RankedAbility[] = ['longer_words', 'scribberish', 'no_color_change', 'word_shuffle', 'opponent_mistakes', 'time_stop', 'screen_flash'];
+                    const choices: RankedAbility[] = [];
+                    while (choices.length < 3) {
+                      const idx = Math.floor(Math.random() * abilities.length);
+                      const ability = abilities.splice(idx, 1)[0];
+                      choices.push(ability);
+                    }
+                    p.abilityChoices = choices;
+                  });
+
+                  // Delay showing the ability selection slightly so players can see round results
                   setTimeout(() => {
-                    if (rankedMatches[match.id]) {
-                      io.to(data.matchId).emit('rankedNextRound', { round: match.currentRound });
+                    if (rankedMatches[match.id] && match.state === 'ability_selection') {
+                      Object.values(match.players).forEach(p => {
+                        io.to(p.id).emit('rankedAbilitySelectionStart', { choices: p.abilityChoices });
+                      });
+
+                      // Give them 15 seconds to choose, else force default or random
+                      match.abilitySelectionTimer = setTimeout(() => {
+                        if (rankedMatches[match.id] && match.state === 'ability_selection') {
+                          Object.values(match.players).forEach(p => {
+                            if (!p.selectedAbility && p.abilityChoices) {
+                              p.selectedAbility = p.abilityChoices[0];
+                              p.activeAbility = p.selectedAbility;
+                            }
+                          });
+                          
+                          match.currentRound += 1;
+                          match.state = 'waiting_ready';
+                          
+                          io.to(match.id).emit('rankedAbilitySelectionComplete');
+                          
+                          setTimeout(() => {
+                            if (rankedMatches[match.id]) {
+                              io.to(match.id).emit('rankedNextRound', { round: match.currentRound });
+                            }
+                          }, 2000);
+                        }
+                      }, 15000);
                     }
                   }, 3000);
                 }
               }
-            }, 60000);
+            };
+            match.roundTimer = setTimeout(handleRoundEnd, 60000);
+          }
+        }
+      }
+    });
+    socket.on('rankedSelectAbility', (data: { matchId: string; ability: RankedAbility }) => {
+      const match = rankedMatches[data.matchId];
+      if (match && match.state === 'ability_selection') {
+        const player = match.players[socket.id];
+        if (player && player.abilityChoices?.includes(data.ability) && !player.selectedAbility) {
+          player.selectedAbility = data.ability;
+          player.activeAbility = data.ability;
+          socket.emit('rankedAbilityConfirmed', { ability: data.ability });
+          
+          const allSelected = Object.values(match.players).every(p => p.selectedAbility);
+          if (allSelected) {
+            clearTimeout(match.abilitySelectionTimer);
+            match.currentRound += 1;
+            match.state = 'waiting_ready';
+            
+            io.to(match.id).emit('rankedAbilitySelectionComplete');
+            
+            setTimeout(() => {
+              if (rankedMatches[match.id]) {
+                io.to(match.id).emit('rankedNextRound', { round: match.currentRound });
+              }
+            }, 2000);
           }
         }
       }
     });
 
-    socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number; typedText?: string; activeKeys?: string[] }) => {
+
+    socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string }) => {
       const match = rankedMatches[data.matchId];
       if (match && match.state === 'playing') {
         const player = match.players[socket.id];
@@ -378,11 +458,28 @@ export const initSocket = (httpServer: HttpServer) => {
             progress: data.progress, 
             wpm: data.wpm, 
             typedText: data.typedText, 
-            activeKeys: data.activeKeys 
+            activeKeys: data.activeKeys,
+            targetText: data.targetText
           });
         }
       }
     });
+
+    socket.on('rankedTimeStop', (data: { matchId: string }) => {
+      const match = rankedMatches[data.matchId];
+      if (match && match.state === 'playing') {
+        socket.to(data.matchId).emit('rankedTimeStop');
+        match.extraTime = (match.extraTime || 0) + 1000;
+      }
+    });
+
+    socket.on('rankedScreenFlash', (data: { matchId: string }) => {
+      const match = rankedMatches[data.matchId];
+      if (match && match.state === 'playing') {
+        socket.to(data.matchId).emit('rankedScreenFlash');
+      }
+    });
+
 
     socket.on('disconnect', () => {
       console.log(`Socket disconnected: ${socket.id}`);

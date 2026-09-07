@@ -3,9 +3,10 @@ import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getStoredBgColor } from '@/lib/colors';
 import { LANGUAGES } from '@/lib/languages';
-import { loadDictionary } from '@/lib/words';
+import { loadDictionary, DICTIONARY } from '@/lib/words';
 import { generateSentences } from '@/lib/quotes';
 import LiveKeyboard, { getKeyLabel } from '@/components/LiveKeyboard';
+import { AbilitySelection, Ability } from '@/components/AbilitySelection';
 
 interface RankedMatchData {
   matchId: string;
@@ -43,10 +44,10 @@ interface RankedPlayerAreaProps {
   colorTheme?: any;
   fontFamily?: string;
   bgTheme?: any;
-    bgTheme?: any;
+  noColorChange?: boolean;
 }
 
-function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme }: RankedPlayerAreaProps) {
+function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, noColorChange }: RankedPlayerAreaProps) {
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
@@ -180,7 +181,11 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
                 if (i < typedText.length) {
                   // We don't apply classes for correct opponent text, we rely on the injected #opponent-area span css!
                   // Except for mistakes, which we style specifically.
-                  color = typedText[i] === char ? 'correct-char' : 'text-rose-500 underline exclude-theme';
+                  if (noColorChange) {
+                    color = 'correct-char';
+                  } else {
+                    color = typedText[i] === char ? 'correct-char' : 'text-rose-500 underline exclude-theme';
+                  }
                 } else if (i === typedText.length) {
                   color = 'text-slate-100 exclude-theme';
                 }
@@ -222,7 +227,7 @@ export default function RankedMode({ onBack }: Props) {
   
   // Game state
   const [sentences, setSentences] = useState<string[]>([]);
-  const [gameState, setGameState] = useState<'waiting_ready' | 'playing' | 'round_finished' | 'match_finished'>('waiting_ready');
+  const [gameState, setGameState] = useState<'waiting_ready' | 'playing' | 'round_finished' | 'ability_selection' | 'match_finished'>('waiting_ready');
   const [currentRound, setCurrentRound] = useState(0);
   const [myProgress, setMyProgress] = useState(0);
   const [myWpm, setMyWpm] = useState(0);
@@ -233,6 +238,14 @@ export default function RankedMode({ onBack }: Props) {
   const [matchWinner, setMatchWinner] = useState<string | null>(null);
   const [eloChanges, setEloChanges] = useState<Record<string, number>>({});
 
+  // Ability states
+  const [abilityChoices, setAbilityChoices] = useState<any[]>([]);
+  const [mySelectedAbility, setMySelectedAbility] = useState<any>(null);
+  const [myActiveAbility, setMyActiveAbility] = useState<any>(null);
+
+  const [myTargetText, setMyTargetText] = useState('');
+  const [oppTargetText, setOppTargetText] = useState('');
+
   const [typedText, setTypedText] = useState('');
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -241,6 +254,33 @@ export default function RankedMode({ onBack }: Props) {
   // Opponent typing state
   const [oppTypedText, setOppTypedText] = useState('');
   const [oppActiveKeys, setOppActiveKeys] = useState<Set<string>>(new Set());
+
+  // Ability active states
+  const [isScreenFlashed, setIsScreenFlashed] = useState(false);
+  const [isTimeStopped, setIsTimeStopped] = useState(false);
+  const [oppMistakes, setOppMistakes] = useState<string[]>([]);
+
+  const applyAbilitiesToText = (baseText: string, ability: any, mistakes: string[]) => {
+    let words = baseText.split(' ');
+    if (ability === 'longer_words') {
+        const longWords = DICTIONARY.filter(w => w.word.length >= 5).map(w => w.word);
+        if (longWords.length > 0) {
+            words = words.map((w, i) => ((i + 1) % 10 === 0) ? longWords[Math.floor(Math.random() * longWords.length)] : w);
+        }
+    } else if (ability === 'scribberish') {
+        words = words.map(w => Array.from({ length: w.length }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join(''));
+    } else if (ability === 'opponent_mistakes' && mistakes.length > 0) {
+        words = words.map((w, i) => {
+            if ((i + 1) % 5 === 0) {
+                const letter = mistakes[Math.floor(Math.random() * mistakes.length)];
+                const withLetter = DICTIONARY.find(dw => dw.word.includes(letter));
+                return withLetter ? withLetter.word : w + letter;
+            }
+            return w;
+        });
+    }
+    return words.join(' ');
+  };
 
   useEffect(() => {
     if (!user || !socket || !isConnected) return;
@@ -285,19 +325,59 @@ export default function RankedMode({ onBack }: Props) {
       setMyWpm(0);
       setOppProgress(0);
       setOppWpm(0);
+      
+      const newTargetText = applyAbilitiesToText(sentences[data.round], myActiveAbility, oppMistakes);
+      setMyTargetText(newTargetText);
+
       setTimeout(() => inputRef.current?.focus(), 100);
     };
 
-    const onOpponentProgress = (data: { progress: number; wpm: number; typedText?: string; activeKeys?: string[] }) => {
+    const onOpponentProgress = (data: { progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string }) => {
       setOppProgress(data.progress);
       setOppWpm(data.wpm);
-      if (data.typedText !== undefined) setOppTypedText(data.typedText);
       if (data.activeKeys) setOppActiveKeys(new Set(data.activeKeys));
+      if (data.targetText !== undefined) setOppTargetText(data.targetText);
+      if (data.typedText !== undefined) {
+        setOppTypedText(data.typedText);
+        // Track opponent mistakes
+        if (data.targetText) {
+          const mistakes = [];
+          for (let i = 0; i < data.typedText.length; i++) {
+            if (data.typedText[i] !== data.targetText[i]) {
+               mistakes.push(data.targetText[i]);
+            }
+          }
+          if (mistakes.length > 0) {
+            setOppMistakes(prev => {
+              const next = [...prev, ...mistakes].filter(c => c !== ' ');
+              // keep last 50 mistakes
+              return next.slice(-50);
+            });
+          }
+        }
+      }
     };
 
     const onRoundEnd = (data: { winnerId: string; scores: Record<string, number> }) => {
       setGameState('round_finished');
       setScores(data.scores);
+      setIsScreenFlashed(false);
+      setIsTimeStopped(false);
+    };
+
+    const onAbilitySelectionStart = (data: { choices: any[] }) => {
+      setGameState('ability_selection');
+      setAbilityChoices(data.choices);
+      setMySelectedAbility(null);
+    };
+
+    const onAbilityConfirmed = (data: { ability: any }) => {
+      setMySelectedAbility(data.ability);
+    };
+
+    const onAbilitySelectionComplete = () => {
+      setMyActiveAbility(mySelectedAbility); // Apply it for the next round
+      setGameState('waiting_ready');
     };
 
     const onNextRound = (data: { round: number }) => {
@@ -319,15 +399,30 @@ export default function RankedMode({ onBack }: Props) {
       alert('Opponent disconnected. You win by default!');
     };
 
+    const onTimeStop = () => {
+      setIsTimeStopped(true);
+      setTimeout(() => setIsTimeStopped(false), 1000);
+    };
+
+    const onScreenFlash = () => {
+      setIsScreenFlashed(true);
+      setTimeout(() => setIsScreenFlashed(false), 1000);
+    };
+
     socket.on('rankedQueueJoined', onQueueJoined);
     socket.on('rankedMatchFound', onMatchFound);
     socket.on('rankedMatchReady', onMatchReady);
     socket.on('rankedRoundStart', onRoundStart);
     socket.on('rankedOpponentProgress', onOpponentProgress);
     socket.on('rankedRoundEnd', onRoundEnd);
+    socket.on('rankedAbilitySelectionStart', onAbilitySelectionStart);
+    socket.on('rankedAbilityConfirmed', onAbilityConfirmed);
+    socket.on('rankedAbilitySelectionComplete', onAbilitySelectionComplete);
     socket.on('rankedNextRound', onNextRound);
     socket.on('rankedMatchFinished', onMatchFinished);
     socket.on('rankedOpponentDisconnected', onOpponentDisconnected);
+    socket.on('rankedTimeStop', onTimeStop);
+    socket.on('rankedScreenFlash', onScreenFlash);
 
     return () => {
       socket.off('rankedQueueJoined', onQueueJoined);
@@ -336,9 +431,14 @@ export default function RankedMode({ onBack }: Props) {
       socket.off('rankedRoundStart', onRoundStart);
       socket.off('rankedOpponentProgress', onOpponentProgress);
       socket.off('rankedRoundEnd', onRoundEnd);
+      socket.off('rankedAbilitySelectionStart', onAbilitySelectionStart);
+      socket.off('rankedAbilityConfirmed', onAbilityConfirmed);
+      socket.off('rankedAbilitySelectionComplete', onAbilitySelectionComplete);
       socket.off('rankedNextRound', onNextRound);
       socket.off('rankedMatchFinished', onMatchFinished);
       socket.off('rankedOpponentDisconnected', onOpponentDisconnected);
+      socket.off('rankedTimeStop', onTimeStop);
+      socket.off('rankedScreenFlash', onScreenFlash);
     };
   }, [user, socket, isConnected]);
 
@@ -373,7 +473,7 @@ export default function RankedMode({ onBack }: Props) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (gameState === 'playing' && timeLeft > 0) {
+    if (gameState === 'playing' && timeLeft > 0 && !isTimeStopped) {
       timerRef.current = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
     } else if (gameState !== 'playing') {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -381,15 +481,56 @@ export default function RankedMode({ onBack }: Props) {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [timeLeft, gameState]);
+  }, [timeLeft, gameState, isTimeStopped]);
+
+  useEffect(() => {
+    if (gameState === 'playing' && myActiveAbility === 'screen_flash') {
+      const interval = setInterval(() => {
+        if (Math.random() < 0.3) {
+          socket?.emit('rankedScreenFlash', { matchId: matchData?.matchId });
+        }
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [gameState, myActiveAbility, matchData?.matchId, socket]);
 
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (gameState !== 'playing' || !matchData || !socket) return;
+    if (gameState !== 'playing' || !matchData || !socket || timeLeft <= 0) return;
     let val = e.target.value;
-    const target = sentences[currentRound];
+    let target = myTargetText;
     
     if (val.length > target.length) {
       val = val.slice(0, target.length);
+    }
+    
+    // Check spacebar completion
+    if (val.length > typedText.length && val[val.length - 1] === ' ') {
+      const wordStart = val.lastIndexOf(' ', val.length - 2) + 1;
+      const wordTyped = val.slice(wordStart, val.length - 1);
+      const wordTarget = target.slice(wordStart, val.length - 1);
+      
+      let wordCorrectCount = 0;
+      for (let i = 0; i < wordTyped.length; i++) {
+        if (wordTyped[i] === wordTarget[i]) wordCorrectCount++;
+      }
+      const accuracy = wordTarget.length > 0 ? wordCorrectCount / wordTarget.length : 0;
+      
+      if (myActiveAbility === 'time_stop') {
+        const chance = 0.05 * (1 + accuracy);
+        if (Math.random() < chance) {
+          socket.emit('rankedTimeStop', { matchId: matchData.matchId });
+        }
+      } else if (myActiveAbility === 'word_shuffle') {
+        const currentIndex = val.length;
+        const before = target.slice(0, currentIndex);
+        const after = target.slice(currentIndex).split(' ');
+        for (let i = after.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [after[i], after[j]] = [after[j], after[i]];
+        }
+        target = before + after.join(' ');
+        setMyTargetText(target);
+      }
     }
 
     setTypedText(val);
@@ -413,26 +554,29 @@ export default function RankedMode({ onBack }: Props) {
       progress, 
       wpm, 
       typedText: val, 
-      activeKeys: Array.from(activeKeys) 
+      activeKeys: Array.from(activeKeys),
+      targetText: target
     });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (timeLeft <= 0) return;
     const key = getKeyLabel(e);
     setActiveKeys(prev => {
       const next = new Set(prev);
       next.add(key);
-      socket?.emit('updateRankedProgress', { matchId: matchData?.matchId, progress: myProgress, wpm: myWpm, typedText, activeKeys: Array.from(next) });
+      socket?.emit('updateRankedProgress', { matchId: matchData?.matchId, progress: myProgress, wpm: myWpm, typedText, activeKeys: Array.from(next), targetText: myTargetText });
       return next;
     });
   };
 
   const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (timeLeft <= 0) return;
     const key = getKeyLabel(e);
     setActiveKeys(prev => {
       const next = new Set(prev);
       next.delete(key);
-      socket?.emit('updateRankedProgress', { matchId: matchData?.matchId, progress: myProgress, wpm: myWpm, typedText, activeKeys: Array.from(next) });
+      socket?.emit('updateRankedProgress', { matchId: matchData?.matchId, progress: myProgress, wpm: myWpm, typedText, activeKeys: Array.from(next), targetText: myTargetText });
       return next;
     });
   };
@@ -488,7 +632,6 @@ export default function RankedMode({ onBack }: Props) {
   }
 
   // 2. Match Screen (Split Screen)
-  const targetText = sentences[currentRound] || '';
   const myScore = scores[socket!.id] || 0;
   const oppScore = scores[matchData.opponent.id] || 0;
 
@@ -539,15 +682,19 @@ export default function RankedMode({ onBack }: Props) {
 
       {/* Split Screen Area */}
       <div className="flex-1 flex flex-col md:flex-row relative">
+        {isScreenFlashed && (
+          <div className="absolute inset-0 bg-black z-40 pointer-events-none transition-opacity duration-150" />
+        )}
         {/* My Side (Left) */}
         <RankedPlayerArea
           label="Your Area"
           wpm={myWpm}
           progress={myProgress}
-          targetText={targetText}
+          targetText={myTargetText}
           typedText={typedText}
           activeKeys={activeKeys}
           gameState={gameState}
+          noColorChange={myActiveAbility === 'no_color_change'}
         />
         
         {/* Hidden Input for me */}
@@ -568,7 +715,7 @@ export default function RankedMode({ onBack }: Props) {
           label="Opponent Area"
           wpm={oppWpm}
           progress={oppProgress}
-          targetText={targetText}
+          targetText={oppTargetText || myTargetText}
           typedText={oppTypedText}
           activeKeys={oppActiveKeys}
           gameState={gameState}
@@ -593,6 +740,14 @@ export default function RankedMode({ onBack }: Props) {
       </div>
 
       {/* Overlays */}
+      {gameState === 'ability_selection' && (
+        <AbilitySelection 
+          choices={abilityChoices as Ability[]} 
+          selected={mySelectedAbility as Ability}
+          onSelect={(ability) => socket?.emit('rankedSelectAbility', { matchId: matchData?.matchId, ability })}
+        />
+      )}
+
       {gameState === 'waiting_ready' && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-20">
           <div className="text-center space-y-6">
