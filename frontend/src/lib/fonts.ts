@@ -274,7 +274,7 @@ export function saveStoredFont(fontName: string): void {
   localStorage.setItem(FONT_TYPE_KEY, 'google');
 }
 
-export function applyGoogleFont(fontName: string): void {
+export async function applyGoogleFont(fontName: string): Promise<void> {
   if (!fontName) return;
 
   saveStoredFont(fontName);
@@ -290,7 +290,17 @@ export function applyGoogleFont(fontName: string): void {
     document.head.appendChild(linkEl);
   }
 
-  linkEl.href = `https://fonts.googleapis.com/css2?family=${apiFontName}:wght@400;500;600;700;800&display=swap`;
+  const href = `https://fonts.googleapis.com/css2?family=${apiFontName}:wght@400;500;600;700;800&display=swap`;
+  if (linkEl.href !== href) {
+    linkEl.href = href;
+  }
+
+  try {
+    // Wait for the font to actually load before applying to avoid layout shift (FOUT)
+    await document.fonts.load(`16px "${formattedName}"`);
+  } catch (e) {
+    console.warn('Failed to load font beforehand', e);
+  }
 
   const styleId = 'dynamic-custom-font-override';
   let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
@@ -301,8 +311,11 @@ export function applyGoogleFont(fontName: string): void {
   }
 
   styleEl.innerHTML = `
-    * {
+    body {
       font-family: '${formattedName}', system-ui, sans-serif !important;
+    }
+    .font-mono {
+      font-family: '${formattedName}', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
     }
   `;
 }
@@ -342,8 +355,11 @@ export function applyUploadedFontFile(fileName: string, dataUrl: string): void {
       font-style: normal;
       font-display: swap;
     }
-    * {
+    body {
       font-family: 'VelocitypeUploadedFont', system-ui, sans-serif !important;
+    }
+    .font-mono {
+      font-family: 'VelocitypeUploadedFont', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
     }
   `;
 }
