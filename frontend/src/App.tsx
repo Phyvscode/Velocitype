@@ -15,11 +15,13 @@ import ConfigureModal from '@/components/ConfigureModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { initializeActiveFont } from '@/lib/fonts';
 import { initializeActiveColor, initializeActiveBgColor } from '@/lib/colors';
+import { getLayoutConfig } from '@/lib/layoutConfig';
 import { loadDictionary } from '@/lib/words';
 import LobbyScreen from '@/components/LobbyScreen';
 import MultiplayerGame from '@/components/MultiplayerGame';
 import VirtualKeyboardConnector from '@/components/VirtualKeyboardConnector';
 import RankedMode from '@/components/RankedMode';
+import VersusModeSetup from '@/components/VersusModeSetup';
 
 type Screen = 'setup' | 'game' | 'results' | 'library' | 'lobby' | 'multiplayerGame' | 'casual' | 'ranked' | 'configure';
 
@@ -141,6 +143,20 @@ function App() {
   useEffect(() => {
     initializeActiveColor();
     initializeActiveBgColor();
+    
+    const applyGlow = () => {
+      const config = getLayoutConfig();
+      document.documentElement.style.setProperty('--text-glow-blur', `${config.textGlow || 0}px`);
+      document.documentElement.style.setProperty('--bg-glow-opacity', `${(config.bgGlow ?? 10) / 100}`);
+    };
+    
+    applyGlow();
+    window.addEventListener('layoutConfigChanged', applyGlow);
+    window.addEventListener('storage', applyGlow);
+    return () => {
+      window.removeEventListener('layoutConfigChanged', applyGlow);
+      window.removeEventListener('storage', applyGlow);
+    };
   }, []);
 
   useEffect(() => {

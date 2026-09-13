@@ -13,6 +13,8 @@ export interface LayoutConfig {
   showKeyboard: boolean;
   quitOffsetX: number;
   quitOffsetY: number;
+  textGlow: number;
+  bgGlow: number;
 }
 
 export const DEFAULT_CONFIG: LayoutConfig = {
@@ -30,6 +32,8 @@ export const DEFAULT_CONFIG: LayoutConfig = {
   showKeyboard: true,
   quitOffsetX: 0,
   quitOffsetY: 0,
+  textGlow: 0,
+  bgGlow: 10,
 };
 
 const STORAGE_KEY = 'velocitype_layout_config';

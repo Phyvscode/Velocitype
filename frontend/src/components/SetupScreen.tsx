@@ -221,13 +221,13 @@ export default function SetupScreen({
   });
 
   const [borderStyle, setBorderStyle] = useState<string>(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('velocitype_portal_border') || 'b0';
-    return 'b0';
+    if (typeof window !== 'undefined') return localStorage.getItem('velocitype_portal_border') || 'b16';
+    return 'b16';
   });
 
   useEffect(() => {
     const handleStorage = () => {
-      setBorderStyle(localStorage.getItem('velocitype_portal_border') || 'b0');
+      setBorderStyle(localStorage.getItem('velocitype_portal_border') || 'b16');
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);

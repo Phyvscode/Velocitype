@@ -70,7 +70,6 @@ export default function VersusModeSetup({ onLobbyJoined }: Props) {
   };
 
   return (
-  return (
     <div className="bg-transparent border border-slate-800 rounded">
       <div className="flex border-b border-slate-800">
         <button

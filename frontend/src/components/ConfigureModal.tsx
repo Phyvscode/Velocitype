@@ -243,6 +243,34 @@ export default function ConfigureModal() {
             />
           </div>
 
+          {/* Text Glow */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-mono text-slate-400 uppercase tracking-widest flex justify-between">
+              <span>Font Glow</span>
+              <span className="text-[var(--hot)]">{config.textGlow || 0}px</span>
+            </label>
+            <input 
+              type="range" min="0" max="30" step="1" 
+              value={config.textGlow || 0}
+              onChange={e => setConfig({...config, textGlow: parseInt(e.target.value)})}
+              className="accent-[var(--hot)]"
+            />
+          </div>
+
+          {/* BG Glow */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-mono text-slate-400 uppercase tracking-widest flex justify-between">
+              <span>Background Glow</span>
+              <span className="text-[var(--hot)]">{config.bgGlow ?? 10}%</span>
+            </label>
+            <input 
+              type="range" min="0" max="50" step="1" 
+              value={config.bgGlow ?? 10}
+              onChange={e => setConfig({...config, bgGlow: parseInt(e.target.value)})}
+              className="accent-[var(--hot)]"
+            />
+          </div>
+
           {/* Max Characters per line */}
           <div className="flex flex-col gap-2">
             <label className="text-xs font-mono text-slate-400 uppercase tracking-widest flex justify-between">

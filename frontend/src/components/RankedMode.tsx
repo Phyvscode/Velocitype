@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getStoredBgColor } from '@/lib/colors';
@@ -18,7 +18,6 @@ interface RankedMatchData {
     elo: number;
     colorTheme?: any;
     fontFamily?: string;
-  bgTheme?: any;
     bgTheme?: any;
   };
 }
@@ -295,7 +294,7 @@ export default function RankedMode({ onBack }: Props) {
         const langObj = LANGUAGES.find(l => l.id === data.language);
         if (langObj) {
           // Preload language dictionary
-          await loadDictionary(langObj.url);
+          await loadDictionary();
           // Generate 9 massive blocks of text (one for each round)
           const s = [];
           for (let i = 0; i < 9; i++) {
@@ -341,7 +340,7 @@ export default function RankedMode({ onBack }: Props) {
         setOppTypedText(data.typedText);
         // Track opponent mistakes
         if (data.targetText) {
-          const mistakes = [];
+          const mistakes: string[] = [];
           for (let i = 0; i < data.typedText.length; i++) {
             if (data.typedText[i] !== data.targetText[i]) {
                mistakes.push(data.targetText[i]);
@@ -632,7 +631,7 @@ export default function RankedMode({ onBack }: Props) {
   }
 
   // 2. Match Screen (Split Screen)
-  const myScore = scores[socket!.id] || 0;
+  const myScore = scores[socket?.id || ''] || 0;
   const oppScore = scores[matchData.opponent.id] || 0;
 
   // Dots for First to 5
@@ -778,14 +777,14 @@ export default function RankedMode({ onBack }: Props) {
       {gameState === 'match_finished' && (
         <div className="absolute inset-0 bg-background/90 backdrop-blur-md flex flex-col items-center justify-center z-30 gap-8">
           <h2 className="font-display text-6xl text-white uppercase tracking-widest">
-            {matchWinner === socket!.id ? 'Victory' : 'Defeat'}
+            {matchWinner === (socket?.id || '') ? 'Victory' : 'Defeat'}
           </h2>
           <div className="flex items-center gap-12 font-mono text-lg uppercase tracking-widest">
             <div className="text-center">
               <div className="text-[var(--hot)] mb-2">You</div>
-              <div className="text-3xl text-white">{scores[socket!.id] || 0}</div>
-              <div className={`text-xs mt-2 ${eloChanges[socket!.id] > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {eloChanges[socket!.id] > 0 ? '+' : ''}{eloChanges[socket!.id]} ELO
+              <div className="text-3xl text-white">{scores[socket?.id || ''] || 0}</div>
+              <div className={`text-xs mt-2 ${eloChanges[socket?.id || ''] > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {eloChanges[socket?.id || ''] > 0 ? '+' : ''}{eloChanges[socket?.id || '']} ELO
               </div>
             </div>
             <div className="text-center">

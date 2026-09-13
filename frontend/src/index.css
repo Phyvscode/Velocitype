@@ -18,6 +18,7 @@
 }
 
 @custom-variant dark (&:is(.dark *));
+/* 
  * All colors MUST use oklch format.
  *
  * To add a new semantic color:
@@ -154,8 +155,8 @@
 }
 
 :root {
-  --background: oklch(0.13 0.012 285);
-  --foreground: oklch(0.93 0.01 300);
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
   --panel: oklch(0.17 0.015 285);
   --card: oklch(0.17 0.015 285);
   --card-foreground: oklch(0.93 0.01 300);
@@ -202,10 +203,14 @@
     color: var(--foreground);
     font-family: var(--font-body);
     background-image:
-      radial-gradient(900px 500px at 15% -10%, color-mix(in srgb, var(--hot) 10%, transparent), transparent 60%),
-      radial-gradient(700px 400px at 95% 110%, oklch(0.55 0.2 300 / 0.10), transparent 60%);
+      radial-gradient(900px 500px at 15% -10%, color-mix(in srgb, var(--hot) calc(var(--bg-glow-opacity, 0.1) * 100%), transparent), transparent 60%),
+      radial-gradient(700px 400px at 95% 110%, oklch(0.55 0.2 300 / var(--bg-glow-opacity, 0.1)), transparent 60%);
     background-attachment: fixed;
   }
+}
+
+h1, h2, h3, h4, h5, h6, p, span:not(.exclude-theme), a, label, li, code, strong, em, b, i, button:not(.exclude-theme), input:not(.exclude-theme), select:not(.exclude-theme), textarea:not(.exclude-theme), td, th {
+  text-shadow: 0 0 var(--text-glow-blur, 0px) var(--hot) !important;
 }
 
 @keyframes border-sweep {

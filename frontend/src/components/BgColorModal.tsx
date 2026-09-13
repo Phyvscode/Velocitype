@@ -33,6 +33,12 @@ export default function BgColorModal({ isOpen, onClose }: Props) {
   };
 
   const handleClose = () => {
+    if (user) {
+      const stored = getStoredBgColor();
+      if (stored) {
+        api.updateSettings({ bgTheme: stored }).catch(console.error);
+      }
+    }
     onClose();
   };
 

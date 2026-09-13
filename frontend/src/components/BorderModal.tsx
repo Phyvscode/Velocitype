@@ -29,9 +29,9 @@ export default function BorderModal({ isOpen, onClose }: BorderModalProps) {
   
   const [selected, setSelected] = React.useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('velocitype_portal_border') || 'b0';
+      return localStorage.getItem('velocitype_portal_border') || 'b16';
     }
-    return 'b0';
+    return 'b16';
   });
 
   const handleSelect = async (id: string) => {

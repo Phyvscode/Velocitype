@@ -3,6 +3,8 @@ import { api, type User, type UserProfileResponse } from '@/lib/api';
 import { applyGoogleFont } from '@/lib/fonts';
 import { applyTextColor } from '@/lib/colors';
 
+import { applyBgColor } from '@/lib/colors';
+
 interface AuthContextType {
   user: User | null;
   stats: UserProfileResponse['stats'] | null;
@@ -29,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setStats(res.stats);
       if (res.user.fontFamily) applyGoogleFont(res.user.fontFamily);
       if (res.user.colorTheme) applyTextColor(res.user.colorTheme, true);
+      if (res.user.bgTheme) applyBgColor(res.user.bgTheme, true);
       if (res.user.portalBorder && typeof window !== 'undefined') {
         localStorage.setItem('velocitype_portal_border', res.user.portalBorder);
         window.dispatchEvent(new Event('storage'));
@@ -36,8 +39,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       setUser(null);
       setStats(null);
-      applyGoogleFont('Inter');
-      applyTextColor({ name: 'Amber Glow', value: '#fbbf24', isGradient: false }, true);
+      // We no longer reset colors here, because if they are a guest (e.g. invalid session),
+      // we want to preserve whatever is saved in their localStorage that main.tsx already loaded.
     } finally {
       setLoading(false);
     }
@@ -71,9 +74,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('velocitype_portal_border');
       window.dispatchEvent(new Event('storage'));
     }
-    // Reset to defaults
+    // Reset to defaults on explicit logout
     applyGoogleFont('Inter');
-    applyTextColor({ name: 'Amber Glow', value: '#fbbf24', isGradient: false }, true);
+    applyTextColor({ name: 'White', value: '#ffffff', isGradient: false }, true);
+    applyBgColor({ name: 'Black', value: '#000000', isGradient: false }, true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('velocitype_portal_border', 'b16');
+      window.dispatchEvent(new Event('storage'));
+    }
   };
 
   const refreshUser = async () => {

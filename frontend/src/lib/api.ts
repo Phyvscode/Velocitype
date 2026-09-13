@@ -6,6 +6,7 @@ export interface User {
   email: string;
   fontFamily?: string;
   colorTheme?: any;
+  bgTheme?: any;
   avatarUrl?: string;
   portalBorder?: string;
 }
@@ -173,7 +174,7 @@ class ApiClient {
     return this.request<LeaderboardEntry[]>('/results/leaderboard');
   }
 
-  public async updateSettings(settings: { fontFamily?: string, colorTheme?: any, avatarUrl?: string, portalBorder?: string }): Promise<any> {
+  public async updateSettings(settings: { fontFamily?: string, colorTheme?: any, avatarUrl?: string, portalBorder?: string, bgTheme?: any }): Promise<any> {
     return this.request('/auth/settings', {
       method: 'PUT',
       body: JSON.stringify(settings),
