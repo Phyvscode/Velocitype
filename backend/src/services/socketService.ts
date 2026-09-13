@@ -1,3 +1,4 @@
+
 import { Server, Socket } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import User from '../models/User.js';
@@ -195,7 +196,7 @@ export const initSocket = (httpServer: HttpServer) => {
       }
     });
 
-    socket.on('updateProgress', async (data: { code: string; progress: number; wpm: number; isFinished: boolean }) => {
+    socket.on('updateProgress', async (data: { code: string; progress: number; wpm: number; isFinished: boolean; cia?: {c: number, i: number, a: number} }) => {
       const lobby = lobbies[data.code];
       if (!lobby || lobby.state !== 'playing') return;
 
@@ -205,7 +206,7 @@ export const initSocket = (httpServer: HttpServer) => {
         player.wpm = data.wpm;
         if (data.isFinished && !player.isFinished) player.isFinished = true;
 
-        io.to(data.code).emit('playerProgress', { playerId: socket.id, progress: player.progress, wpm: player.wpm, isFinished: player.isFinished });
+        io.to(data.code).emit('playerProgress', { playerId: socket.id, progress: player.progress, wpm: player.wpm, isFinished: player.isFinished, cia: data.cia });
 
         const allFinished = lobby.players.every(p => p.isFinished);
         if (allFinished) {
@@ -325,7 +326,6 @@ export const initSocket = (httpServer: HttpServer) => {
             match.extraTime = 0;
 
             const handleRoundEnd = async () => {
-              // Ensure we are still in the same round and game hasn't ended via disconnect
               if (rankedMatches[match.id] && match.state === 'playing' && match.currentRound === roundIndex) {
                 if (match.extraTime && match.extraTime > 0) {
                   const extra = match.extraTime;
@@ -337,7 +337,6 @@ export const initSocket = (httpServer: HttpServer) => {
                 match.state = 'round_finished';
                 
                 const playersList = Object.values(match.players);
-                // Decide winner by WPM
                 let roundWinner = playersList[0];
                 let roundLoser = playersList[1];
                 
@@ -345,7 +344,6 @@ export const initSocket = (httpServer: HttpServer) => {
                   roundWinner = playersList[1];
                   roundLoser = playersList[0];
                 } else if (playersList[1].wpm === playersList[0].wpm) {
-                  // Tie breaker by progress
                   if (playersList[1].progress > playersList[0].progress) {
                     roundWinner = playersList[1];
                     roundLoser = playersList[0];
@@ -359,7 +357,6 @@ export const initSocket = (httpServer: HttpServer) => {
                   scores: { [playersList[0].id]: playersList[0].score, [playersList[1].id]: playersList[1].score } 
                 });
 
-                // Check if someone reached 3 points (Best of 5)
                 if (roundWinner.score >= 3) {
                   match.state = 'finished';
                   await handleRankedMatchEnd(match, io);
@@ -369,25 +366,21 @@ export const initSocket = (httpServer: HttpServer) => {
                     p.ready = false;
                     p.selectedAbility = undefined;
                     
-                    // Generate 3 random choices
                     const abilities: RankedAbility[] = ['longer_words', 'scribberish', 'no_color_change', 'word_shuffle', 'opponent_mistakes', 'time_stop', 'screen_flash'];
                     const choices: RankedAbility[] = [];
                     while (choices.length < 3) {
                       const idx = Math.floor(Math.random() * abilities.length);
-                      const ability = abilities.splice(idx, 1)[0];
-                      choices.push(ability);
+                      choices.push(abilities.splice(idx, 1)[0]);
                     }
                     p.abilityChoices = choices;
                   });
 
-                  // Delay showing the ability selection slightly so players can see round results
                   setTimeout(() => {
                     if (rankedMatches[match.id] && match.state === 'ability_selection') {
                       Object.values(match.players).forEach(p => {
                         io.to(p.id).emit('rankedAbilitySelectionStart', { choices: p.abilityChoices });
                       });
 
-                      // Give them 15 seconds to choose, else force default or random
                       match.abilitySelectionTimer = setTimeout(() => {
                         if (rankedMatches[match.id] && match.state === 'ability_selection') {
                           Object.values(match.players).forEach(p => {
@@ -399,7 +392,6 @@ export const initSocket = (httpServer: HttpServer) => {
                           
                           match.currentRound += 1;
                           match.state = 'waiting_ready';
-                          
                           io.to(match.id).emit('rankedAbilitySelectionComplete');
                           
                           setTimeout(() => {
@@ -419,6 +411,26 @@ export const initSocket = (httpServer: HttpServer) => {
         }
       }
     });
+
+    socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number} }) => {
+      const match = rankedMatches[data.matchId];
+      if (match && match.state === 'playing') {
+        const player = match.players[socket.id];
+        if (player) {
+          player.progress = data.progress;
+          player.wpm = data.wpm;
+          socket.to(data.matchId).emit('rankedOpponentProgress', { 
+            progress: data.progress, 
+            wpm: data.wpm, 
+            typedText: data.typedText, 
+            activeKeys: data.activeKeys,
+            targetText: data.targetText,
+            cia: data.cia
+          });
+        }
+      }
+    });
+
     socket.on('rankedSelectAbility', (data: { matchId: string; ability: RankedAbility }) => {
       const match = rankedMatches[data.matchId];
       if (match && match.state === 'ability_selection') {
@@ -433,7 +445,6 @@ export const initSocket = (httpServer: HttpServer) => {
             clearTimeout(match.abilitySelectionTimer);
             match.currentRound += 1;
             match.state = 'waiting_ready';
-            
             io.to(match.id).emit('rankedAbilitySelectionComplete');
             
             setTimeout(() => {
@@ -442,25 +453,6 @@ export const initSocket = (httpServer: HttpServer) => {
               }
             }, 2000);
           }
-        }
-      }
-    });
-
-
-    socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string }) => {
-      const match = rankedMatches[data.matchId];
-      if (match && match.state === 'playing') {
-        const player = match.players[socket.id];
-        if (player) {
-          player.progress = data.progress;
-          player.wpm = data.wpm;
-          socket.to(data.matchId).emit('rankedOpponentProgress', { 
-            progress: data.progress, 
-            wpm: data.wpm, 
-            typedText: data.typedText, 
-            activeKeys: data.activeKeys,
-            targetText: data.targetText
-          });
         }
       }
     });
@@ -479,7 +471,6 @@ export const initSocket = (httpServer: HttpServer) => {
         socket.to(data.matchId).emit('rankedScreenFlash');
       }
     });
-
 
     socket.on('disconnect', () => {
       console.log(`Socket disconnected: ${socket.id}`);

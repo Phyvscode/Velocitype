@@ -10,6 +10,7 @@ interface Props {
   typed: TypedWord[];
   duration: number;
   rows?: RowKey[];
+  cia?: {c: number, i: number, a: number};
   onPlayAgain: () => void;
   onHome: () => void;
 }
@@ -146,12 +147,18 @@ export default function ResultsScreen({ typed, duration, rows, onPlayAgain, onHo
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8 flex-none">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-8 flex-none">
           <StatCard label="Words typed" value={String(typed.length)} />
-          <StatCard label="Correct" value={String(correctCount)} />
+          <StatCard label="Correct Words" value={String(correctCount)} />
           <StatCard label="Accuracy" value={`${accuracy}%`} />
           <StatCard label="WPM" value={String(wpm)} highlight />
+          <StatCard label="Keystrokes" value={cia ? (
+            <span className="flex items-center gap-1 font-mono text-sm sm:text-base">
+              <span className="text-emerald-400">{cia.c}</span>/
+              <span className="text-rose-400">{cia.i}</span>/
+              <span className="text-amber-400">{cia.a}</span>
+            </span>
+          ) : "-"} />
         </div>
 
         <div className="flex-1 min-h-0 grid lg:grid-cols-2 gap-4 lg:gap-6 pb-4">
@@ -238,7 +245,7 @@ export default function ResultsScreen({ typed, duration, rows, onPlayAgain, onHo
   );
 }
 
-function StatCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function StatCard({ label, value, highlight }: { label: string; value: React.ReactNode; highlight?: boolean }) {
   return (
     <div className="bg-slate-800/40 p-2 sm:p-4 border border-slate-700/50 text-center flex flex-col justify-center">
       <div className={`text-2xl sm:text-3xl font-bold ${highlight ? 'text-[var(--hot)]' : 'text-slate-100'}`}>{value}</div>

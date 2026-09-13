@@ -395,9 +395,10 @@ export const updateSettings = async (req: AuthRequest, res: Response): Promise<R
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    const { fontFamily, colorTheme, avatarUrl, portalBorder } = req.body;
+    const { fontFamily, colorTheme, avatarUrl, portalBorder, bgTheme } = req.body;
     if (fontFamily) user.fontFamily = fontFamily;
     if (colorTheme) user.colorTheme = colorTheme;
+    if (bgTheme) user.bgTheme = bgTheme;
     if (portalBorder) user.portalBorder = portalBorder;
     if (avatarUrl !== undefined) {
       user.avatarUrl = avatarUrl;

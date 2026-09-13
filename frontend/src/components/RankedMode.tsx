@@ -44,9 +44,10 @@ interface RankedPlayerAreaProps {
   fontFamily?: string;
   bgTheme?: any;
   noColorChange?: boolean;
+  cia?: {c: number, i: number, a: number} | null;
 }
 
-function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, noColorChange }: RankedPlayerAreaProps) {
+function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, noColorChange, cia }: RankedPlayerAreaProps) {
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
@@ -140,7 +141,16 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
       {isOpponent && oppStyle && <style>{oppStyle}</style>}
       <div className="flex justify-between items-end mb-4 md:mb-8">
         <span className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">{label}</span>
-        <span className="font-mono text-sm uppercase tracking-widest" style={{ color: isOpponent ? oppPrimaryHex : 'var(--hot)' }}>{wpm} WPM</span>
+        <div className="flex flex-col items-end gap-1">
+          <span className="font-mono text-sm uppercase tracking-widest" style={{ color: isOpponent ? oppPrimaryHex : 'var(--hot)' }}>{wpm} WPM</span>
+          {cia && (
+            <span className="font-mono text-[10px] text-slate-400 tracking-widest">
+              <span className="text-emerald-400">{cia.c}</span>/
+              <span className="text-rose-400">{cia.i}</span>/
+              <span className="text-amber-400">{cia.a}</span>
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 relative flex flex-col justify-center overflow-visible">
@@ -229,6 +239,9 @@ export default function RankedMode({ onBack }: Props) {
   const [gameState, setGameState] = useState<'waiting_ready' | 'playing' | 'round_finished' | 'ability_selection' | 'match_finished'>('waiting_ready');
   const [currentRound, setCurrentRound] = useState(0);
   const [myProgress, setMyProgress] = useState(0);
+  const [myCia, setMyCia] = useState({c: 0, i: 0, a: 0});
+  const myLetterStatesRef = useRef<number[]>([]);
+  const [oppCia, setOppCia] = useState<{c: number, i: number, a: number} | null>(null);
   const [myWpm, setMyWpm] = useState(0);
   const [oppProgress, setOppProgress] = useState(0);
   const [oppWpm, setOppWpm] = useState(0);
@@ -322,6 +335,10 @@ export default function RankedMode({ onBack }: Props) {
       setStartTime(Date.now());
       setMyProgress(0);
       setMyWpm(0);
+      setMyCia({c: 0, i: 0, a: 0});
+      myLetterStatesRef.current = [];
+      setOppCia(null);
+      setOppProgress(0);
       setOppProgress(0);
       setOppWpm(0);
       
@@ -331,9 +348,10 @@ export default function RankedMode({ onBack }: Props) {
       setTimeout(() => inputRef.current?.focus(), 100);
     };
 
-    const onOpponentProgress = (data: { progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string }) => {
+    const onOpponentProgress = (data: { progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number} }) => {
       setOppProgress(data.progress);
       setOppWpm(data.wpm);
+      if (data.cia) setOppCia(data.cia);
       if (data.activeKeys) setOppActiveKeys(new Set(data.activeKeys));
       if (data.targetText !== undefined) setOppTargetText(data.targetText);
       if (data.typedText !== undefined) {
@@ -534,6 +552,29 @@ export default function RankedMode({ onBack }: Props) {
 
     setTypedText(val);
     
+    // CIA Tracking
+    let tempC = 0, tempI = 0, tempA = 0;
+    for (let i = 0; i < val.length; i++) {
+      const isMatch = val[i] === target[i];
+      const currState = myLetterStatesRef.current[i] || 0;
+      if (isMatch) {
+        if (currState === 0) myLetterStatesRef.current[i] = 1;
+        else if (currState === 2) myLetterStatesRef.current[i] = 3;
+      } else {
+        myLetterStatesRef.current[i] = 2;
+      }
+    }
+    
+    for (let i = 0; i < val.length; i++) {
+      const state = myLetterStatesRef.current[i] || 0;
+      if (state === 1) tempC++;
+      else if (state === 3) tempA++;
+      else tempI++;
+    }
+    
+    const newCia = { c: tempC, i: tempI, a: tempA };
+    setMyCia(newCia);
+    
     // Only count correct characters for progress and WPM
     let correctCount = 0;
     for (let i = 0; i < val.length; i++) {
@@ -554,7 +595,8 @@ export default function RankedMode({ onBack }: Props) {
       wpm, 
       typedText: val, 
       activeKeys: Array.from(activeKeys),
-      targetText: target
+      targetText: target,
+      cia: newCia
     });
   };
 
@@ -694,6 +736,7 @@ export default function RankedMode({ onBack }: Props) {
           activeKeys={activeKeys}
           gameState={gameState}
           noColorChange={myActiveAbility === 'no_color_change'}
+          cia={myCia}
         />
         
         {/* Hidden Input for me */}
@@ -722,6 +765,7 @@ export default function RankedMode({ onBack }: Props) {
           colorTheme={matchData.opponent.colorTheme}
           fontFamily={matchData.opponent.fontFamily}
           bgTheme={matchData.opponent.bgTheme}
+          cia={oppCia}
         />
 
         {/* Center Divider - with timer shifted down */}

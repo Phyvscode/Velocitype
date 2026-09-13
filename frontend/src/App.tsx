@@ -103,6 +103,7 @@ function App() {
   const [lobbyCode, setLobbyCode] = useState<string | null>(null);
   const [typed, setTyped] = useState<TypedWord[]>([]);
   const [finalTime, setFinalTime] = useState<number | undefined>(undefined);
+  const [finalCia, setFinalCia] = useState<{c: number, i: number, a: number} | undefined>(undefined);
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState<boolean>(false);
@@ -186,9 +187,10 @@ function App() {
     navigate('game');
   };
 
-  const handleFinish = (results: TypedWord[], finalTimeElapsed?: number) => {
+  const handleFinish = (results: TypedWord[], finalTimeElapsed?: number, cia?: {c: number, i: number, a: number}) => {
     setTyped(results);
     setFinalTime(finalTimeElapsed);
+    setFinalCia(cia);
     navigate('results');
   };
 
@@ -288,7 +290,7 @@ function App() {
         <div className="h-full w-full">
           <GameScreen
             config={config}
-            onFinish={(results) => handleFinish(results)}
+            onFinish={(results, t, cia) => handleFinish(results, t, cia)}
             onQuit={handleHome}
           />
         </div>
@@ -296,9 +298,10 @@ function App() {
       {screen === 'results' && config && (
         <div className="h-full w-full">
           <ResultsScreen
-          typed={typed}
-          duration={finalTime !== undefined ? finalTime : config.duration}
-          rows={config.rows}
+            typed={typed}
+            duration={finalTime !== undefined ? finalTime : config.duration}
+            rows={config.rows}
+            cia={finalCia}
             onPlayAgain={handlePlayAgain}
             onHome={handleHome}
           />

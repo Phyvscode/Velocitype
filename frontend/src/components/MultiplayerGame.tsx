@@ -24,10 +24,10 @@ export default function MultiplayerGame({ lobbyCode, config, onLeave }: Props) {
         const pIndex = prev.findIndex(p => p.id === data.playerId);
         if (pIndex >= 0) {
           const newPlayers = [...prev];
-          newPlayers[pIndex] = { ...newPlayers[pIndex], progress: data.progress, wpm: data.wpm, isFinished: data.isFinished };
+          newPlayers[pIndex] = { ...newPlayers[pIndex], progress: data.progress, wpm: data.wpm, isFinished: data.isFinished, cia: data.cia };
           return newPlayers;
         } else {
-          return [...prev, { id: data.playerId, progress: data.progress, wpm: data.wpm, isFinished: data.isFinished, username: 'Unknown' }];
+          return [...prev, { id: data.playerId, progress: data.progress, wpm: data.wpm, isFinished: data.isFinished, cia: data.cia, username: 'Unknown' }];
         }
       });
     });
@@ -57,7 +57,7 @@ export default function MultiplayerGame({ lobbyCode, config, onLeave }: Props) {
     };
   }, [socket, isConnected]);
 
-  const handleUpdate = (progress: number, wpm: number, isFinished: boolean) => {
+  const handleUpdate = (progress: number, wpm: number, isFinished: boolean, cia?: {c: number, i: number, a: number}) => {
     if (socket && isConnected) {
       if (typeof window !== 'undefined' && wpm > 0) {
         const stored = localStorage.getItem('velocitype_highest_wpm');
@@ -66,7 +66,7 @@ export default function MultiplayerGame({ lobbyCode, config, onLeave }: Props) {
           localStorage.setItem('velocitype_highest_wpm', Math.round(wpm).toString());
         }
       }
-      socket.emit('updateProgress', { code: lobbyCode, progress, wpm, isFinished });
+      socket.emit('updateProgress', { code: lobbyCode, progress, wpm, isFinished, cia });
     }
   };
 
@@ -75,7 +75,11 @@ export default function MultiplayerGame({ lobbyCode, config, onLeave }: Props) {
       <div className="w-full max-w-4xl mx-auto py-12 px-6 bg-slate-900 border border-slate-700 shadow-2xl">
         <h2 className="text-3xl font-bold text-amber-400 mb-8 text-center">Match Results</h2>
         <div className="space-y-4">
-          {results.map((r, i) => (
+          {results.map((r, i) => {
+            // Find player data to get CIA if it wasn't passed via results array initially.
+            const p = players.find(p => p.id === r.userId);
+            const cia = p?.cia || r.cia;
+            return (
             <div key={r.userId} className={`flex items-center justify-between p-4 border ${r.isWinner ? 'bg-amber-400/20 border-amber-400/50' : 'bg-slate-800 border-slate-700'}`}>
               <div className="flex items-center gap-4">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${r.isWinner ? 'bg-amber-400 text-slate-900' : 'bg-slate-700 text-slate-300'}`}>
@@ -83,8 +87,15 @@ export default function MultiplayerGame({ lobbyCode, config, onLeave }: Props) {
                 </div>
                 <div>
                   <div className="font-bold text-slate-100 text-lg">{r.username}</div>
-                  <div className="text-sm text-slate-400">
-                    ELO Change: <span className={r.eloChange > 0 ? 'text-emerald-400' : 'text-rose-400'}>{r.eloChange > 0 ? '+' : ''}{r.eloChange}</span>
+                  <div className="text-sm text-slate-400 flex gap-4">
+                    <span>ELO Change: <span className={r.eloChange > 0 ? 'text-emerald-400' : 'text-rose-400'}>{r.eloChange > 0 ? '+' : ''}{r.eloChange}</span></span>
+                    {cia && (
+                      <span className="font-mono tracking-widest text-xs mt-0.5">
+                        <span className="text-emerald-400">{cia.c}</span>/
+                        <span className="text-rose-400">{cia.i}</span>/
+                        <span className="text-amber-400">{cia.a}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -92,7 +103,8 @@ export default function MultiplayerGame({ lobbyCode, config, onLeave }: Props) {
                 {Math.round(r.wpm)} WPM
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
         <div className="mt-8 flex justify-center">
           <button onClick={onLeave} className="px-8 py-3 bg-slate-700 hover:bg-slate-600 font-bold text-slate-100 transition-colors">
@@ -108,9 +120,9 @@ export default function MultiplayerGame({ lobbyCode, config, onLeave }: Props) {
       <div className="flex-1 border border-slate-700/50 rounded-lg overflow-hidden relative min-h-0">
         <GameScreen 
           config={config} 
-          onFinish={() => handleUpdate(100, players.find(p => p.id === socket?.id)?.wpm || 0, true)} 
+          onFinish={() => handleUpdate(100, players.find(p => p.id === socket?.id)?.wpm || 0, true, players.find(p => p.id === socket?.id)?.cia)} 
           onQuit={onLeave}
-          onProgress={(progress, wpm) => handleUpdate(progress, wpm, false)}
+          onProgress={(progress, wpm, cia) => handleUpdate(progress, wpm, false, cia)}
           hideHeader={true}
         />
       </div>
@@ -124,8 +136,15 @@ export default function MultiplayerGame({ lobbyCode, config, onLeave }: Props) {
                 <span className="font-semibold text-slate-300">
                   {p.username} {p.id === socket?.id && '(You)'}
                 </span>
-                <span className="text-amber-400 font-mono font-bold">
-                  {Math.round(p.wpm || 0)} WPM
+                <span className="text-amber-400 font-mono font-bold flex flex-col items-end">
+                  <span>{Math.round(p.wpm || 0)} WPM</span>
+                  {p.cia && (
+                    <span className="text-[10px] text-slate-400 tracking-widest mt-1">
+                      <span className="text-emerald-400">{p.cia.c}</span>/
+                      <span className="text-rose-400">{p.cia.i}</span>/
+                      <span className="text-amber-400">{p.cia.a}</span>
+                    </span>
+                  )}
                 </span>
               </div>
               <div className="h-2 w-full bg-slate-900 rounded overflow-hidden">

@@ -15,9 +15,9 @@ export interface TypedWord {
 
 interface Props {
   config: GameConfig;
-  onFinish: (typed: TypedWord[], finalTimeElapsed?: number) => void;
+  onFinish: (typed: TypedWord[], finalTimeElapsed?: number, cia?: {c: number, i: number, a: number}) => void;
   onQuit: () => void;
-  onProgress?: (progress: number, wpm: number) => void;
+  onProgress?: (progress: number, wpm: number, cia?: {c: number, i: number, a: number}) => void;
   hideHeader?: boolean;
 }
 
@@ -154,10 +154,13 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
     finishedRef.current = true;
     const isWordsMode = (config as any).limitMode === 'words';
     const elapsed = isWordsMode ? timeLeftRef.current : duration - timeLeftRef.current;
-    onFinish(completedRef.current, elapsed);
+    onFinish(completedRef.current, elapsed, { ...globalCiaRef.current });
   }, [onFinish, config, duration]);
 
   const startTimeRef = useRef<number | null>(null);
+  const letterStatesRef = useRef<number[]>([]);
+  const globalCiaRef = useRef({ c: 0, i: 0, a: 0 });
+  const [ciaState, setCiaState] = useState({ c: 0, i: 0, a: 0 });
 
   // Timer starts on first keystroke.
   useEffect(() => {
@@ -199,10 +202,12 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
           (startTimeRef as any).lastProgressTime = now;
           const limit = (config as any).limitValue || 20;
           const progressPct = isWordsMode ? (completedRef.current.length / limit) * 100 : (timeElapsed / duration) * 100;
-          onProgress(progressPct, currentWpm);
+          onProgress(progressPct, currentWpm, { ...globalCiaRef.current });
         }
       }
       
+      setCiaState({ ...globalCiaRef.current });
+
       if (shouldFinish) {
         finish();
       } else {
@@ -224,6 +229,22 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
   // onChange until a key like Enter commits the composition).
   const submitWord = useCallback(
     (value: string) => {
+      let tempC = 0, tempI = 0, tempA = 0;
+      for (let i = 0; i < currentWord.length; i++) {
+        if (i >= value.length) {
+          tempI++; // Missed/Skipped letter
+        } else {
+          const state = letterStatesRef.current[i] || 0;
+          if (state === 1) tempC++;
+          else if (state === 3) tempA++;
+          else tempI++; // Incorrect
+        }
+      }
+      globalCiaRef.current.c += tempC;
+      globalCiaRef.current.i += tempI;
+      globalCiaRef.current.a += tempA;
+      letterStatesRef.current = [];
+
       const word = value.slice(0, currentWord.length);
       const isCorrect = word === currentWord && value.length >= currentWord.length;
       const entry: TypedWord = { word: currentWord, correct: isCorrect };
@@ -249,6 +270,18 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
     const value = e.target.value;
     if (!started && value.length > 0) setStarted(true);
     setTyped(value);
+    
+    // Update letter states for c/i/a tracking
+    for (let i = 0; i < value.length; i++) {
+      const isMatch = value[i] === currentWord[i];
+      const currState = letterStatesRef.current[i] || 0;
+      if (isMatch) {
+        if (currState === 0) letterStatesRef.current[i] = 1; // Correct
+        else if (currState === 2) letterStatesRef.current[i] = 3; // Almost correct
+      } else {
+        letterStatesRef.current[i] = 2; // Incorrect
+      }
+    }
   };
 
   // Auto-advance: reacts directly to state rather than the onChange event,
@@ -308,6 +341,11 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
               &larr; Quit
             </button>
             <div className="flex items-center gap-4 text-[clamp(18px,2vw,24px)] font-bold tabular-nums">
+              <div className="text-slate-400 text-sm font-mono tracking-widest flex items-center gap-2">
+                <span className="text-emerald-400">{ciaState.c}</span>/
+                <span className="text-rose-400">{ciaState.i}</span>/
+                <span className="text-amber-400">{ciaState.a}</span>
+              </div>
             </div>
           </div>
         </header>
