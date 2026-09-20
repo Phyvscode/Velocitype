@@ -49,6 +49,7 @@ interface RankedPlayer {
   colorTheme?: any;
   fontFamily?: string;
   bgTheme?: any;
+  characters?: string[];
 }
 
 interface RankedMatch {
@@ -239,7 +240,8 @@ export const initSocket = (httpServer: HttpServer) => {
         finishedRound: false,
         colorTheme: data.colorTheme,
         fontFamily: data.fontFamily,
-        bgTheme: data.bgTheme
+        bgTheme: data.bgTheme,
+        characters: data.characters
       };
 
       rankedQueue[lang].push(player);
@@ -368,7 +370,7 @@ export const initSocket = (httpServer: HttpServer) => {
                     if (rankedMatches[match.id]) {
                       io.to(match.id).emit('rankedNextRound', { round: match.currentRound });
                     }
-                  }, 4000);
+                  }, 30000);
 
                 }
               }

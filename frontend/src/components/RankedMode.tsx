@@ -19,6 +19,7 @@ interface RankedMatchData {
     colorTheme?: any;
     fontFamily?: string;
     bgTheme?: any;
+    characters?: string[];
   };
 }
 
@@ -43,12 +44,16 @@ interface RankedPlayerAreaProps {
   colorTheme?: any;
   fontFamily?: string;
   bgTheme?: any;
+    characters?: string[];
   cia?: {c: number, i: number, a: number} | null;
   charge: number;
   dyslexiaActive?: boolean;
+  tripActive?: boolean;
+  blinkActive?: boolean;
+  characters?: string[];
 }
 
-function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, cia, charge, dyslexiaActive }: RankedPlayerAreaProps) {
+function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, cia, charge, dyslexiaActive, tripActive, blinkActive, characters = [] }: RankedPlayerAreaProps) {
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
@@ -138,7 +143,13 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
   }, [isOpponent, fontFamily]);
 
   return (
-    <div id={isOpponent ? "opponent-area" : undefined} className={`flex-1 p-4 md:p-8 flex flex-col relative ${isOpponent ? 'bg-slate-900/40' : ''}`}>
+    <div id={isOpponent ? "opponent-area" : undefined} className={`flex-1 p-4 md:p-8 flex flex-col relative ${isOpponent ? 'bg-slate-900/40' : ''} ${tripActive ? 'trip-body tripping' : ''} ${blinkActive ? 'view-blink blinking' : ''}`}>
+      {tripActive && (
+        <div className="trip-layer">
+          <div className="trip-hue"></div>
+          <div className="blobs"></div>
+        </div>
+      )}
       {isOpponent && oppStyle && <style>{oppStyle}</style>}
       <div className="flex justify-between items-end mb-4 md:mb-8">
         <span className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">{label}</span>
@@ -239,6 +250,14 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
         </div>
         <span className="font-mono text-xs text-slate-500">{charge}%</span>
       </div>
+      
+      {gameState === 'playing' && characters.length > 0 && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 pointer-events-none z-10 flex gap-4">
+          {characters.map((charId, idx) => (
+            <AnimatedCharacter key={idx} id={charId} className="h-48 object-contain" />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -659,7 +678,7 @@ export default function RankedMode({ onBack }: Props) {
 
   return (
     <div 
-      className={`w-screen h-[100dvh] flex flex-col bg-background overflow-hidden relative ${oppUpgrades >= 1 ? 'trip-body tripping' : ''} ${oppUpgrades >= 3 ? 'view-blink blinking' : ''}`}
+      className={`w-screen h-[100dvh] flex flex-col bg-background overflow-hidden relative `}
       data-level={oppUpgrades > 3 ? 3 : oppUpgrades}
       onMouseDown={(e) => {
         const t = e.target as HTMLElement;
@@ -706,6 +725,9 @@ export default function RankedMode({ onBack }: Props) {
           cia={myCia}
           charge={myCharge}
           dyslexiaActive={oppUpgrades >= 2}
+          tripActive={oppUpgrades >= 1}
+          blinkActive={oppUpgrades >= 3}
+          characters={selectedCharacters}
         />
         
         {/* Hidden Input for me */}
@@ -737,6 +759,9 @@ export default function RankedMode({ onBack }: Props) {
           cia={oppCia}
           charge={oppCharge}
           dyslexiaActive={myUpgrades >= 2}
+          tripActive={myUpgrades >= 1}
+          blinkActive={myUpgrades >= 3}
+          characters={matchData.opponent.characters}
         />
 
         {/* Center Divider - with timer shifted down */}
@@ -772,20 +797,7 @@ export default function RankedMode({ onBack }: Props) {
         </div>
       )}
 
-      {gameState === 'playing' && (
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-none z-10 flex gap-4">
-          {selectedCharacters.map((charId, idx) => (
-            <AnimatedCharacter key={idx} id={charId} className="h-48 object-contain" />
-          ))}
-        </div>
-      )}
 
-      {oppUpgrades >= 1 && (
-        <div className="trip-layer">
-          <div className="trip-hue"></div>
-          <div className="blobs"></div>
-        </div>
-      )}
 
       {gameState === 'round_finished' && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-20">
