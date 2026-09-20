@@ -252,6 +252,7 @@ export default function RankedMode({ onBack }: Props) {
   
   // Game state
   const [sentences, setSentences] = useState<string[]>([]);
+  const sentencesRef = useRef<string[]>([]);
   const [gameState, setGameState] = useState<'waiting_ready' | 'playing' | 'round_finished' | 'match_finished'>('waiting_ready');
   const [currentRound, setCurrentRound] = useState(0);
   const [myProgress, setMyProgress] = useState(0);
@@ -323,6 +324,7 @@ export default function RankedMode({ onBack }: Props) {
 
     const onMatchReady = (data: { sentences: string[] }) => {
       setSentences(data.sentences);
+      sentencesRef.current = data.sentences;
       setGameState('waiting_ready');
       setCurrentRound(0);
       setAmIReady(false);
@@ -343,7 +345,7 @@ export default function RankedMode({ onBack }: Props) {
       setOppProgress(0);
       setOppWpm(0);
       
-      const newTargetText = sentences[data.round];
+      const newTargetText = sentencesRef.current[data.round] || sentencesRef.current[0] || 'Hello world.';
       setMyTargetText(newTargetText);
 
       setTimeout(() => inputRef.current?.focus(), 100);
