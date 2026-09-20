@@ -165,7 +165,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
         </div>
       </div>
 
-      <div className="flex-1 relative flex flex-col overflow-visible pt-12">
+      <div className="flex-1 relative flex flex-col overflow-visible pt-4 pb-4">
         <div 
           className="relative w-full select-none font-mono tracking-wide text-left trip-text-target"
           style={{ fontSize: 'clamp(14px, 1.8vw, 24px)' }}
