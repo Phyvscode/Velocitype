@@ -152,7 +152,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
       )}
       {isOpponent && oppStyle && <style>{oppStyle}</style>}
       <div className="flex justify-between items-end mb-4 md:mb-8">
-        <span className="font-mono text-[10px] text-slate-500 uppercase tracking-widest">{label}</span>
+        
         <div className="flex flex-col items-end gap-1">
           <span className="font-mono text-sm uppercase tracking-widest" style={{ color: isOpponent ? oppPrimaryHex : 'var(--hot)' }}>{wpm} WPM</span>
           {cia && (
@@ -165,7 +165,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
         </div>
       </div>
 
-      <div className="flex-1 relative flex flex-col justify-center overflow-visible">
+      <div className="flex-1 relative flex flex-col overflow-visible pt-12">
         <div 
           className="relative w-full select-none font-mono tracking-wide text-left trip-text-target"
           style={{ fontSize: 'clamp(14px, 1.8vw, 24px)' }}
@@ -233,7 +233,10 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
         </div>
       </div>
       
-      <div className="w-full max-w-[600px] mx-auto transform scale-[0.6] origin-bottom md:scale-75 mt-auto pt-8">
+      <div 
+        className="w-full max-w-[600px] mx-auto mt-8 mb-12 origin-bottom transform-gpu"
+        style={{ transform: 'scale(0.75) perspective(1200px) rotateX(45deg)' }}
+      >
         <LiveKeyboard activeKeys={activeKeys} />
       </div>
 
