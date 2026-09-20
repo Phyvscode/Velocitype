@@ -22,7 +22,7 @@ export function AnimatedCharacter({ id, className = "h-48 object-contain", stati
   // Map IDs to their paths
   let src = "";
   if (id === 'mushgirl') {
-    src = \`/characters/Mushgirl/girlwithoutmush_000\${frame}.png\`;
+    src = `/characters/Mushgirl/girlwithoutmush_000${frame}.png`;
   }
 
   if (!src) return null;

@@ -44,7 +44,6 @@ interface RankedPlayerAreaProps {
   colorTheme?: any;
   fontFamily?: string;
   bgTheme?: any;
-    characters?: string[];
   cia?: {c: number, i: number, a: number} | null;
   charge: number;
   dyslexiaActive?: boolean;
@@ -883,9 +882,9 @@ export default function RankedMode({ onBack }: Props) {
                 {eloChanges[socket?.id || ''] > 0 ? '+' : ''}{eloChanges[socket?.id || '']} ELO
               </div>
               <div className="text-xs mt-2 font-mono tracking-widest">
-                <span className="text-emerald-400">{myCia.current.c}</span>/
-                <span className="text-red-500">{myCia.current.i}</span>/
-                <span className="text-amber-400">{myCia.current.a}</span>
+                <span className="text-emerald-400">{myCia.c}</span>/
+                <span className="text-red-500">{myCia.i}</span>/
+                <span className="text-amber-400">{myCia.a}</span>
               </div>
             </div>
             <div className="text-center">
@@ -895,9 +894,9 @@ export default function RankedMode({ onBack }: Props) {
                 {eloChanges[matchData.opponent.id] > 0 ? '+' : ''}{eloChanges[matchData.opponent.id]} ELO
               </div>
               <div className="text-xs mt-2 font-mono tracking-widest">
-                <span className="text-emerald-400">{oppCia.current.c}</span>/
-                <span className="text-red-500">{oppCia.current.i}</span>/
-                <span className="text-amber-400">{oppCia.current.a}</span>
+                <span className="text-emerald-400">{oppCia?.c ?? 0}</span>/
+                <span className="text-red-500">{oppCia?.i ?? 0}</span>/
+                <span className="text-amber-400">{oppCia?.a ?? 0}</span>
               </div>
             </div>
           </div>
