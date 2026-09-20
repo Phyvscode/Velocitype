@@ -449,6 +449,7 @@ export default function RankedMode({ onBack }: Props) {
       language,
       colorTheme: user.colorTheme,
       fontFamily: user.fontFamily,
+      characters: selectedCharacters
     });
   };
 
@@ -654,7 +655,7 @@ export default function RankedMode({ onBack }: Props) {
                     isSelected ? 'border-cyan-400 bg-cyan-950/40' : 'border-slate-800 hover:border-slate-600 bg-slate-900/50'
                   }`}
                 >
-                  <AnimatedCharacter id={charId} className="h-40 object-contain scale-[1.3] transform-gpu" />
+                  <AnimatedCharacter id={charId} className="h-40 object-contain scale-[1.3] transform-gpu" staticMode />
                 </div>
               );
             })}
