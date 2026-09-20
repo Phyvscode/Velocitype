@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api, type User, type UserProfileResponse } from '@/lib/api';
 import { applyGoogleFont } from '@/lib/fonts';
-import { applyTextColor } from '@/lib/colors';
 
-import { applyBgColor } from '@/lib/colors';
 
 interface AuthContextType {
   user: User | null;
@@ -23,15 +21,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [stats, setStats] = useState<UserProfileResponse['stats'] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const fetchProfile = async () => {
+  const fetchProfile = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await api.getMe();
       setUser(res.user);
       setStats(res.stats);
       if (res.user.fontFamily) applyGoogleFont(res.user.fontFamily);
-      if (res.user.colorTheme) applyTextColor(res.user.colorTheme, true);
-      if (res.user.bgTheme) applyBgColor(res.user.bgTheme, true);
       if (res.user.portalBorder && typeof window !== 'undefined') {
         localStorage.setItem('velocitype_portal_border', res.user.portalBorder);
         window.dispatchEvent(new Event('storage'));
@@ -52,17 +48,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     await api.login(email, password);
-    await fetchProfile();
+    await fetchProfile(true);
   };
 
   const googleLogin = async (credential: string) => {
     await api.googleLogin(credential);
-    await fetchProfile();
+    await fetchProfile(true);
   };
 
   const signup = async (username: string, email: string, password: string, avatarUrl?: string) => {
     await api.signup(username, email, password, avatarUrl);
-    await fetchProfile();
+    await fetchProfile(true);
   };
 
   const logout = () => {
@@ -76,8 +72,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     // Reset to defaults on explicit logout
     applyGoogleFont('Inter');
-    applyTextColor({ name: 'White', value: '#ffffff', isGradient: false }, true);
-    applyBgColor({ name: 'Black', value: '#000000', isGradient: false }, true);
     if (typeof window !== 'undefined') {
       localStorage.setItem('velocitype_portal_border', 'b16');
       window.dispatchEvent(new Event('storage'));
@@ -85,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshUser = async () => {
-    await fetchProfile();
+    await fetchProfile(true);
   };
 
   return (

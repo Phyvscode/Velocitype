@@ -15,6 +15,7 @@ export interface IUser extends Document {
   avatarUrl?: string;
   profilePictureSource?: 'google' | 'upload';
   portalBorder?: string;
+  bgTheme?: any;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
@@ -68,6 +69,10 @@ const userSchema = new Schema<IUser>(
     profilePictureSource: {
       type: String,
       enum: ['google', 'upload'],
+    },
+    bgTheme: {
+      type: Schema.Types.Mixed,
+      default: null,
     },
     portalBorder: {
       type: String,

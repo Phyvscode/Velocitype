@@ -96,6 +96,33 @@ export default function ConfigureModal() {
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
   };
 
+  const [isDraggingCia, setIsDraggingCia] = useState(false);
+  const dragStartPosCia = useRef({ x: 0, y: 0 });
+  const dragStartOffsetCia = useRef({ x: 0, y: 0 });
+
+  const handlePointerDownCia = (e: React.PointerEvent) => {
+    setIsDraggingCia(true);
+    dragStartPosCia.current = { x: e.clientX, y: e.clientY };
+    dragStartOffsetCia.current = { x: config.ciaOffsetX || 0, y: config.ciaOffsetY || 0 };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMoveCia = (e: React.PointerEvent) => {
+    if (!isDraggingCia) return;
+    const dx = e.clientX - dragStartPosCia.current.x;
+    const dy = e.clientY - dragStartPosCia.current.y;
+    setConfig({
+      ...config,
+      ciaOffsetX: dragStartOffsetCia.current.x + dx,
+      ciaOffsetY: dragStartOffsetCia.current.y + dy
+    });
+  };
+
+  const handlePointerUpCia = (e: React.PointerEvent) => {
+    setIsDraggingCia(false);
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+  };
+
   const [showSidebar, setShowSidebar] = useState(false);
 
   // Preview dummy text
@@ -137,8 +164,22 @@ export default function ConfigureModal() {
                   &larr; Quit
                 </div>
               </div>
-              <div className="flex items-center gap-4 text-[clamp(18px,2vw,24px)] font-bold tabular-nums opacity-0 pointer-events-none">
-                00:00
+              <div 
+                className={`flex items-center gap-4 text-[clamp(18px,2vw,24px)] font-bold tabular-nums pointer-events-auto ${isDraggingCia ? 'cursor-grabbing' : 'cursor-grab'}`}
+                style={{
+                  transform: `translate(${config.ciaOffsetX || 0}px, ${config.ciaOffsetY || 0}px)`,
+                  touchAction: 'none'
+                }}
+                onPointerDown={handlePointerDownCia}
+                onPointerMove={handlePointerMoveCia}
+                onPointerUp={handlePointerUpCia}
+                onPointerCancel={handlePointerUpCia}
+              >
+                <div className="text-slate-400 text-sm font-mono tracking-widest flex items-center gap-2 pointer-events-none">
+                  <span className="text-emerald-400">12</span>/
+                  <span className="text-red-500">0</span>/
+                  <span className="text-amber-400">1</span>
+                </div>
               </div>
             </div>
           </header>

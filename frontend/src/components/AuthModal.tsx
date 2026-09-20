@@ -164,7 +164,7 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
       <div className="w-full max-w-md bg-background border border-white/10 p-6 sm:p-8 shadow-2xl relative">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-white hover:text-slate-200 transition-colors p-2 text-xl font-bold exclude-theme"
+          className="absolute top-4 right-4 text-\[var(--theme-bg,var(--background))\] hover:text-slate-200 transition-colors p-2 text-xl font-bold exclude-theme"
         >
           ✕
         </button>
@@ -209,7 +209,7 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
         )}
 
         {error && (
-          <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm font-medium text-center">
+          <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 text-red-500 text-sm font-medium text-center">
             {error}
           </div>
         )}
@@ -289,7 +289,7 @@ export default function AuthModal({ isOpen, initialMode = 'signup', onClose }: P
                 <button
                   type="button"
                   onClick={generateCaptcha}
-                  className="bg-slate-500 hover:bg-white/20 border border-l-0 border-slate-500 text-white px-4 flex items-center justify-center transition-colors rounded-br-sm"
+                  className="bg-slate-500 hover:bg-white/20 border border-l-0 border-slate-500 text-\[var(--theme-bg,var(--background))\] px-4 flex items-center justify-center transition-colors rounded-br-sm"
                   title="Refresh CAPTCHA"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>

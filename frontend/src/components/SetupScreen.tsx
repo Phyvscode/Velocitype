@@ -30,8 +30,7 @@ interface Props {
   onOpenLeaderboard: () => void;
   onOpenAuth: () => void;
   onOpenFont: () => void;
-  onOpenColor: () => void;
-  onOpenUiColor: () => void;
+  onOpenTheme: () => void;
   onOpenBorder: () => void;
   onOpenConfigure: () => void;
   onOpenCasual: () => void;
@@ -152,8 +151,7 @@ export default function SetupScreen({
   onOpenLeaderboard,
   onOpenAuth,
   onOpenFont,
-  onOpenColor,
-  onOpenUiColor,
+  onOpenTheme,
   onOpenBorder,
   onOpenConfigure,
   onOpenCasual,
@@ -675,7 +673,7 @@ export default function SetupScreen({
       <header className="w-full flex items-center justify-center px-8 py-4 border-b border-slate-800/0">
         <div className="flex items-center gap-10">
           <div>
-            <h1 className="text-7xl font-display tracking-widest text-white uppercase">Veloci<span className="text-[var(--hot)]">type</span></h1>
+            <h1 className="text-7xl font-display tracking-widest text-[var(--hot)] uppercase">Velocitype</h1>
           </div>
         </div>
       </header>
@@ -803,21 +801,29 @@ export default function SetupScreen({
                 <div ref={textContainerRef} className="font-mono text-2xl sm:text-3xl text-[var(--hot)] leading-[1.6] break-words whitespace-pre-wrap w-full h-full overflow-hidden text-ellipsis relative">
                   {!isHoveringKeyboard && !isRandomSentencesLive ? (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <span className="text-slate-600">Hover here to try the keyboard...</span>
+                      <span className="text-slate-400">Hover here to try the keyboard...</span>
                     </div>
                   ) : (
                     <>
                       {isRandomSentencesLive && liveTargetSentence ? (
                         <>
                         {liveTargetSentence.split('').map((char, i) => {
-                          let colorClass = 'text-slate-600 exclude-theme';
+                          let colorVar = '#64748b';
+                          let extraCls = 'exclude-theme';
                           if (i < typedText.length) {
-                            colorClass = typedText[i] === char ? 'text-[var(--hot)] theme-text-override' : 'text-rose-400 underline exclude-theme';
+                            if (typedText[i] === char) {
+                              colorVar = 'var(--theme-text)';
+                              extraCls = 'theme-text-override';
+                            } else {
+                              colorVar = '#ef4444';
+                              extraCls = 'underline exclude-theme';
+                            }
                           } else if (i === typedText.length) {
-                            colorClass = 'text-slate-100 exclude-theme';
+                            colorVar = 'var(--foreground, white)';
+                            extraCls = 'exclude-theme';
                           }
                           return (
-                            <span key={i} className={`relative ${colorClass}`}>
+                            <span key={i} className={`relative ${extraCls}`} style={{ color: colorVar }}>
                               {i === typedText.length && (
                                  <span className="absolute -left-[1px] top-0 bottom-0 w-[3px] bg-[var(--hot)] animate-caret z-10"></span>
                               )}
@@ -911,10 +917,9 @@ export default function SetupScreen({
             <div className="w-full rounded-lg p-[clamp(1rem,2vh,2.5rem)]">
             
             {activeMode === 'customization' && (
-              <div className="flex items-center justify-center gap-16 py-12">
+              <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 py-8 mt-4 max-w-4xl mx-auto">
                 <button onClick={onOpenFont} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Fonts</button>
-                <button onClick={onOpenColor} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Colors</button>
-                <button onClick={onOpenUiColor} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Background</button>
+                <button onClick={onOpenTheme} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Themes</button>
                 <button onClick={onOpenBorder} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Border</button>
                 <button onClick={onOpenConfigure} className="text-3xl font-display tracking-widest text-[var(--hot)] hover:text-white transition-colors">Configure</button>
               </div>

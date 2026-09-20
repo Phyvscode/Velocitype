@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 import type { TypedWord } from './GameScreen';
 import { fetchMeaning, meaningToText, type MeaningResult } from '@/lib/dictionary';
@@ -23,7 +23,7 @@ interface WordState {
   saving: boolean;
 }
 
-export default function ResultsScreen({ typed, duration, rows, onPlayAgain, onHome }: Props) {
+export default function ResultsScreen({ typed, duration, rows, cia, onPlayAgain, onHome }: Props) {
   const { user, refreshUser } = useAuth();
   const [selected, setSelected] = useState<string | null>(null);
   const [states, setStates] = useState<Record<string, WordState>>({});
@@ -155,7 +155,7 @@ export default function ResultsScreen({ typed, duration, rows, onPlayAgain, onHo
           <StatCard label="Keystrokes" value={cia ? (
             <span className="flex items-center gap-1 font-mono text-sm sm:text-base">
               <span className="text-emerald-400">{cia.c}</span>/
-              <span className="text-rose-400">{cia.i}</span>/
+              <span className="text-red-500">{cia.i}</span>/
               <span className="text-amber-400">{cia.a}</span>
             </span>
           ) : "-"} />
@@ -175,10 +175,13 @@ export default function ResultsScreen({ typed, duration, rows, onPlayAgain, onHo
                   <button
                     key={i}
                     onClick={() => handleSelect(w)}
+                    style={!isSel && !t.correct ? { color: '#ef4444' } : undefined}
                     className={`px-3 py-1.5 font-mono text-sm transition-all flex items-center gap-1.5 ${
                       isSel
                         ? 'bg-[var(--hot)] text-slate-900'
-                        : 'bg-slate-900/50 hover:bg-slate-700/60 text-slate-200'
+                        : !t.correct 
+                          ? 'bg-red-500/10 hover:bg-red-500/20 border border-red-500/30'
+                          : 'bg-slate-900/50 hover:bg-slate-700/60 text-slate-200'
                     }`}
                   >
                     {w}

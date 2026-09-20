@@ -88,11 +88,11 @@ export default function MultiplayerGame({ lobbyCode, config, onLeave }: Props) {
                 <div>
                   <div className="font-bold text-slate-100 text-lg">{r.username}</div>
                   <div className="text-sm text-slate-400 flex gap-4">
-                    <span>ELO Change: <span className={r.eloChange > 0 ? 'text-emerald-400' : 'text-rose-400'}>{r.eloChange > 0 ? '+' : ''}{r.eloChange}</span></span>
+                    <span>ELO Change: <span className={r.eloChange > 0 ? 'text-emerald-400' : 'text-red-500'}>{r.eloChange > 0 ? '+' : ''}{r.eloChange}</span></span>
                     {cia && (
                       <span className="font-mono tracking-widest text-xs mt-0.5">
                         <span className="text-emerald-400">{cia.c}</span>/
-                        <span className="text-rose-400">{cia.i}</span>/
+                        <span className="text-red-500">{cia.i}</span>/
                         <span className="text-amber-400">{cia.a}</span>
                       </span>
                     )}
@@ -141,7 +141,7 @@ export default function MultiplayerGame({ lobbyCode, config, onLeave }: Props) {
                   {p.cia && (
                     <span className="text-[10px] text-slate-400 tracking-widest mt-1">
                       <span className="text-emerald-400">{p.cia.c}</span>/
-                      <span className="text-rose-400">{p.cia.i}</span>/
+                      <span className="text-red-500">{p.cia.i}</span>/
                       <span className="text-amber-400">{p.cia.a}</span>
                     </span>
                   )}

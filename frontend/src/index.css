@@ -111,6 +111,10 @@
 }
 
 .dark {
+  --theme-caret: var(--hot);
+  --theme-sub: #64748b;
+  --theme-text: #fcd34d;
+  --theme-error: #ef4444;
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
@@ -177,6 +181,10 @@
   --input: oklch(0.28 0.02 290);
   --ring: oklch(0.62 0.25 0);
   --radius: 0.25rem;
+  --theme-caret: var(--hot);
+  --theme-sub: #64748b;
+  --theme-text: #fcd34d;
+  --theme-error: #ef4444;
   --gradient-ember: linear-gradient(150deg, oklch(0.82 0.18 75), oklch(0.68 0.22 40));
   --glow-hot: 0 0 24px color-mix(in srgb, var(--hot) 45%, transparent);
   --shadow-panel: 0 20px 50px -20px oklch(0 0 0 / 0.9);

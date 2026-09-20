@@ -147,7 +147,7 @@ export default function VirtualKeyboardConnector({ onKeyDetected, isActive = tru
     <div className="fixed bottom-4 right-4 bg-slate-900 border border-slate-700 rounded-lg p-3 shadow-xl z-50 flex flex-col items-center gap-2">
       <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider flex justify-between w-full">
         <span>AI Vision Keyboard</span>
-        <span className={status.includes('Connected') ? 'text-emerald-400' : 'text-rose-400'}>&bull;</span>
+        <span className={status.includes('Connected') ? 'text-emerald-400' : 'text-red-500'}>&bull;</span>
       </div>
       <div className={`relative w-[280px] h-[210px] rounded overflow-hidden bg-black border-2 transition-colors ${status.includes('Connected') ? (isPostureCorrect ? 'border-emerald-500' : 'border-rose-500') : 'border-slate-800'}`}>
         <video 

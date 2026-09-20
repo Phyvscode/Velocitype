@@ -1,12 +1,12 @@
+import { AnimatedCharacter } from './AnimatedCharacter';
 import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { getStoredBgColor } from '@/lib/colors';
 import { LANGUAGES } from '@/lib/languages';
 import { loadDictionary, DICTIONARY } from '@/lib/words';
 import { generateSentences } from '@/lib/quotes';
 import LiveKeyboard, { getKeyLabel } from '@/components/LiveKeyboard';
-import { AbilitySelection, Ability } from '@/components/AbilitySelection';
+import '../trip.css';
 
 interface RankedMatchData {
   matchId: string;
@@ -43,11 +43,12 @@ interface RankedPlayerAreaProps {
   colorTheme?: any;
   fontFamily?: string;
   bgTheme?: any;
-  noColorChange?: boolean;
   cia?: {c: number, i: number, a: number} | null;
+  charge: number;
+  dyslexiaActive?: boolean;
 }
 
-function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, noColorChange, cia }: RankedPlayerAreaProps) {
+function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, cia, charge, dyslexiaActive }: RankedPlayerAreaProps) {
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
@@ -146,7 +147,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
           {cia && (
             <span className="font-mono text-[10px] text-slate-400 tracking-widest">
               <span className="text-emerald-400">{cia.c}</span>/
-              <span className="text-rose-400">{cia.i}</span>/
+              <span className="text-red-500">{cia.i}</span>/
               <span className="text-amber-400">{cia.a}</span>
             </span>
           )}
@@ -155,7 +156,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
 
       <div className="flex-1 relative flex flex-col justify-center overflow-visible">
         <div 
-          className="relative w-full select-none font-mono tracking-wide text-left"
+          className="relative w-full select-none font-mono tracking-wide text-left trip-text-target"
           style={{ fontSize: 'clamp(14px, 1.8vw, 24px)' }}
         >
           <div 
@@ -188,20 +189,21 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
               {targetText.split('').map((char, i) => {
                 let color = 'text-slate-500';
                 if (i < typedText.length) {
-                  // We don't apply classes for correct opponent text, we rely on the injected #opponent-area span css!
-                  // Except for mistakes, which we style specifically.
-                  if (noColorChange) {
-                    color = 'correct-char';
-                  } else {
-                    color = typedText[i] === char ? 'correct-char' : 'text-rose-500 underline exclude-theme';
-                  }
+                  color = typedText[i] === char ? 'correct-char' : 'text-red-500 underline exclude-theme';
                 } else if (i === typedText.length) {
                   color = 'text-slate-100 exclude-theme';
                 }
                 
-                // For the local player, we apply the normal theme class
                 if (!isOpponent && color === 'correct-char') {
                   color = 'text-[var(--hot)]';
+                }
+
+                let styleObj: any = isOpponent && color === 'correct-char' ? {} : undefined;
+                if (dyslexiaActive && color === 'text-slate-500') {
+                  color += ' dyslexia-char';
+                  const flipX = Math.random() > 0.5 ? -1 : 1;
+                  const flipY = Math.random() > 0.5 ? -1 : 1;
+                  styleObj = { ...styleObj, '--fx': flipX, '--fy': flipY };
                 }
 
                 return (
@@ -209,7 +211,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
                     key={i} 
                     ref={el => letterRefs.current[i] = el}
                     className={`${color}`}
-                    style={isOpponent && color === 'correct-char' ? {} : undefined} // will use scoped styles
+                    style={styleObj}
                   >
                     {char}
                   </span>
@@ -222,6 +224,20 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
       
       <div className="w-full max-w-[600px] mx-auto transform scale-[0.6] origin-bottom md:scale-75 mt-auto pt-8">
         <LiveKeyboard activeKeys={activeKeys} />
+      </div>
+
+      {/* Battery Charge Meter */}
+      <div className="absolute bottom-6 left-6 flex items-center gap-2">
+        <div className="relative flex items-center">
+          <div className="w-10 h-4 rounded-sm border-2 border-slate-700 relative overflow-hidden flex bg-slate-900/50">
+            <div 
+              className="h-full bg-[var(--hot)] transition-all duration-200" 
+              style={{ width: `${charge}%` }}
+            />
+          </div>
+          <div className="w-[3px] h-2 bg-slate-700 rounded-r-sm" />
+        </div>
+        <span className="font-mono text-xs text-slate-500">{charge}%</span>
       </div>
     </div>
   );
@@ -236,9 +252,12 @@ export default function RankedMode({ onBack }: Props) {
   
   // Game state
   const [sentences, setSentences] = useState<string[]>([]);
-  const [gameState, setGameState] = useState<'waiting_ready' | 'playing' | 'round_finished' | 'ability_selection' | 'match_finished'>('waiting_ready');
+  const [gameState, setGameState] = useState<'waiting_ready' | 'playing' | 'round_finished' | 'match_finished'>('waiting_ready');
   const [currentRound, setCurrentRound] = useState(0);
   const [myProgress, setMyProgress] = useState(0);
+  const [myCharge, setMyCharge] = useState(0);
+  const myChargeRef = useRef(0);
+  const [oppCharge, setOppCharge] = useState(0);
   const [myCia, setMyCia] = useState({c: 0, i: 0, a: 0});
   const myLetterStatesRef = useRef<number[]>([]);
   const [oppCia, setOppCia] = useState<{c: number, i: number, a: number} | null>(null);
@@ -250,10 +269,6 @@ export default function RankedMode({ onBack }: Props) {
   const [matchWinner, setMatchWinner] = useState<string | null>(null);
   const [eloChanges, setEloChanges] = useState<Record<string, number>>({});
 
-  // Ability states
-  const [abilityChoices, setAbilityChoices] = useState<any[]>([]);
-  const [mySelectedAbility, setMySelectedAbility] = useState<any>(null);
-  const [myActiveAbility, setMyActiveAbility] = useState<any>(null);
 
   const [myTargetText, setMyTargetText] = useState('');
   const [oppTargetText, setOppTargetText] = useState('');
@@ -267,32 +282,18 @@ export default function RankedMode({ onBack }: Props) {
   const [oppTypedText, setOppTypedText] = useState('');
   const [oppActiveKeys, setOppActiveKeys] = useState<Set<string>>(new Set());
 
-  // Ability active states
-  const [isScreenFlashed, setIsScreenFlashed] = useState(false);
-  const [isTimeStopped, setIsTimeStopped] = useState(false);
-  const [oppMistakes, setOppMistakes] = useState<string[]>([]);
+  const [selectedCharacters, setSelectedCharacters] = useState<string[]>(['mushgirl']);
+  const [myUpgrades, setMyUpgrades] = useState(0);
+  const [oppUpgrades, setOppUpgrades] = useState(0);
+  const [frame, setFrame] = useState(1);
 
-  const applyAbilitiesToText = (baseText: string, ability: any, mistakes: string[]) => {
-    let words = baseText.split(' ');
-    if (ability === 'longer_words') {
-        const longWords = DICTIONARY.filter(w => w.word.length >= 5).map(w => w.word);
-        if (longWords.length > 0) {
-            words = words.map((w, i) => ((i + 1) % 10 === 0) ? longWords[Math.floor(Math.random() * longWords.length)] : w);
-        }
-    } else if (ability === 'scribberish') {
-        words = words.map(w => Array.from({ length: w.length }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join(''));
-    } else if (ability === 'opponent_mistakes' && mistakes.length > 0) {
-        words = words.map((w, i) => {
-            if ((i + 1) % 5 === 0) {
-                const letter = mistakes[Math.floor(Math.random() * mistakes.length)];
-                const withLetter = DICTIONARY.find(dw => dw.word.includes(letter));
-                return withLetter ? withLetter.word : w + letter;
-            }
-            return w;
-        });
-    }
-    return words.join(' ');
-  };
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    const interval = setInterval(() => {
+      setFrame(f => (f % 8) + 1);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [gameState]);
 
   useEffect(() => {
     if (!user || !socket || !isConnected) return;
@@ -342,59 +343,28 @@ export default function RankedMode({ onBack }: Props) {
       setOppProgress(0);
       setOppWpm(0);
       
-      const newTargetText = applyAbilitiesToText(sentences[data.round], myActiveAbility, oppMistakes);
+      const newTargetText = sentences[data.round];
       setMyTargetText(newTargetText);
 
       setTimeout(() => inputRef.current?.focus(), 100);
     };
 
-    const onOpponentProgress = (data: { progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number} }) => {
+    const onOpponentProgress = (data: { progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number}; charge?: number }) => {
       setOppProgress(data.progress);
       setOppWpm(data.wpm);
       if (data.cia) setOppCia(data.cia);
+      if (data.charge !== undefined) setOppCharge(data.charge);
       if (data.activeKeys) setOppActiveKeys(new Set(data.activeKeys));
       if (data.targetText !== undefined) setOppTargetText(data.targetText);
       if (data.typedText !== undefined) {
         setOppTypedText(data.typedText);
-        // Track opponent mistakes
-        if (data.targetText) {
-          const mistakes: string[] = [];
-          for (let i = 0; i < data.typedText.length; i++) {
-            if (data.typedText[i] !== data.targetText[i]) {
-               mistakes.push(data.targetText[i]);
-            }
-          }
-          if (mistakes.length > 0) {
-            setOppMistakes(prev => {
-              const next = [...prev, ...mistakes].filter(c => c !== ' ');
-              // keep last 50 mistakes
-              return next.slice(-50);
-            });
-          }
-        }
+        
       }
     };
 
     const onRoundEnd = (data: { winnerId: string; scores: Record<string, number> }) => {
       setGameState('round_finished');
       setScores(data.scores);
-      setIsScreenFlashed(false);
-      setIsTimeStopped(false);
-    };
-
-    const onAbilitySelectionStart = (data: { choices: any[] }) => {
-      setGameState('ability_selection');
-      setAbilityChoices(data.choices);
-      setMySelectedAbility(null);
-    };
-
-    const onAbilityConfirmed = (data: { ability: any }) => {
-      setMySelectedAbility(data.ability);
-    };
-
-    const onAbilitySelectionComplete = () => {
-      setMyActiveAbility(mySelectedAbility); // Apply it for the next round
-      setGameState('waiting_ready');
     };
 
     const onNextRound = (data: { round: number }) => {
@@ -416,14 +386,8 @@ export default function RankedMode({ onBack }: Props) {
       alert('Opponent disconnected. You win by default!');
     };
 
-    const onTimeStop = () => {
-      setIsTimeStopped(true);
-      setTimeout(() => setIsTimeStopped(false), 1000);
-    };
-
-    const onScreenFlash = () => {
-      setIsScreenFlashed(true);
-      setTimeout(() => setIsScreenFlashed(false), 1000);
+    const onOpponentUpgrades = (data: { upgrades: number }) => {
+      setOppUpgrades(data.upgrades);
     };
 
     socket.on('rankedQueueJoined', onQueueJoined);
@@ -431,15 +395,11 @@ export default function RankedMode({ onBack }: Props) {
     socket.on('rankedMatchReady', onMatchReady);
     socket.on('rankedRoundStart', onRoundStart);
     socket.on('rankedOpponentProgress', onOpponentProgress);
+    socket.on('rankedOpponentUpgrades', onOpponentUpgrades);
     socket.on('rankedRoundEnd', onRoundEnd);
-    socket.on('rankedAbilitySelectionStart', onAbilitySelectionStart);
-    socket.on('rankedAbilityConfirmed', onAbilityConfirmed);
-    socket.on('rankedAbilitySelectionComplete', onAbilitySelectionComplete);
     socket.on('rankedNextRound', onNextRound);
     socket.on('rankedMatchFinished', onMatchFinished);
     socket.on('rankedOpponentDisconnected', onOpponentDisconnected);
-    socket.on('rankedTimeStop', onTimeStop);
-    socket.on('rankedScreenFlash', onScreenFlash);
 
     return () => {
       socket.off('rankedQueueJoined', onQueueJoined);
@@ -447,15 +407,11 @@ export default function RankedMode({ onBack }: Props) {
       socket.off('rankedMatchReady', onMatchReady);
       socket.off('rankedRoundStart', onRoundStart);
       socket.off('rankedOpponentProgress', onOpponentProgress);
+      socket.off('rankedOpponentUpgrades', onOpponentUpgrades);
       socket.off('rankedRoundEnd', onRoundEnd);
-      socket.off('rankedAbilitySelectionStart', onAbilitySelectionStart);
-      socket.off('rankedAbilityConfirmed', onAbilityConfirmed);
-      socket.off('rankedAbilitySelectionComplete', onAbilitySelectionComplete);
       socket.off('rankedNextRound', onNextRound);
       socket.off('rankedMatchFinished', onMatchFinished);
       socket.off('rankedOpponentDisconnected', onOpponentDisconnected);
-      socket.off('rankedTimeStop', onTimeStop);
-      socket.off('rankedScreenFlash', onScreenFlash);
     };
   }, [user, socket, isConnected]);
 
@@ -469,7 +425,6 @@ export default function RankedMode({ onBack }: Props) {
       language,
       colorTheme: user.colorTheme,
       fontFamily: user.fontFamily,
-      bgTheme: getStoredBgColor()
     });
   };
 
@@ -490,7 +445,7 @@ export default function RankedMode({ onBack }: Props) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (gameState === 'playing' && timeLeft > 0 && !isTimeStopped) {
+    if (gameState === 'playing' && timeLeft > 0 ) {
       timerRef.current = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
     } else if (gameState !== 'playing') {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -498,18 +453,7 @@ export default function RankedMode({ onBack }: Props) {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [timeLeft, gameState, isTimeStopped]);
-
-  useEffect(() => {
-    if (gameState === 'playing' && myActiveAbility === 'screen_flash') {
-      const interval = setInterval(() => {
-        if (Math.random() < 0.3) {
-          socket?.emit('rankedScreenFlash', { matchId: matchData?.matchId });
-        }
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [gameState, myActiveAbility, matchData?.matchId, socket]);
+  }, [timeLeft, gameState]);
 
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (gameState !== 'playing' || !matchData || !socket || timeLeft <= 0) return;
@@ -532,27 +476,12 @@ export default function RankedMode({ onBack }: Props) {
       }
       const accuracy = wordTarget.length > 0 ? wordCorrectCount / wordTarget.length : 0;
       
-      if (myActiveAbility === 'time_stop') {
-        const chance = 0.05 * (1 + accuracy);
-        if (Math.random() < chance) {
-          socket.emit('rankedTimeStop', { matchId: matchData.matchId });
-        }
-      } else if (myActiveAbility === 'word_shuffle') {
-        const currentIndex = val.length;
-        const before = target.slice(0, currentIndex);
-        const after = target.slice(currentIndex).split(' ');
-        for (let i = after.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [after[i], after[j]] = [after[j], after[i]];
-        }
-        target = before + after.join(' ');
-        setMyTargetText(target);
-      }
     }
 
     setTypedText(val);
     
     // CIA Tracking
+    const prevC = myLetterStatesRef.current.filter(x => x === 1).length;
     let tempC = 0, tempI = 0, tempA = 0;
     for (let i = 0; i < val.length; i++) {
       const isMatch = val[i] === target[i];
@@ -575,6 +504,12 @@ export default function RankedMode({ onBack }: Props) {
     const newCia = { c: tempC, i: tempI, a: tempA };
     setMyCia(newCia);
     
+    if (tempC > prevC) {
+      const newCharge = Math.min(100, myChargeRef.current + (tempC - prevC));
+      setMyCharge(newCharge);
+      myChargeRef.current = newCharge;
+    }
+    
     // Only count correct characters for progress and WPM
     let correctCount = 0;
     for (let i = 0; i < val.length; i++) {
@@ -596,7 +531,8 @@ export default function RankedMode({ onBack }: Props) {
       typedText: val, 
       activeKeys: Array.from(activeKeys),
       targetText: target,
-      cia: newCia
+      cia: newCia,
+      charge: myChargeRef.current
     });
   };
 
@@ -633,7 +569,8 @@ export default function RankedMode({ onBack }: Props) {
   // 1. Setup / Queueing Screen
   if (!matchData) {
     return (
-      <div className="w-full max-w-lg mx-auto bg-slate-900/50 border border-slate-800 p-8 rounded flex flex-col items-center gap-8">
+      <div className="w-full max-w-[1400px] mx-auto flex flex-col items-center justify-center gap-12 pt-12 relative">
+        <div className="w-full max-w-lg bg-slate-900/50 border border-slate-800 p-8 rounded flex flex-col items-center gap-8">
         <h2 className="font-display text-3xl tracking-widest text-[var(--hot)] uppercase">Ranked Queue</h2>
         
         <div className="w-full space-y-4">
@@ -654,7 +591,7 @@ export default function RankedMode({ onBack }: Props) {
           <div className="w-full space-y-4">
             <button 
               onClick={handleLeaveQueue}
-              className="w-full py-5 border border-rose-500/50 text-rose-500 bg-rose-500/10 font-mono text-sm uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-colors rounded"
+              className="w-full py-5 border border-rose-500/50 text-red-500 bg-rose-500/10 font-mono text-sm uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-colors rounded"
             >
               Cancel Matchmaking
             </button>
@@ -668,6 +605,37 @@ export default function RankedMode({ onBack }: Props) {
             Play Ranked
           </button>
         )}
+        </div>
+
+        {/* Character Selection */}
+        <div className="w-full flex flex-col items-start shrink-0 px-8">
+          <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block text-left mb-6">
+            Select Characters (Max 3)
+          </label>
+          <div className="flex flex-wrap gap-6 items-center justify-start">
+            {['mushgirl'].map(charId => {
+              const isSelected = selectedCharacters.includes(charId);
+              return (
+                <div 
+                  key={charId}
+                  onClick={() => {
+                    if (queueing) return;
+                    if (isSelected) {
+                      setSelectedCharacters(prev => prev.filter(c => c !== charId));
+                    } else if (selectedCharacters.length < 3) {
+                      setSelectedCharacters(prev => [...prev, charId]);
+                    }
+                  }}
+                  className={`cursor-pointer w-28 h-28 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${
+                    isSelected ? 'border-cyan-400 bg-cyan-950/40' : 'border-slate-800 hover:border-slate-600 bg-slate-900/50'
+                  }`}
+                >
+                  <AnimatedCharacter id={charId} className="h-40 object-contain scale-[1.3] transform-gpu" />
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     );
   }
@@ -689,7 +657,8 @@ export default function RankedMode({ onBack }: Props) {
 
   return (
     <div 
-      className="w-screen h-[100dvh] flex flex-col bg-background overflow-hidden relative"
+      className={`w-screen h-[100dvh] flex flex-col bg-background overflow-hidden relative ${oppUpgrades >= 1 ? 'trip-body tripping' : ''} ${oppUpgrades >= 3 ? 'view-blink blinking' : ''}`}
+      data-level={oppUpgrades > 3 ? 3 : oppUpgrades}
       onMouseDown={(e) => {
         const t = e.target as HTMLElement;
         if (t.closest('button, select')) return;
@@ -715,7 +684,7 @@ export default function RankedMode({ onBack }: Props) {
         <div className="flex items-center gap-6 text-right">
           {renderDots(oppScore)}
           <div>
-            <div className="font-mono text-lg text-rose-400 uppercase tracking-widest">{matchData.opponent.username}</div>
+            <div className="font-mono text-lg text-red-500 uppercase tracking-widest">{matchData.opponent.username}</div>
             <div className="font-mono text-xs text-slate-500 uppercase tracking-widest mt-1">ELO: {matchData.opponent.elo}</div>
           </div>
         </div>
@@ -723,9 +692,6 @@ export default function RankedMode({ onBack }: Props) {
 
       {/* Split Screen Area */}
       <div className="flex-1 flex flex-col md:flex-row relative">
-        {isScreenFlashed && (
-          <div className="absolute inset-0 bg-black z-40 pointer-events-none transition-opacity duration-150" />
-        )}
         {/* My Side (Left) */}
         <RankedPlayerArea
           label="Your Area"
@@ -735,8 +701,9 @@ export default function RankedMode({ onBack }: Props) {
           typedText={typedText}
           activeKeys={activeKeys}
           gameState={gameState}
-          noColorChange={myActiveAbility === 'no_color_change'}
           cia={myCia}
+          charge={myCharge}
+          dyslexiaActive={oppUpgrades >= 2}
         />
         
         {/* Hidden Input for me */}
@@ -766,6 +733,8 @@ export default function RankedMode({ onBack }: Props) {
           fontFamily={matchData.opponent.fontFamily}
           bgTheme={matchData.opponent.bgTheme}
           cia={oppCia}
+          charge={oppCharge}
+          dyslexiaActive={myUpgrades >= 2}
         />
 
         {/* Center Divider - with timer shifted down */}
@@ -783,14 +752,6 @@ export default function RankedMode({ onBack }: Props) {
       </div>
 
       {/* Overlays */}
-      {gameState === 'ability_selection' && (
-        <AbilitySelection 
-          choices={abilityChoices as Ability[]} 
-          selected={mySelectedAbility as Ability}
-          onSelect={(ability) => socket?.emit('rankedSelectAbility', { matchId: matchData?.matchId, ability })}
-        />
-      )}
-
       {gameState === 'waiting_ready' && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-20">
           <div className="text-center space-y-6">
@@ -809,11 +770,84 @@ export default function RankedMode({ onBack }: Props) {
         </div>
       )}
 
+      {gameState === 'playing' && (
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-none z-10 flex gap-4">
+          {selectedCharacters.map((charId, idx) => (
+            <AnimatedCharacter key={idx} id={charId} className="h-48 object-contain" />
+          ))}
+        </div>
+      )}
+
+      {oppUpgrades >= 1 && (
+        <div className="trip-layer">
+          <div className="trip-hue"></div>
+          <div className="blobs"></div>
+        </div>
+      )}
+
       {gameState === 'round_finished' && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-20">
-          <div className="text-center space-y-4">
-            <h3 className="font-display text-4xl text-white uppercase tracking-widest">Round Finished</h3>
-            <p className="font-mono text-sm text-[var(--hot)] uppercase tracking-widest">Next round starting soon...</p>
+          <div className="bg-slate-900 border border-slate-700 p-8 rounded flex flex-col items-center gap-6 max-w-md w-full">
+            <h3 className="font-display text-3xl text-[var(--hot)] uppercase tracking-widest">Upgrade Shop</h3>
+            <div className="font-mono text-sm text-slate-300">Available Charge: <span className="text-[var(--hot)]">{myCharge}</span></div>
+            
+            <div className="w-full space-y-4">
+              {myUpgrades === 0 && (
+                <button 
+                  onClick={() => {
+                    if (myCharge >= 30) {
+                      setMyCharge(c => c - 30);
+                      myChargeRef.current -= 30;
+                      setMyUpgrades(1);
+                      socket?.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: 1 });
+                    }
+                  }}
+                  disabled={myCharge < 30}
+                  className="w-full py-3 border border-slate-700 bg-slate-800 font-mono text-sm uppercase tracking-widest disabled:opacity-50 hover:bg-slate-700 transition-colors"
+                >
+                  Buy Shrooms (30 Charge)
+                </button>
+              )}
+              {myUpgrades === 1 && (
+                <button 
+                  onClick={() => {
+                    if (myCharge >= 60) {
+                      setMyCharge(c => c - 60);
+                      myChargeRef.current -= 60;
+                      setMyUpgrades(2);
+                      socket?.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: 2 });
+                    }
+                  }}
+                  disabled={myCharge < 60}
+                  className="w-full py-3 border border-slate-700 bg-slate-800 font-mono text-sm uppercase tracking-widest disabled:opacity-50 hover:bg-slate-700 transition-colors"
+                >
+                  Buy Dyslexia (60 Charge)
+                </button>
+              )}
+              {myUpgrades === 2 && (
+                <button 
+                  onClick={() => {
+                    if (myCharge >= 100) {
+                      setMyCharge(c => c - 100);
+                      myChargeRef.current -= 100;
+                      setMyUpgrades(3);
+                      socket?.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: 3 });
+                    }
+                  }}
+                  disabled={myCharge < 100}
+                  className="w-full py-3 border border-slate-700 bg-slate-800 font-mono text-sm uppercase tracking-widest disabled:opacity-50 hover:bg-slate-700 transition-colors"
+                >
+                  Buy Blinking (100 Charge)
+                </button>
+              )}
+              {myUpgrades === 3 && (
+                <div className="text-center font-mono text-sm text-emerald-400 uppercase tracking-widest">
+                  Max Upgrades Reached!
+                </div>
+              )}
+            </div>
+
+            <p className="font-mono text-xs text-slate-500 uppercase tracking-widest mt-4">Next round starting soon...</p>
           </div>
         </div>
       )}
@@ -825,17 +859,27 @@ export default function RankedMode({ onBack }: Props) {
           </h2>
           <div className="flex items-center gap-12 font-mono text-lg uppercase tracking-widest">
             <div className="text-center">
-              <div className="text-[var(--hot)] mb-2">You</div>
+              <div className="text-emerald-400 mb-2">You</div>
               <div className="text-3xl text-white">{scores[socket?.id || ''] || 0}</div>
-              <div className={`text-xs mt-2 ${eloChanges[socket?.id || ''] > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              <div className={`text-xs mt-2 ${eloChanges[socket?.id || ''] > 0 ? 'text-emerald-400' : 'text-red-500'}`}>
                 {eloChanges[socket?.id || ''] > 0 ? '+' : ''}{eloChanges[socket?.id || '']} ELO
+              </div>
+              <div className="text-xs mt-2 font-mono tracking-widest">
+                <span className="text-emerald-400">{myCia.current.c}</span>/
+                <span className="text-red-500">{myCia.current.i}</span>/
+                <span className="text-amber-400">{myCia.current.a}</span>
               </div>
             </div>
             <div className="text-center">
-              <div className="text-rose-400 mb-2">{matchData.opponent.username}</div>
+              <div className="text-red-500 mb-2">{matchData.opponent.username}</div>
               <div className="text-3xl text-white">{scores[matchData.opponent.id] || 0}</div>
-              <div className={`text-xs mt-2 ${eloChanges[matchData.opponent.id] > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              <div className={`text-xs mt-2 ${eloChanges[matchData.opponent.id] > 0 ? 'text-emerald-400' : 'text-red-500'}`}>
                 {eloChanges[matchData.opponent.id] > 0 ? '+' : ''}{eloChanges[matchData.opponent.id]} ELO
+              </div>
+              <div className="text-xs mt-2 font-mono tracking-widest">
+                <span className="text-emerald-400">{oppCia.current.c}</span>/
+                <span className="text-red-500">{oppCia.current.i}</span>/
+                <span className="text-amber-400">{oppCia.current.a}</span>
               </div>
             </div>
           </div>

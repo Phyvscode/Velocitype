@@ -95,7 +95,7 @@ export default function LibraryScreen({ onBack, onOpenAuth }: Props) {
               />
             </div>
 
-            {error && <p className="text-rose-400 text-sm mb-4">{error}</p>}
+            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
             {loading ? (
               <div className="flex items-center justify-center py-16 text-slate-400">
@@ -122,7 +122,7 @@ export default function LibraryScreen({ onBack, onOpenAuth }: Props) {
                       <h3 className="text-lg font-bold font-mono capitalize">{w.word}</h3>
                       <button
                         onClick={() => handleDelete(w.id)}
-                        className="text-slate-500 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100"
+                        className="text-slate-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                         aria-label="Delete word"
                       >
                         

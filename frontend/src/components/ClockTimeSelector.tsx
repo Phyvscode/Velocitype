@@ -201,6 +201,7 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
+              className="w-full h-full text-right bg-transparent text-4xl font-display text-[var(--hot)] border-none outline-none focus:ring-0 p-0"
               value={displayVal}
               onChange={(e) => {
                 const val = e.target.value.replace(/\D/g, '');
@@ -220,7 +221,6 @@ export default function ClockTimeSelector({ durationVal, durationRawInput, setDu
                 if (mode === 'time' && val > 3600) val = 3600;
                 setDurationInput(val.toString());
               }}
-              className="bg-transparent text-white caret-white text-4xl font-bold focus:outline-none text-right w-20"
             />
             <span className="w-8 text-left text-[var(--hot)]/60 text-3xl font-bold pointer-events-none ml-1">
               {mode === 'words' ? 'w' : 's'}

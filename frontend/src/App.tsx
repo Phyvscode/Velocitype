@@ -8,13 +8,11 @@ import LibraryScreen from '@/components/LibraryScreen';
 import AuthModal from '@/components/AuthModal';
 import LeaderboardModal from '@/components/LeaderboardModal';
 import FontModal from '@/components/FontModal';
-import ColorModal from '@/components/ColorModal';
-import BgColorModal from '@/components/BgColorModal';
 import BorderModal from '@/components/BorderModal';
 import ConfigureModal from '@/components/ConfigureModal';
+import FullThemeModal from '@/components/FullThemeModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { initializeActiveFont } from '@/lib/fonts';
-import { initializeActiveColor, initializeActiveBgColor } from '@/lib/colors';
 import { getLayoutConfig } from '@/lib/layoutConfig';
 import { loadDictionary } from '@/lib/words';
 import LobbyScreen from '@/components/LobbyScreen';
@@ -108,9 +106,8 @@ function App() {
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState<boolean>(false);
   const [isFontModalOpen, setIsFontModalOpen] = useState<boolean>(false);
-  const [isColorModalOpen, setIsColorModalOpen] = useState<boolean>(false);
-  const [isUiColorModalOpen, setIsUiColorModalOpen] = useState<boolean>(false);
   const [isBorderModalOpen, setIsBorderModalOpen] = useState<boolean>(false);
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState<boolean>(false);
   const [dictReady, setDictReady] = useState<boolean>(false);
 
   // Load the full word dictionary (thousands of real words) before any
@@ -142,8 +139,6 @@ function App() {
   // any game screen renders, so preferences are already active by the
   // time sign-in happens — not reset by it.
   useEffect(() => {
-    initializeActiveColor();
-    initializeActiveBgColor();
     
     const applyGlow = () => {
       const config = getLayoutConfig();
@@ -258,8 +253,7 @@ function App() {
           onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
           onOpenAuth={() => openAuth('login')}
           onOpenFont={() => setIsFontModalOpen(true)}
-          onOpenColor={() => setIsColorModalOpen(true)} 
-          onOpenUiColor={() => setIsUiColorModalOpen(true)}
+          onOpenTheme={() => setIsThemeModalOpen(true)}
           onOpenBorder={() => setIsBorderModalOpen(true)}
           onOpenConfigure={() => navigate('configure')}
           onOpenCasual={() => navigate('casual')}
@@ -319,9 +313,8 @@ function App() {
       />
       <LeaderboardModal isOpen={isLeaderboardOpen} onClose={() => setIsLeaderboardOpen(false)} />
       <FontModal isOpen={isFontModalOpen} onClose={() => setIsFontModalOpen(false)} />
-      <ColorModal isOpen={isColorModalOpen} onClose={() => setIsColorModalOpen(false)} />
-      <BgColorModal isOpen={isUiColorModalOpen} onClose={() => setIsUiColorModalOpen(false)} />
       <BorderModal isOpen={isBorderModalOpen} onClose={() => setIsBorderModalOpen(false)} />
+      <FullThemeModal isOpen={isThemeModalOpen} onClose={() => setIsThemeModalOpen(false)} />
       {screen === 'configure' && <ConfigureModal />}
       {useVirtualKeyboard && <VirtualKeyboardConnector />}
     </div>

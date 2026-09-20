@@ -311,7 +311,7 @@ export async function applyGoogleFont(fontName: string): Promise<void> {
   }
 
   styleEl.innerHTML = `
-    body {
+    * {
       font-family: '${formattedName}', system-ui, sans-serif !important;
     }
     .font-mono {
@@ -355,7 +355,7 @@ export function applyUploadedFontFile(fileName: string, dataUrl: string): void {
       font-style: normal;
       font-display: swap;
     }
-    body {
+    * {
       font-family: 'VelocitypeUploadedFont', system-ui, sans-serif !important;
     }
     .font-mono {

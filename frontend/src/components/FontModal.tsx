@@ -23,6 +23,26 @@ export default function FontModal({ isOpen, onClose }: Props) {
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const { user } = useAuth();
 
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    // Batch load all fonts to preview them
+    const BATCH_SIZE = 40;
+    for (let i = 0; i < PRESET_FONTS.length; i += BATCH_SIZE) {
+      const batch = PRESET_FONTS.slice(i, i + BATCH_SIZE);
+      const id = `font-preview-batch-${i}`;
+      if (!document.getElementById(id)) {
+        const families = batch.map(f => `family=${f.googleFont}`).join('&');
+        const link = document.createElement('link');
+        link.id = id;
+        link.rel = 'stylesheet';
+        link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+        document.head.appendChild(link);
+      }
+    }
+  }, [isOpen]);
+
+
   // File Upload State
   const [dragOver, setDragOver] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
@@ -305,7 +325,7 @@ export default function FontModal({ isOpen, onClose }: Props) {
             </div>
 
             {uploadError && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm flex items-center gap-2">
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-red-500 text-sm flex items-center gap-2">
                 
                 {uploadError}
               </div>

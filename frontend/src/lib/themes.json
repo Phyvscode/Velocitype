@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Dracula",
+    "bgColor": "#000000",
+    "mainColor": "#ffffff",
+    "caretColor": "#ffffff",
+    "subColor": "#888888",
+    "textColor": "#cccccc",
+    "errorColor": "#ff0000",
+    "errorExtraColor": "#aa0000"
+  },
+  {
+    "name": "Catppuccin",
+    "bgColor": "#000000",
+    "mainColor": "#ffffff",
+    "caretColor": "#ffffff",
+    "subColor": "#888888",
+    "textColor": "#cccccc",
+    "errorColor": "#ff0000",
+    "errorExtraColor": "#aa0000"
+  }
+]

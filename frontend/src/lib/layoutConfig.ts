@@ -13,6 +13,8 @@ export interface LayoutConfig {
   showKeyboard: boolean;
   quitOffsetX: number;
   quitOffsetY: number;
+  ciaOffsetX: number;
+  ciaOffsetY: number;
   textGlow: number;
   bgGlow: number;
 }
@@ -32,6 +34,8 @@ export const DEFAULT_CONFIG: LayoutConfig = {
   showKeyboard: true,
   quitOffsetX: 0,
   quitOffsetY: 0,
+  ciaOffsetX: 0,
+  ciaOffsetY: 0,
   textGlow: 0,
   bgGlow: 10,
 };

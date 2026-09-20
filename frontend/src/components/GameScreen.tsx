@@ -340,10 +340,13 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
             >
               &larr; Quit
             </button>
-            <div className="flex items-center gap-4 text-[clamp(18px,2vw,24px)] font-bold tabular-nums">
+            <div 
+              className="flex items-center gap-4 text-[clamp(18px,2vw,24px)] font-bold tabular-nums z-50 relative"
+              style={{ transform: `translate(${layoutConfig.ciaOffsetX || 0}px, ${layoutConfig.ciaOffsetY || 0}px)` }}
+            >
               <div className="text-slate-400 text-sm font-mono tracking-widest flex items-center gap-2">
                 <span className="text-emerald-400">{ciaState.c}</span>/
-                <span className="text-rose-400">{ciaState.i}</span>/
+                <span className="text-red-500">{ciaState.i}</span>/
                 <span className="text-amber-400">{ciaState.a}</span>
               </div>
             </div>
@@ -362,7 +365,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
             flash === 'correct'
               ? 'text-emerald-400'
               : flash === 'wrong'
-              ? 'text-rose-400'
+              ? 'text-red-500'
               : 'text-slate-100'
           }`}
           style={{ 
@@ -396,25 +399,35 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
             >
               {/* Smooth Fluid Caret Bar */}
               <span
-                className="absolute -translate-y-1/2 w-[3px] h-[1em] bg-[var(--hot)] rounded-full pointer-events-none transition-all duration-150 ease-out animate-caret exclude-theme"
+                className="absolute -translate-y-1/2 w-[3px] h-[1em] bg-[var(--theme-caret)] rounded-full pointer-events-none transition-all duration-150 ease-out animate-caret exclude-theme"
                 style={{
                   left: `${caretLeft}px`,
                   top: `${caretTop}px`,
+                  backgroundColor: 'var(--theme-caret)'
                 }}
               />
 
               {currentWord.split('').map((ch, ci) => {
-                let cls = 'text-slate-500 exclude-theme';
+                let colorVar = '#64748b';
+                let extraCls = 'exclude-theme';
                 if (ci < typed.length) {
-                  cls = typed[ci] === ch ? 'text-amber-300 theme-text-override' : 'text-rose-400 underline exclude-theme';
+                  if (typed[ci] === ch) {
+                    colorVar = 'var(--theme-text)';
+                    extraCls = 'theme-text-override';
+                  } else {
+                    colorVar = '#ef4444';
+                    extraCls = 'underline exclude-theme';
+                  }
                 } else if (ci === typed.length) {
-                  cls = 'text-slate-100 exclude-theme';
+                  colorVar = 'var(--foreground, white)';
+                  extraCls = 'exclude-theme';
                 }
                 return (
                   <span
                     key={ci}
                     ref={(el) => { letterRefs.current[ci] = el; }}
-                    className={`transition-colors ${cls}`}
+                    className={`transition-colors ${extraCls}`}
+                    style={{ color: colorVar }}
                   >
                     {ch}
                   </span>
@@ -461,7 +474,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
             timeLeft={(config as any).limitMode === 'words' ? Math.max(0, ((config as any).limitValue || 20) - completedRef.current.length) : timeLeft} 
             isTyping={started} 
           >
-            <span className={`text-3xl font-bold tabular-nums tracking-widest ${!(config as any).limitMode || (config as any).limitMode === 'time' ? (timeLeft <= 5 ? 'text-rose-400' : 'text-white') : 'text-white'}`}>{timeLeft.toFixed(2)}s</span>
+            <span className={`text-3xl font-bold tabular-nums tracking-widest ${!(config as any).limitMode || (config as any).limitMode === 'time' ? (timeLeft <= 5 ? 'text-red-500' : 'text-white') : 'text-white'}`}>{timeLeft.toFixed(2)}s</span>
           </HourglassAnimation>
         </div>
       </footer>

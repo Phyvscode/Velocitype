@@ -49,9 +49,6 @@ interface RankedPlayer {
   colorTheme?: any;
   fontFamily?: string;
   bgTheme?: any;
-  abilityChoices?: RankedAbility[];
-  selectedAbility?: RankedAbility;
-  activeAbility?: RankedAbility;
 }
 
 interface RankedMatch {
@@ -223,7 +220,7 @@ export const initSocket = (httpServer: HttpServer) => {
     });
 
     // ----- RANKED MODE -----
-    socket.on('joinRankedQueue', (data: { userId: string; username: string; elo: number; language: string; colorTheme?: any; fontFamily?: string; bgTheme?: any }) => {
+    socket.on('joinRankedQueue', (data: { userId: string; username: string; elo: number; language: string; colorTheme?: any; fontFamily?: string; bgTheme?: any; characters?: string[] }) => {
       const lang = data.language || 'english';
       if (!rankedQueue[lang]) rankedQueue[lang] = [];
 
@@ -361,48 +358,18 @@ export const initSocket = (httpServer: HttpServer) => {
                   match.state = 'finished';
                   await handleRankedMatchEnd(match, io);
                 } else {
-                  match.state = 'ability_selection';
+                  
+                  match.currentRound += 1;
+                  match.state = 'waiting_ready';
                   Object.values(match.players).forEach(p => {
                     p.ready = false;
-                    p.selectedAbility = undefined;
-                    
-                    const abilities: RankedAbility[] = ['longer_words', 'scribberish', 'no_color_change', 'word_shuffle', 'opponent_mistakes', 'time_stop', 'screen_flash'];
-                    const choices: RankedAbility[] = [];
-                    while (choices.length < 3) {
-                      const idx = Math.floor(Math.random() * abilities.length);
-                      choices.push(abilities.splice(idx, 1)[0]);
-                    }
-                    p.abilityChoices = choices;
                   });
-
                   setTimeout(() => {
-                    if (rankedMatches[match.id] && match.state === 'ability_selection') {
-                      Object.values(match.players).forEach(p => {
-                        io.to(p.id).emit('rankedAbilitySelectionStart', { choices: p.abilityChoices });
-                      });
-
-                      match.abilitySelectionTimer = setTimeout(() => {
-                        if (rankedMatches[match.id] && match.state === 'ability_selection') {
-                          Object.values(match.players).forEach(p => {
-                            if (!p.selectedAbility && p.abilityChoices) {
-                              p.selectedAbility = p.abilityChoices[0];
-                              p.activeAbility = p.selectedAbility;
-                            }
-                          });
-                          
-                          match.currentRound += 1;
-                          match.state = 'waiting_ready';
-                          io.to(match.id).emit('rankedAbilitySelectionComplete');
-                          
-                          setTimeout(() => {
-                            if (rankedMatches[match.id]) {
-                              io.to(match.id).emit('rankedNextRound', { round: match.currentRound });
-                            }
-                          }, 2000);
-                        }
-                      }, 15000);
+                    if (rankedMatches[match.id]) {
+                      io.to(match.id).emit('rankedNextRound', { round: match.currentRound });
                     }
-                  }, 3000);
+                  }, 4000);
+
                 }
               }
             };
@@ -412,14 +379,15 @@ export const initSocket = (httpServer: HttpServer) => {
       }
     });
 
-    socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number} }) => {
+    socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number}; charge?: number }) => {
       const match = rankedMatches[data.matchId];
       if (match && match.state === 'playing') {
         const player = match.players[socket.id];
         if (player) {
           player.progress = data.progress;
           player.wpm = data.wpm;
-          socket.to(data.matchId).emit('rankedOpponentProgress', { 
+          socket.to(data.matchId).emit('rankedOpponentProgress', {
+            charge: data.charge, 
             progress: data.progress, 
             wpm: data.wpm, 
             typedText: data.typedText, 
@@ -431,46 +399,15 @@ export const initSocket = (httpServer: HttpServer) => {
       }
     });
 
-    socket.on('rankedSelectAbility', (data: { matchId: string; ability: RankedAbility }) => {
+    socket.on('rankedUpgrades', (data: { matchId: string; upgrades: number }) => {
       const match = rankedMatches[data.matchId];
-      if (match && match.state === 'ability_selection') {
-        const player = match.players[socket.id];
-        if (player && player.abilityChoices?.includes(data.ability) && !player.selectedAbility) {
-          player.selectedAbility = data.ability;
-          player.activeAbility = data.ability;
-          socket.emit('rankedAbilityConfirmed', { ability: data.ability });
-          
-          const allSelected = Object.values(match.players).every(p => p.selectedAbility);
-          if (allSelected) {
-            clearTimeout(match.abilitySelectionTimer);
-            match.currentRound += 1;
-            match.state = 'waiting_ready';
-            io.to(match.id).emit('rankedAbilitySelectionComplete');
-            
-            setTimeout(() => {
-              if (rankedMatches[match.id]) {
-                io.to(match.id).emit('rankedNextRound', { round: match.currentRound });
-              }
-            }, 2000);
-          }
-        }
+      if (match) {
+        socket.to(data.matchId).emit('rankedOpponentUpgrades', { upgrades: data.upgrades });
       }
     });
 
-    socket.on('rankedTimeStop', (data: { matchId: string }) => {
-      const match = rankedMatches[data.matchId];
-      if (match && match.state === 'playing') {
-        socket.to(data.matchId).emit('rankedTimeStop');
-        match.extraTime = (match.extraTime || 0) + 1000;
-      }
-    });
 
-    socket.on('rankedScreenFlash', (data: { matchId: string }) => {
-      const match = rankedMatches[data.matchId];
-      if (match && match.state === 'playing') {
-        socket.to(data.matchId).emit('rankedScreenFlash');
-      }
-    });
+
 
     socket.on('disconnect', () => {
       console.log(`Socket disconnected: ${socket.id}`);

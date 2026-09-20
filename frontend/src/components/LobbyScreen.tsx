@@ -109,7 +109,7 @@ export default function LobbyScreen({ lobbyCode, onLeave, onGameStart }: Props) 
               {isHost && p.id !== socket?.id && (
                 <button 
                   onClick={() => handleKick(p.id)}
-                  className="text-xs text-rose-400 hover:text-rose-300 font-bold px-3 py-1 border border-rose-500/30 hover:bg-rose-500/10 transition-colors"
+                  className="text-xs text-red-500 hover:text-rose-300 font-bold px-3 py-1 border border-rose-500/30 hover:bg-rose-500/10 transition-colors"
                 >
                   Kick
                 </button>
