@@ -234,8 +234,8 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
       </div>
       
       <div 
-        className="w-full max-w-[600px] mx-auto mt-8 mb-12 origin-bottom transform-gpu"
-        style={{ transform: 'scale(0.75) perspective(1200px) rotateX(45deg)' }}
+        className="w-full max-w-[600px] mx-auto mt-0 mb-32 origin-bottom transform-gpu -translate-y-8"
+        style={{ transform: 'scale(0.75)' }}
       >
         <LiveKeyboard activeKeys={activeKeys} />
       </div>
