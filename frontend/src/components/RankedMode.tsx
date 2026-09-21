@@ -99,8 +99,8 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
     
     const rollLevel = () => {
       const r = Math.random();
-      if (r < 0.6) currentLevel = Math.min(2, currentLevel + 1); // 60% chance to go up
-      else if (r < 0.8) currentLevel = Math.max(0, currentLevel - 1); // 20% chance to go down
+      if (r < 0.5) currentLevel = Math.min(2, currentLevel + 1);
+      else currentLevel = Math.max(0, currentLevel - 1);
       
       setTripLevel(currentLevel + 1); // mapping 0,1,2 to data-level 1,2,3
     };
@@ -169,7 +169,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
   useEffect(() => {
     // 0 = 0, 1 = 0.35, 2 = 0.7, 3 = 1.0
     const multipliers = [0, 0.35, 0.7, 1];
-    const targetScale = tripActive ? 22 * (multipliers[tripLevel] || 0) : 0;
+    const targetScale = tripActive ? 12 * (multipliers[tripLevel] || 0) : 0;
     
     const warpTarget = targetScale;
     let warpNow = 0;

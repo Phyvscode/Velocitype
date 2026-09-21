@@ -84,7 +84,7 @@
   
   @keyframes breathe {
     0%, 100% { transform: scale(1) rotate(0deg); }
-    50%      { transform: scale(calc(1 + var(--lvl) * .04)) rotate(calc(var(--lvl) * -.5deg)); }
+    50%      { transform: scale(calc(1 + var(--lvl) * .015)) rotate(calc(var(--lvl) * -.2deg)); }
   }
   @keyframes glow {
     0%, 100% { text-shadow: 0 0 .25em rgba(255, 80, 170, calc(var(--lvl) * .8)); }
