@@ -79,7 +79,7 @@
     100% { transform: translate(-6%, 5%) scale(1.05) rotate(-15deg); }
   }
 
-  .tripping .trip-text-target { transform-origin: 0 60%; animation: breathe 7s ease-in-out infinite; filter: url(#warp); }
+  .tripping .trip-text-target { transform-origin: 0 60%; animation: breathe 7s ease-in-out infinite;  }
   .tripping .trip-text-glow { animation: glow 12s linear infinite; }
   
   @keyframes breathe {
