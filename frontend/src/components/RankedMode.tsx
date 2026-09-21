@@ -277,7 +277,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
         
         <div className="flex flex-col items-end gap-1">
           <span className="font-mono text-sm uppercase tracking-widest" style={{ color: isOpponent ? oppPrimaryHex : 'var(--hot)' }}>{wpm} WPM</span>
-          {cia && (
+          {!isOpponent && cia && (
             <span className="font-mono text-[10px] text-slate-400 tracking-widest">
               <span className="text-emerald-400">{cia.c}</span>/
               <span className="text-red-500">{cia.i}</span>/
