@@ -258,7 +258,11 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
       {tripActive && (
         <div className="trip-layer">
           <div className="trip-hue"></div>
-          <div className="blobs"></div>
+          <div className="fog fog-1"></div>
+          <div className="fog fog-2"></div>
+          <div className="fog fog-3"></div>
+          <div className="fog fog-4"></div>
+          <div className="fog fog-5"></div>
         </div>
       )}
       {isOpponent && oppStyle && <style>{oppStyle}</style>}
