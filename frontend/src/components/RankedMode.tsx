@@ -117,7 +117,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
       const letters = Array.from(containerRef.current.querySelectorAll('.dyslexia-char')) as HTMLElement[];
       if (!letters.length) return;
       
-      const n = 3 + Math.floor(Math.random() * 6); // 3 to 8 letters
+      const n = 6 + Math.floor(Math.random() * 6); // 3 to 8 letters
       for (let i = 0; i < n; i++) {
         const ch = letters[Math.floor(Math.random() * letters.length)];
         if (ch.dataset.busy) continue;
@@ -131,7 +131,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
           delete ch.dataset.busy;
         }, 1200 + Math.random() * 1400); // 1.2s to 2.6s
       }
-    }, 900);
+    }, 700);
     
     return () => clearInterval(interval);
   }, [dyslexiaActive]);
@@ -169,7 +169,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
   useEffect(() => {
     // 0 = 0, 1 = 0.35, 2 = 0.7, 3 = 1.0
     const multipliers = [0, 0.35, 0.7, 1];
-    const targetScale = tripActive ? 12 * (multipliers[tripLevel] || 0) : 0;
+    const targetScale = tripActive ? 16 * (multipliers[tripLevel] || 0) : 0;
     
     const warpTarget = targetScale;
     let warpNow = 0;
