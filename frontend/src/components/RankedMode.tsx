@@ -57,6 +57,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
   const [scrollLines, setScrollLines] = useState(0);
+  const [tripLevel, setTripLevel] = useState(0);
   const warpId = isOpponent ? "warp-opp" : "warp-me";
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +87,27 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
   }, [typedText, targetText]);
 
   
+  
+  useEffect(() => {
+    if (!tripActive) {
+      setTripLevel(0);
+      return;
+    }
+    setTripLevel(1); // start at level 1 (or 0 internally, but let's say 1 to match data-level="1")
+    let currentLevel = 0;
+    
+    const rollLevel = () => {
+      const r = Math.random();
+      if (r < 0.6) currentLevel = Math.min(2, currentLevel + 1); // 60% chance to go up
+      else if (r < 0.8) currentLevel = Math.max(0, currentLevel - 1); // 20% chance to go down
+      
+      setTripLevel(currentLevel + 1); // mapping 0,1,2 to data-level 1,2,3
+    };
+    
+    const interval = setInterval(rollLevel, 3000);
+    return () => clearInterval(interval);
+  }, [tripActive]);
+
   useEffect(() => {
     if (!dyslexiaActive) return;
     let timeout: any;
@@ -106,8 +128,13 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
   }, [dyslexiaActive]);
 
   
+  
   useEffect(() => {
-    const warpTarget = tripActive ? 22 : 0;
+    // 0 = 0, 1 = 0.35, 2 = 0.7, 3 = 1.0
+    const multipliers = [0, 0.35, 0.7, 1];
+    const targetScale = tripActive ? 22 * (multipliers[tripLevel] || 0) : 0;
+    
+    const warpTarget = targetScale;
     let warpNow = 0;
     let warpRaf: any;
     const warpEl = containerRef.current?.querySelector('feDisplacementMap');
@@ -125,7 +152,8 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
     
     warpRaf = requestAnimationFrame(tweenWarp);
     return () => cancelAnimationFrame(warpRaf);
-  }, [tripActive]);
+  }, [tripActive, tripLevel]);
+
 
   useLayoutEffect(() => {
     updateCaretPosition();
@@ -186,7 +214,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
   }, [isOpponent, fontFamily]);
 
   return (
-    <div id={isOpponent ? "opponent-area" : undefined} className={`flex-1 p-4 md:p-8 flex flex-col relative ${isOpponent ? 'bg-slate-900/40' : ''} ${tripActive ? 'trip-body tripping' : ''} ${blinkActive ? 'view-blink blinking' : ''}`} data-level={tripActive ? "3" : "0"}>
+    <div id={isOpponent ? "opponent-area" : undefined} className={`flex-1 p-4 md:p-8 flex flex-col relative ${isOpponent ? 'bg-slate-900/40' : ''} ${tripActive ? 'trip-body tripping' : ''} ${blinkActive ? 'view-blink blinking' : ''}`} data-level={tripActive ? String(tripLevel) : "0"}>
       {tripActive && (
         <div className="trip-layer">
           <div className="trip-hue"></div>
