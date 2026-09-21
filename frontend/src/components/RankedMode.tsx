@@ -1,5 +1,5 @@
 import { AnimatedCharacter } from './AnimatedCharacter';
-import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { LANGUAGES } from '@/lib/languages';
@@ -51,6 +51,20 @@ interface RankedPlayerAreaProps {
   blinkActive?: boolean;
   characters?: string[];
 }
+
+
+
+const WarpFilter = React.memo(({ id }: { id: string }) => (
+  <svg width="0" height="0" style={{position: 'absolute'}} aria-hidden="true" focusable="false">
+    <filter id={id} x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.006 0.010" numOctaves="2" seed="3" result="noise">
+        <animate attributeName="baseFrequency" dur="12s" repeatCount="indefinite" values="0.006 0.010; 0.012 0.006; 0.006 0.010"/>
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+));
+
 
 function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, cia, charge, dyslexiaActive, tripActive, blinkActive, characters = [] }: RankedPlayerAreaProps) {
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -117,7 +131,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
       const letters = Array.from(containerRef.current.querySelectorAll('.dyslexia-char')) as HTMLElement[];
       if (!letters.length) return;
       
-      const n = 6 + Math.floor(Math.random() * 6); // 3 to 8 letters
+      const n = 8 + Math.floor(Math.random() * 8); // 3 to 8 letters
       for (let i = 0; i < n; i++) {
         const ch = letters[Math.floor(Math.random() * letters.length)];
         if (ch.dataset.busy) continue;
@@ -315,34 +329,46 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
                 }}
               />
 
-              {targetText.split('').map((char, i) => {
-                let color = 'text-slate-500';
-                if (i < typedText.length) {
-                  color = typedText[i] === char ? 'correct-char' : 'text-red-500 underline exclude-theme';
-                } else if (i === typedText.length) {
-                  color = 'text-slate-100 exclude-theme';
-                }
-                
-                if (!isOpponent && color === 'correct-char') {
-                  color = 'text-[var(--hot)]';
-                }
+              {(() => {
+                const words = targetText.split(' ');
+                let charIndex = 0;
+                return words.map((word, wIdx) => {
+                  const charsAndSpace = wIdx < words.length - 1 ? word.split('').concat([' ']) : word.split('');
+                  return (
+                    <span key={wIdx} className="inline-block whitespace-nowrap">
+                      {charsAndSpace.map((char, cIdx) => {
+                        const i = charIndex++;
+                        let color = 'text-slate-500';
+                        if (i < typedText.length) {
+                          color = typedText[i] === char ? 'correct-char' : 'text-red-500 underline exclude-theme';
+                        } else if (i === typedText.length) {
+                          color = 'text-slate-100 exclude-theme';
+                        }
+                        
+                        if (!isOpponent && color === 'correct-char') {
+                          color = 'text-[var(--hot)]';
+                        }
 
-                let styleObj: any = isOpponent && color === 'correct-char' ? {} : undefined;
-                if (dyslexiaActive && color === 'text-slate-500') {
-                  color += ' dyslexia-char';
-                }
+                        let styleObj: any = isOpponent && color === 'correct-char' ? {} : undefined;
+                        if (dyslexiaActive && color === 'text-slate-500') {
+                          color += ' dyslexia-char';
+                        }
 
-                return (
-                  <span 
-                    key={i} 
-                    ref={el => letterRefs.current[i] = el}
-                    className={`${color}`}
-                    style={styleObj}
-                  >
-                    {char}
-                  </span>
-                );
-              })}
+                        return (
+                          <span 
+                            key={i} 
+                            ref={el => letterRefs.current[i] = el}
+                            className={`${color}`}
+                            style={styleObj}
+                          >
+                            {char}
+                          </span>
+                        );
+                      })}
+                    </span>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>
