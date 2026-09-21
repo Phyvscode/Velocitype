@@ -32,7 +32,7 @@ interface Props {
   onBack: () => void;
 }
 
-interface RankedPlayerAreaProps {
+export interface RankedPlayerAreaProps {
   label: string;
   wpm: number;
   progress: number;
@@ -66,7 +66,7 @@ const WarpFilter = React.memo(({ id }: { id: string }) => (
 ));
 
 
-function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, cia, charge, dyslexiaActive, tripActive, blinkActive, characters = [] }: RankedPlayerAreaProps) {
+export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, cia, charge, dyslexiaActive, tripActive, blinkActive, characters = [] }: RankedPlayerAreaProps) {
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);

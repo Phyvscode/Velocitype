@@ -35,6 +35,7 @@ interface Props {
   onOpenConfigure: () => void;
   onOpenCasual: () => void;
   onOpenRanked: () => void;
+  onOpenRankedTest: () => void;
   onLobbyJoined: (code: string) => void;
 }
 
@@ -156,6 +157,7 @@ export default function SetupScreen({
   onOpenConfigure,
   onOpenCasual,
   onOpenRanked,
+  onOpenRankedTest,
   onLobbyJoined,
 }: Props) {
   const [typedText, setTypedText] = useState('');
@@ -1174,6 +1176,19 @@ export default function SetupScreen({
                     </div>
                     <div className="relative z-10">
                       <h3 className="font-display text-2xl tracking-widest text-[var(--hot)] uppercase mb-2">Ranked</h3>
+                      <p className="font-mono text-xs text-slate-400 leading-relaxed uppercase tracking-widest">Matchmake against players of similar skill, earn ELO, and climb the global leaderboards.</p>
+                    </div>
+                  </button>
+
+<button
+                    onClick={onOpenRankedTest}
+                    className="flex-1 group relative p-8 border border-slate-800 rounded-lg bg-slate-900/30 hover:bg-slate-800/50 hover:border-[var(--hot)] transition-all duration-300 text-left overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">
+                      <svg viewBox="0 0 24 24" className="w-24 h-24 text-[var(--hot)]" fill="currentColor"><path d="M12 2L2 22h20L12 2zm0 4.5L16.5 17h-9L12 6.5z"/></svg>
+                    </div>
+                    <div className="relative z-10">
+                      <h3 className="font-display text-2xl tracking-widest text-[var(--hot)] uppercase mb-2">Ranked Sandbox</h3>
                       <p className="font-mono text-xs text-slate-400 leading-relaxed uppercase tracking-widest">Matchmake against players of similar skill, earn ELO, and climb the global leaderboards.</p>
                     </div>
                   </button>

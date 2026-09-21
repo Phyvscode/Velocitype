@@ -18,10 +18,11 @@ import { loadDictionary } from '@/lib/words';
 import LobbyScreen from '@/components/LobbyScreen';
 import MultiplayerGame from '@/components/MultiplayerGame';
 import VirtualKeyboardConnector from '@/components/VirtualKeyboardConnector';
-import RankedMode from '@/components/RankedMode';
+import RankedMode from './components/RankedMode';
+import RankedSandbox from './components/RankedSandbox';
 import VersusModeSetup from '@/components/VersusModeSetup';
 
-type Screen = 'setup' | 'game' | 'results' | 'library' | 'lobby' | 'multiplayerGame' | 'casual' | 'ranked' | 'configure';
+type Screen = 'setup' | 'game' | 'results' | 'library' | 'lobby' | 'multiplayerGame' | 'casual' | 'ranked' | 'configure' | 'ranked_test';
 
 function App() {
   const { user, loading } = useAuth();
@@ -242,6 +243,11 @@ function App() {
         </div>
       )}
 
+      
+      {screen === 'ranked_test' && (
+        <RankedSandbox onBack={() => navigate('setup')} />
+      )}
+
       {screen === 'ranked' && (
         <RankedMode onBack={() => navigate('setup')} />
       )}
@@ -258,6 +264,7 @@ function App() {
           onOpenConfigure={() => navigate('configure')}
           onOpenCasual={() => navigate('casual')}
           onOpenRanked={() => navigate('ranked')}
+          onOpenRankedTest={() => navigate('ranked_test')}
           onLobbyJoined={(code) => {
             setLobbyCode(code);
             navigate('lobby');
