@@ -403,7 +403,7 @@ export const initSocket = (httpServer: HttpServer) => {
       }
     });
 
-    socket.on('rankedUpgrades', (data: { matchId: string; upgrades: number }) => {
+    socket.on('rankedUpgrades', (data: { matchId: string; upgrades: string[] }) => {
       const match = rankedMatches[data.matchId];
       if (match) {
         socket.to(data.matchId).emit('rankedOpponentUpgrades', { upgrades: data.upgrades });
