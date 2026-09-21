@@ -16,16 +16,17 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const [myShrooms, setMyShrooms] = useState(false);
   const [myDyslexia, setMyDyslexia] = useState(false);
   const [myBlink, setMyBlink] = useState(false);
-  const [myScramble, setMyScramble] = useState(false);
-  const [mySabotage, setMySabotage] = useState(false);
-  const [mySpam, setMySpam] = useState(false);
+  const [mySequence, setMySequence] = useState<string[]>([]);
 
   const [oppShrooms, setOppShrooms] = useState(false);
   const [oppDyslexia, setOppDyslexia] = useState(false);
   const [oppBlink, setOppBlink] = useState(false);
-  const [oppScramble, setOppScramble] = useState(false);
-  const [oppSabotage, setOppSabotage] = useState(false);
-  const [oppSpam, setOppSpam] = useState(false);
+  const [oppSequence, setOppSequence] = useState<string[]>([]);
+  
+  const toggleSeq = (seq: string[], setSeq: React.Dispatch<React.SetStateAction<string[]>>, name: string) => {
+    if (seq.includes(name)) setSeq(seq.filter(n => n !== name));
+    else setSeq([...seq, name]);
+  };
 
   const [typedText, setTypedText] = useState('');
   const [myTargetText, setMyTargetText] = useState('generating text please wait... ');
@@ -49,14 +50,14 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   useEffect(() => {
     if (!baseTargetText.startsWith('generating')) {
       // My abilities affect MY target text (sandbox logic: testing on myself)
-      let myText = applyScrewedEffects(baseTargetText, { scramble: myScramble, sabotage: mySabotage, spam: mySpam }, 'e') + ' ';
+      let myText = applyScrewedEffects(baseTargetText, mySequence, 'e') + ' ';
       setMyTargetText(myText);
 
       // Opp abilities affect OPP target text (sandbox logic: testing on bot)
-      let oppText = applyScrewedEffects(baseTargetText, { scramble: oppScramble, sabotage: oppSabotage, spam: oppSpam }, 'e') + ' ';
+      let oppText = applyScrewedEffects(baseTargetText, oppSequence, 'e') + ' ';
       setOppTargetText(oppText);
     }
-  }, [myScramble, mySabotage, mySpam, oppScramble, oppSabotage, oppSpam, baseTargetText]);
+  }, [mySequence, oppSequence, baseTargetText]);
 
   // Opponent auto-typing loop
   useEffect(() => {
@@ -140,15 +141,15 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Blinking</span>
             </label>
             <label className="flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" checked={myScramble} onChange={e => setMyScramble(e.target.checked)} className="w-3 h-3 accent-[var(--hot)]" />
+              <input type="checkbox" checked={mySequence.includes('scramble')} onChange={() => toggleSeq(mySequence, setMySequence, 'scramble')} className="w-3 h-3 accent-[var(--hot)]" />
               <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Scramble</span>
             </label>
             <label className="flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" checked={mySabotage} onChange={e => setMySabotage(e.target.checked)} className="w-3 h-3 accent-[var(--hot)]" />
+              <input type="checkbox" checked={mySequence.includes('sabotage')} onChange={() => toggleSeq(mySequence, setMySequence, 'sabotage')} className="w-3 h-3 accent-[var(--hot)]" />
               <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Sabotage</span>
             </label>
             <label className="flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" checked={mySpam} onChange={e => setMySpam(e.target.checked)} className="w-3 h-3 accent-[var(--hot)]" />
+              <input type="checkbox" checked={mySequence.includes('spam')} onChange={() => toggleSeq(mySequence, setMySequence, 'spam')} className="w-3 h-3 accent-[var(--hot)]" />
               <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Spam</span>
             </label>
           </div>
@@ -189,15 +190,15 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Blinking</span>
             </label>
             <label className="flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" checked={oppScramble} onChange={e => setOppScramble(e.target.checked)} className="w-3 h-3 accent-[var(--hot)]" />
+              <input type="checkbox" checked={oppSequence.includes('scramble')} onChange={() => toggleSeq(oppSequence, setOppSequence, 'scramble')} className="w-3 h-3 accent-[var(--hot)]" />
               <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Scramble</span>
             </label>
             <label className="flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" checked={oppSabotage} onChange={e => setOppSabotage(e.target.checked)} className="w-3 h-3 accent-[var(--hot)]" />
+              <input type="checkbox" checked={oppSequence.includes('sabotage')} onChange={() => toggleSeq(oppSequence, setOppSequence, 'sabotage')} className="w-3 h-3 accent-[var(--hot)]" />
               <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Sabotage</span>
             </label>
             <label className="flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" checked={oppSpam} onChange={e => setOppSpam(e.target.checked)} className="w-3 h-3 accent-[var(--hot)]" />
+              <input type="checkbox" checked={oppSequence.includes('spam')} onChange={() => toggleSeq(oppSequence, setOppSequence, 'spam')} className="w-3 h-3 accent-[var(--hot)]" />
               <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Spam</span>
             </label>
           </div>
