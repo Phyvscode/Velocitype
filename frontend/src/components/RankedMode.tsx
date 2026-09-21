@@ -58,6 +58,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
   const [caretTop, setCaretTop] = useState(0);
   const [scrollLines, setScrollLines] = useState(0);
   const [tripLevel, setTripLevel] = useState(0);
+  const [blinkStyle, setBlinkStyle] = useState("");
   const warpId = isOpponent ? "warp-opp" : "warp-me";
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -108,24 +109,60 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
     return () => clearInterval(interval);
   }, [tripActive]);
 
+  
   useEffect(() => {
     if (!dyslexiaActive) return;
-    let timeout: any;
-    const scramble = () => {
-      if (containerRef.current) {
-        const elems = containerRef.current.querySelectorAll('.dyslexia-char');
-        elems.forEach((el: any) => {
-          if (Math.random() < 0.2) {
-            el.style.setProperty('--fx', Math.random() > 0.5 ? -1 : 1);
-            el.style.setProperty('--fy', Math.random() > 0.5 ? -1 : 1);
-          }
-        });
+    const interval = setInterval(() => {
+      if (!containerRef.current) return;
+      const letters = Array.from(containerRef.current.querySelectorAll('.dyslexia-char')) as HTMLElement[];
+      if (!letters.length) return;
+      
+      const n = 3 + Math.floor(Math.random() * 6); // 3 to 8 letters
+      for (let i = 0; i < n; i++) {
+        const ch = letters[Math.floor(Math.random() * letters.length)];
+        if (ch.dataset.busy) continue;
+        ch.dataset.busy = "1";
+        
+        const prop = Math.random() < 0.5 ? "--fy" : "--fx";
+        ch.style.setProperty(prop, "-1");
+        
+        setTimeout(() => {
+          ch.style.removeProperty(prop);
+          delete ch.dataset.busy;
+        }, 1200 + Math.random() * 1400); // 1.2s to 2.6s
       }
-      timeout = setTimeout(scramble, 400 + Math.random() * 800);
-    };
-    scramble();
-    return () => clearTimeout(timeout);
+    }, 900);
+    
+    return () => clearInterval(interval);
   }, [dyslexiaActive]);
+
+
+  useEffect(() => {
+    if (!blinkActive) {
+      setBlinkStyle('');
+      return;
+    }
+    const STYLES = ['blinking', 'flickering'];
+    let active = false;
+    
+    const rollBlink = () => {
+      if (active) return;
+      if (Math.random() < 0.3) {
+        active = true;
+        const style = STYLES[Math.floor(Math.random() * STYLES.length)];
+        setBlinkStyle(style);
+        setTimeout(() => {
+          setBlinkStyle('');
+          active = false;
+        }, 5000); // Wait enough time for either animation to finish (flicker is 5s, blink is 2s)
+      }
+    };
+    
+    const interval = setInterval(rollBlink, 2000);
+    return () => clearInterval(interval);
+  }, [blinkActive]);
+
+
 
   
   
@@ -214,7 +251,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
   }, [isOpponent, fontFamily]);
 
   return (
-    <div id={isOpponent ? "opponent-area" : undefined} className={`flex-1 p-4 md:p-8 flex flex-col relative ${isOpponent ? 'bg-slate-900/40' : ''} ${tripActive ? 'trip-body tripping' : ''} ${blinkActive ? 'view-blink blinking' : ''}`} data-level={tripActive ? String(tripLevel) : "0"}>
+    <div id={isOpponent ? "opponent-area" : undefined} className={`flex-1 p-4 md:p-8 flex flex-col relative ${isOpponent ? 'bg-slate-900/40' : ''} ${tripActive ? 'trip-body tripping' : ''} ${blinkActive ? 'view-blink ' + blinkStyle : ''}`} data-level={tripActive ? String(tripLevel) : "0"}>
       {tripActive && (
         <div className="trip-layer">
           <div className="trip-hue"></div>
