@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+const fs = require('fs');
+const path = 'frontend/src/components/RankedSandbox.tsx';
+
+const newCode = `import React, { useState, useEffect } from 'react';
 import { RankedPlayerArea } from './RankedMode';
 import { generateSentences } from '@/lib/quotes';
 import { useAuth } from '../contexts/AuthContext';
@@ -175,3 +178,6 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     </div>
   );
 }
+`;
+
+fs.writeFileSync(path, newCode);
