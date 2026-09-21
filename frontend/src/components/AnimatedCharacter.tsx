@@ -27,7 +27,7 @@ export function AnimatedCharacter({ id, className = "h-48 object-contain", stati
     src = `/characters/Mushgirl/girlwithoutmush_000${frame}.png`;
   } else if (id === 'screwed') {
     const frameStr = String(frame).padStart(4, '0');
-    src = `/characters/screwed/screwed_${frameStr}.png`;
+    src = `/characters/Screwed/screwed_${frameStr}.png`;
   }
 
   if (!src) return null;
