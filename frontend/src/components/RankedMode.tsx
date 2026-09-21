@@ -524,7 +524,11 @@ export default function RankedMode({ onBack }: Props) {
       
       let newTargetText = sentencesRef.current[data.round] || sentencesRef.current[0] || "Hello world.";
       if (matchDataRef.current?.opponent.characters?.includes("screwed") && oppUpgradesRef.current >= 1) {
-        newTargetText = applyScrewedEffects(newTargetText, oppUpgradesRef.current, myWorstLetterRef.current);
+        newTargetText = applyScrewedEffects(newTargetText, {
+          scramble: oppUpgradesRef.current >= 1,
+          sabotage: oppUpgradesRef.current >= 2,
+          spam: oppUpgradesRef.current >= 3
+        }, myWorstLetterRef.current);
       }
 
       setMyTargetText(newTargetText);

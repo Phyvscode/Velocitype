@@ -45,26 +45,16 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   useEffect(() => {
     if (!baseTargetText.startsWith('generating')) {
       // My abilities affect MY target text (sandbox logic: testing on myself)
-      let myUpgrades = 0;
-      if (myUpg1) myUpgrades = 1;
-      if (myUpg2) myUpgrades = 2;
-      if (myUpg3) myUpgrades = 3;
-      
       let myText = baseTargetText;
-      if (myChar === 'screwed' && myUpgrades > 0) {
-        myText = applyScrewedEffects(baseTargetText, myUpgrades, 'e') + ' ';
+      if (myChar === 'screwed') {
+        myText = applyScrewedEffects(baseTargetText, { scramble: myUpg1, sabotage: myUpg2, spam: myUpg3 }, 'e') + ' ';
       }
       setMyTargetText(myText);
 
       // Opp abilities affect OPP target text (sandbox logic: testing on bot)
-      let oppUpgrades = 0;
-      if (oppUpg1) oppUpgrades = 1;
-      if (oppUpg2) oppUpgrades = 2;
-      if (oppUpg3) oppUpgrades = 3;
-
       let oppText = baseTargetText;
-      if (oppChar === 'screwed' && oppUpgrades > 0) {
-        oppText = applyScrewedEffects(baseTargetText, oppUpgrades, 'e') + ' ';
+      if (oppChar === 'screwed') {
+        oppText = applyScrewedEffects(baseTargetText, { scramble: oppUpg1, sabotage: oppUpg2, spam: oppUpg3 }, 'e') + ' ';
       }
       setOppTargetText(oppText);
     }
