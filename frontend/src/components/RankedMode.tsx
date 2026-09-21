@@ -73,6 +73,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
   const [scrollLines, setScrollLines] = useState(0);
   const [tripLevel, setTripLevel] = useState(0);
   const [blinkStyle, setBlinkStyle] = useState("");
+  const warpNowRef = useRef(0);
   const warpId = isOpponent ? "warp-opp" : "warp-me";
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -186,17 +187,16 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
     const targetScale = tripActive ? 16 * (multipliers[tripLevel] || 0) : 0;
     
     const warpTarget = targetScale;
-    let warpNow = 0;
     let warpRaf: any;
     const warpEl = containerRef.current?.querySelector('feDisplacementMap');
     
     const tweenWarp = () => {
       if (!warpEl) return;
-      warpNow += (warpTarget - warpNow) * 0.04;
-      if (Math.abs(warpTarget - warpNow) < 0.05) warpNow = warpTarget;
-      warpEl.setAttribute("scale", warpNow.toFixed(2));
+      warpNowRef.current += (warpTarget - warpNowRef.current) * 0.04;
+      if (Math.abs(warpTarget - warpNowRef.current) < 0.05) warpNowRef.current = warpTarget;
+      warpEl.setAttribute("scale", warpNowRef.current.toFixed(2));
       
-      if (warpNow !== warpTarget) {
+      if (warpNowRef.current !== warpTarget) {
         warpRaf = requestAnimationFrame(tweenWarp);
       }
     };
