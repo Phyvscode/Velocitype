@@ -24,7 +24,8 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const [oppUpg3, setOppUpg3] = useState(false);
 
   const [typedText, setTypedText] = useState('');
-  const [targetText, setTargetText] = useState('generating text please wait... ');
+  const [myTargetText, setMyTargetText] = useState('generating text please wait... ');
+  const [oppTargetText, setOppTargetText] = useState('generating text please wait... ');
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
   
   // For opponent, we'll auto-type
@@ -36,36 +37,50 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     generateSentences('', ['top', 'home', 'bottom'], 3, 12, 30, '').then(words => {
       const t = words.join(' ') + ' ';
       setBaseTargetText(t);
-      setTargetText(t);
+      setMyTargetText(t);
+      setOppTargetText(t);
     });
   }, []);
 
   useEffect(() => {
     if (!baseTargetText.startsWith('generating')) {
-      let text = baseTargetText;
-      let upgrades = 0;
-      if (oppUpg1) upgrades = 1;
-      if (oppUpg2) upgrades = 2;
-      if (oppUpg3) upgrades = 3;
+      // My abilities affect MY target text (sandbox logic: testing on myself)
+      let myUpgrades = 0;
+      if (myUpg1) myUpgrades = 1;
+      if (myUpg2) myUpgrades = 2;
+      if (myUpg3) myUpgrades = 3;
       
-      if (oppChar === 'screwed' && upgrades > 0) {
-        text = applyScrewedEffects(baseTargetText, upgrades, 'e') + ' ';
+      let myText = baseTargetText;
+      if (myChar === 'screwed' && myUpgrades > 0) {
+        myText = applyScrewedEffects(baseTargetText, myUpgrades, 'e') + ' ';
       }
-      setTargetText(text);
+      setMyTargetText(myText);
+
+      // Opp abilities affect OPP target text (sandbox logic: testing on bot)
+      let oppUpgrades = 0;
+      if (oppUpg1) oppUpgrades = 1;
+      if (oppUpg2) oppUpgrades = 2;
+      if (oppUpg3) oppUpgrades = 3;
+
+      let oppText = baseTargetText;
+      if (oppChar === 'screwed' && oppUpgrades > 0) {
+        oppText = applyScrewedEffects(baseTargetText, oppUpgrades, 'e') + ' ';
+      }
+      setOppTargetText(oppText);
     }
-  }, [oppChar, oppUpg1, oppUpg2, oppUpg3, baseTargetText]);
+  }, [myChar, myUpg1, myUpg2, myUpg3, oppChar, oppUpg1, oppUpg2, oppUpg3, baseTargetText]);
 
   // Opponent auto-typing loop
   useEffect(() => {
-    if (targetText.startsWith('generating')) return;
+    if (oppTargetText.startsWith('generating')) return;
     const interval = setInterval(() => {
       setOppTypedText(prev => {
-        if (prev.length >= targetText.length) return prev;
-        return prev + targetText[prev.length];
+        if (prev.length >= oppTargetText.length) return prev;
+        return prev + oppTargetText[prev.length];
       });
     }, 150); // ~80 WPM
     return () => clearInterval(interval);
-  }, [targetText]);
+  }, [oppTargetText]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -75,7 +90,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         e.preventDefault();
         setTypedText(prev => {
           let next = prev + e.key;
-          if (next.length > targetText.length) next = next.slice(0, targetText.length);
+          if (next.length > myTargetText.length) next = next.slice(0, myTargetText.length);
           return next;
         });
         setActiveKeys(prev => {
@@ -103,7 +118,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [targetText]);
+  }, [myTargetText]);
 
   return (
     <div className="w-screen h-[100dvh] flex flex-col bg-background overflow-hidden relative">
@@ -147,8 +162,8 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             <RankedPlayerArea
               label={user?.username || "Player"}
               wpm={120}
-              progress={(typedText.length / Math.max(1, targetText.length)) * 100}
-              targetText={targetText}
+              progress={(typedText.length / Math.max(1, myTargetText.length)) * 100}
+              targetText={myTargetText}
               typedText={typedText}
               activeKeys={activeKeys}
               gameState="playing"
@@ -190,8 +205,8 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             <RankedPlayerArea
               label="Bot"
               wpm={80}
-              progress={(oppTypedText.length / Math.max(1, targetText.length)) * 100}
-              targetText={targetText}
+              progress={(oppTypedText.length / Math.max(1, oppTargetText.length)) * 100}
+              targetText={oppTargetText}
               typedText={oppTypedText}
               activeKeys={new Set()}
               gameState="playing"
