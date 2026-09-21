@@ -411,6 +411,25 @@ export const initSocket = (httpServer: HttpServer) => {
 
 
 
+
+    socket.on('leaveRankedMatch', (data: { matchId: string }) => {
+      const match = rankedMatches[data.matchId];
+      if (match && match.players[socket.id] && match.state !== 'finished') {
+        match.state = 'finished';
+        if (match.roundTimer) clearTimeout(match.roundTimer);
+        
+        const remainingPlayer = Object.values(match.players).find(p => p.id !== socket.id);
+        if (remainingPlayer) {
+          io.to(data.matchId).emit('rankedOpponentDisconnected');
+          remainingPlayer.score = 5;
+          handleRankedMatchEnd(match, io).catch(console.error);
+        } else {
+          delete rankedMatches[data.matchId];
+        }
+        socket.leave(data.matchId);
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log(`Socket disconnected: ${socket.id}`);
       

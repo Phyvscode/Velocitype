@@ -412,6 +412,8 @@ export default function RankedMode({ onBack }: Props) {
   const [language, setLanguage] = useState('english');
   const [queueing, setQueueing] = useState(false);
   const [matchData, setMatchData] = useState<RankedMatchData | null>(null);
+  const matchDataRef = useRef<RankedMatchData | null>(null);
+  useEffect(() => { matchDataRef.current = matchData; }, [matchData]);
   
   // Game state
   const [sentences, setSentences] = useState<string[]>([]);
@@ -567,6 +569,10 @@ export default function RankedMode({ onBack }: Props) {
     socket.on('rankedOpponentDisconnected', onOpponentDisconnected);
 
     return () => {
+      if (matchDataRef.current) {
+        socket.emit('leaveRankedMatch', { matchId: matchDataRef.current.matchId });
+      }
+      socket.emit('leaveRankedQueue', { language: 'english' }); // just in case they leave while queueing
       socket.off('rankedQueueJoined', onQueueJoined);
       socket.off('rankedMatchFound', onMatchFound);
       socket.off('rankedMatchReady', onMatchReady);
