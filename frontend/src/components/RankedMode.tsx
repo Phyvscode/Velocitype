@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from
 import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { LANGUAGES } from '@/lib/languages';
-import { loadDictionary, DICTIONARY } from '@/lib/words';
+import { loadDictionary, DICTIONARY, applyScrewedEffects } from "@/lib/words";
+
 import { generateSentences } from '@/lib/quotes';
 import LiveKeyboard, { getKeyLabel } from '@/components/LiveKeyboard';
 import '../trip.css';
@@ -422,6 +423,12 @@ export default function RankedMode({ onBack }: Props) {
   const [currentRound, setCurrentRound] = useState(0);
   const [myProgress, setMyProgress] = useState(0);
   const [myCharge, setMyCharge] = useState(0);
+  const [myBestLetter, setMyBestLetter] = useState<string | null>(null);
+  const [myWorstLetter, setMyWorstLetter] = useState<string | null>(null);
+  const [oppBestLetter, setOppBestLetter] = useState<string | null>(null);
+  const [oppWorstLetter, setOppWorstLetter] = useState<string | null>(null);
+  const myLetterStatsRef = useRef<Record<string, {c: number, i: number}>>({});
+
   const myChargeRef = useRef(0);
   const [oppCharge, setOppCharge] = useState(0);
   const [myCia, setMyCia] = useState({c: 0, i: 0, a: 0});
@@ -451,6 +458,11 @@ export default function RankedMode({ onBack }: Props) {
   const [selectedCharacters, setSelectedCharacters] = useState<string[]>(['mushgirl']);
   const [myUpgrades, setMyUpgrades] = useState(0);
   const [oppUpgrades, setOppUpgrades] = useState(0);
+  const oppUpgradesRef = useRef(0);
+  useEffect(() => { oppUpgradesRef.current = oppUpgrades; }, [oppUpgrades]);
+  const myWorstLetterRef = useRef<string | null>(null);
+  useEffect(() => { myWorstLetterRef.current = myWorstLetter; }, [myWorstLetter]);
+
   const [frame, setFrame] = useState(1);
 
   useEffect(() => {
@@ -510,17 +522,24 @@ export default function RankedMode({ onBack }: Props) {
       setOppProgress(0);
       setOppWpm(0);
       
-      const newTargetText = sentencesRef.current[data.round] || sentencesRef.current[0] || 'Hello world.';
+      let newTargetText = sentencesRef.current[data.round] || sentencesRef.current[0] || "Hello world.";
+      if (matchDataRef.current?.opponent.characters?.includes("screwed") && oppUpgradesRef.current >= 1) {
+        newTargetText = applyScrewedEffects(newTargetText, oppUpgradesRef.current, myWorstLetterRef.current);
+      }
+
       setMyTargetText(newTargetText);
 
       setTimeout(() => inputRef.current?.focus(), 100);
     };
 
-    const onOpponentProgress = (data: { progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number}; charge?: number }) => {
+    const onOpponentProgress = (data: { progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number}; charge?: number; bestLetter?: string; worstLetter?: string; }) => {
       setOppProgress(data.progress);
       setOppWpm(data.wpm);
       if (data.cia) setOppCia(data.cia);
       if (data.charge !== undefined) setOppCharge(data.charge);
+      if (data.bestLetter !== undefined) setOppBestLetter(data.bestLetter);
+      if (data.worstLetter !== undefined) setOppWorstLetter(data.worstLetter);
+
       if (data.activeKeys) setOppActiveKeys(new Set(data.activeKeys));
       if (data.targetText !== undefined) setOppTargetText(data.targetText);
       if (data.typedText !== undefined) {
@@ -689,6 +708,14 @@ export default function RankedMode({ onBack }: Props) {
     }
 
     const progress = (correctCount / target.length) * 100;
+    let maxI = -1, worstChar = null, maxC = -1, bestChar = null;
+    for (const char in myLetterStatsRef.current) {
+      if (myLetterStatsRef.current[char].i > maxI) { maxI = myLetterStatsRef.current[char].i; worstChar = char; }
+      if (myLetterStatsRef.current[char].c > maxC) { maxC = myLetterStatsRef.current[char].c; bestChar = char; }
+    }
+    setMyBestLetter(bestChar);
+    setMyWorstLetter(worstChar);
+
     const timeElapsed = (Date.now() - (startTime || Date.now())) / 60000;
     const words = correctCount / 5;
     const wpm = timeElapsed > 0 ? Math.round(words / timeElapsed) : 0;
@@ -704,6 +731,9 @@ export default function RankedMode({ onBack }: Props) {
       activeKeys: Array.from(activeKeys),
       targetText: target,
       cia: newCia,
+      bestLetter: bestChar,
+      worstLetter: worstChar,
+
       charge: myChargeRef.current
     });
   };
@@ -785,7 +815,7 @@ export default function RankedMode({ onBack }: Props) {
             Select Characters (Max 3)
           </label>
           <div className="flex flex-wrap gap-6 items-center justify-start">
-            {['mushgirl'].map(charId => {
+            {['mushgirl', 'screwed'].map(charId => {
               const isSelected = selectedCharacters.includes(charId);
               return (
                 <div 
@@ -955,6 +985,23 @@ export default function RankedMode({ onBack }: Props) {
           <div className="bg-slate-900 border border-slate-700 p-8 rounded flex flex-col items-center gap-6 max-w-md w-full">
             <h3 className="font-display text-3xl text-[var(--hot)] uppercase tracking-widest">Upgrade Shop</h3>
             <div className="font-mono text-sm text-slate-300">Available Charge: <span className="text-[var(--hot)]">{myCharge}</span></div>
+            <div className="flex w-full justify-between gap-8 mb-4">
+              <div className="flex-1 border border-slate-700 p-4 rounded bg-slate-800/50">
+                <div className="text-[var(--hot)] text-xs font-mono uppercase mb-2">You</div>
+                <div className="flex justify-between text-xs font-mono text-slate-300">
+                  <span>Best: <span className="text-emerald-400">{myBestLetter || "-"}</span></span>
+                  <span>Worst: <span className="text-red-400">{myWorstLetter || "-"}</span></span>
+                </div>
+              </div>
+              <div className="flex-1 border border-slate-700 p-4 rounded bg-slate-800/50">
+                <div className="text-red-400 text-xs font-mono uppercase mb-2">Opponent</div>
+                <div className="flex justify-between text-xs font-mono text-slate-300">
+                  <span>Best: <span className="text-emerald-400">{oppBestLetter || "-"}</span></span>
+                  <span>Worst: <span className="text-red-400">{oppWorstLetter || "-"}</span></span>
+                </div>
+              </div>
+            </div>
+
             
             <div className="w-full space-y-4">
               {myUpgrades === 0 && (

@@ -9,20 +9,25 @@ interface AnimatedCharacterProps {
 export function AnimatedCharacter({ id, className = "h-48 object-contain", staticMode = false }: AnimatedCharacterProps) {
   const [frame, setFrame] = useState(1);
 
+  const frameCount = id === 'screwed' ? 42 : 8;
+  const fps = id === 'screwed' ? 10 : 7.8;
+
   useEffect(() => {
     if (staticMode) return;
     
-    // 7.8 fps = ~128.2ms per frame
     const int = setInterval(() => {
-      setFrame(f => (f >= 8 ? 1 : f + 1));
-    }, 128);
+      setFrame(f => (f >= frameCount ? 1 : f + 1));
+    }, 1000 / fps);
     return () => clearInterval(int);
-  }, [staticMode]);
+  }, [staticMode, frameCount, fps]);
 
   // Map IDs to their paths
   let src = "";
   if (id === 'mushgirl') {
     src = `/characters/Mushgirl/girlwithoutmush_000${frame}.png`;
+  } else if (id === 'screwed') {
+    const frameStr = String(frame).padStart(4, '0');
+    src = `/characters/screwed/screwed_${frameStr}.png`;
   }
 
   if (!src) return null;

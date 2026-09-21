@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { RankedPlayerArea } from './RankedMode';
-import { generateSentences } from '@/lib/quotes';
+import { generateSentences } from "@/lib/quotes";
+import { applyScrewedEffects } from "@/lib/words";
+
 import { useAuth } from '../contexts/AuthContext';
 
 interface RankedSandboxProps {
@@ -14,11 +16,13 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const [myTripActive, setMyTripActive] = useState(false);
   const [myDyslexiaActive, setMyDyslexiaActive] = useState(false);
   const [myBlinkActive, setMyBlinkActive] = useState(false);
+  const [myScrewedActive, setMyScrewedActive] = useState(false);
 
   // Opponent states
   const [oppTripActive, setOppTripActive] = useState(false);
   const [oppDyslexiaActive, setOppDyslexiaActive] = useState(false);
   const [oppBlinkActive, setOppBlinkActive] = useState(false);
+  const [oppScrewedActive, setOppScrewedActive] = useState(false);
 
   const [typedText, setTypedText] = useState('');
   const [targetText, setTargetText] = useState('generating text please wait... ');
@@ -27,11 +31,25 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   // For opponent, we'll auto-type
   const [oppTypedText, setOppTypedText] = useState('');
   
+  const [baseTargetText, setBaseTargetText] = useState('generating text please wait... ');
+
   useEffect(() => {
     generateSentences('', ['top', 'home', 'bottom'], 3, 12, 30, '').then(words => {
-      setTargetText(words.join(' ') + ' ');
+      const t = words.join(' ') + ' ';
+      setBaseTargetText(t);
+      setTargetText(t);
     });
   }, []);
+
+  useEffect(() => {
+    if (!baseTargetText.startsWith('generating')) {
+      if (oppScrewedActive) {
+        setTargetText(applyScrewedEffects(baseTargetText, 3, 'e') + ' ');
+      } else {
+        setTargetText(baseTargetText);
+      }
+    }
+  }, [oppScrewedActive, baseTargetText]);
 
   // Opponent auto-typing loop
   useEffect(() => {
@@ -114,6 +132,10 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               <input type="checkbox" checked={myBlinkActive} onChange={e => setMyBlinkActive(e.target.checked)} className="w-4 h-4 accent-[var(--hot)]" />
               <span className="font-mono text-sm uppercase tracking-widest text-slate-300">Blinking</span>
             </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={myScrewedActive} onChange={e => setMyScrewedActive(e.target.checked)} className="w-4 h-4 accent-[var(--hot)]" />
+              <span className="font-mono text-sm uppercase tracking-widest text-slate-300">Screwed (3 upg)</span>
+            </label>
           </div>
           <div className="flex-1 pt-24 px-8 overflow-hidden flex flex-col">
             <RankedPlayerArea
@@ -130,7 +152,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               dyslexiaActive={myDyslexiaActive}
               tripActive={myTripActive}
               blinkActive={myBlinkActive}
-              characters={["mushgirl"]}
+              characters={["mushgirl", ...(myScrewedActive ? ["screwed"] : [])]}
             />
           </div>
         </div>
@@ -151,6 +173,10 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               <input type="checkbox" checked={oppBlinkActive} onChange={e => setOppBlinkActive(e.target.checked)} className="w-4 h-4 accent-[var(--hot)]" />
               <span className="font-mono text-sm uppercase tracking-widest text-slate-300">Blinking</span>
             </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={oppScrewedActive} onChange={e => setOppScrewedActive(e.target.checked)} className="w-4 h-4 accent-[var(--hot)]" />
+              <span className="font-mono text-sm uppercase tracking-widest text-slate-300">Screwed (3 upg)</span>
+            </label>
           </div>
           <div className="flex-1 pt-24 px-8 overflow-hidden flex flex-col">
             <RankedPlayerArea
@@ -167,7 +193,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               dyslexiaActive={oppDyslexiaActive}
               tripActive={oppTripActive}
               blinkActive={oppBlinkActive}
-              characters={["mushgirl"]}
+              characters={["mushgirl", ...(oppScrewedActive ? ["screwed"] : [])]}
             />
           </div>
         </div>
