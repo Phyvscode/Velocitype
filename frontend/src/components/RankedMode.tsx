@@ -335,7 +335,7 @@ function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeK
                 return words.map((word, wIdx) => {
                   const charsAndSpace = wIdx < words.length - 1 ? word.split('').concat([' ']) : word.split('');
                   return (
-                    <span key={wIdx} className="inline-block whitespace-nowrap">
+                    <span key={wIdx} className="inline-block whitespace-pre">
                       {charsAndSpace.map((char, cIdx) => {
                         const i = charIndex++;
                         let color = 'text-slate-500';
