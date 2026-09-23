@@ -18,6 +18,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const [myBlink, setMyBlink] = useState(false);
   
   const [startTime, setStartTime] = useState<number | null>(null);
+  const [timeLeft, setTimeLeft] = useState(120);
   const [myWpm, setMyWpm] = useState(0);
   const [oppWpm, setOppWpm] = useState(0);
 
@@ -154,10 +155,23 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         </div>
       </div>
 
-      <div className="flex-1 w-full flex h-full">
+      <div className="flex-1 w-full flex h-full relative">
+        {/* Global Timer Overlay */}
+        <div className="absolute top-0 w-full p-4 flex justify-between items-center z-50 pointer-events-none">
+          <div className="flex-1" />
+          {mySequence.includes('joker3') ? (
+            <div className="font-mono text-xl tracking-widest text-slate-600 uppercase">???</div>
+          ) : (
+            <div className="font-mono text-2xl tracking-widest text-emerald-400">
+              {formatTime(timeLeft)}
+            </div>
+          )}
+          <div className="flex-1 flex justify-end"></div>
+        </div>
+
         {/* PLAYER SIDE */}
         <div className="flex-1 border-r border-slate-800/50 flex flex-col h-full relative">
-          <div className="absolute top-0 left-0 w-full p-4 bg-slate-900/80 border-b border-slate-800 flex flex-wrap items-center justify-center gap-4 z-40 backdrop-blur-md">
+          <div className="absolute bottom-0 left-0 w-full p-4 bg-slate-900/80 border-t border-slate-800 flex flex-wrap items-center justify-center gap-4 z-40 backdrop-blur-md">
              <div className="text-xs text-[var(--hot)] uppercase tracking-widest mr-2 font-bold">My Screen</div>
              <label className="flex items-center gap-1 cursor-pointer">
               <input type="checkbox" checked={myShrooms} onChange={e => setMyShrooms(e.target.checked)} className="w-3 h-3 accent-[var(--hot)]" />
@@ -197,19 +211,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             </label>
           </div>
           
-      {/* Dummy Clock for Sandbox Testing */}
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-50 bg-slate-900/80 px-6 py-2 rounded-full border border-slate-700 flex flex-col items-center pointer-events-none">
-        <span className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Global Clock</span>
-        {mySequence.includes('joker3') ? (
-          <div className="font-mono text-xl tracking-widest text-slate-600 uppercase">???</div>
-        ) : (
-          <div className="font-mono text-2xl tracking-widest text-emerald-400">
-            01:30
-          </div>
-        )}
-      </div>
-
-          <div className="flex-1 pt-24 px-8 overflow-hidden flex flex-col">
+                <div className="flex-1 pt-12 pb-24 px-8 overflow-hidden flex flex-col">
             <RankedPlayerArea
               label={user?.username || "Player"}
               wpm={myWpm}
@@ -232,7 +234,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
 
         {/* OPPONENT SIDE */}
         <div className="flex-1 flex flex-col h-full relative">
-          <div className="absolute top-0 left-0 w-full p-4 bg-slate-900/80 border-b border-slate-800 flex flex-wrap items-center justify-center gap-4 z-40 backdrop-blur-md">
+          <div className="absolute bottom-0 left-0 w-full p-4 bg-slate-900/80 border-t border-slate-800 flex flex-wrap items-center justify-center gap-4 z-40 backdrop-blur-md">
              <div className="text-xs text-slate-500 uppercase tracking-widest mr-2 font-bold">Bot Screen</div>
              <label className="flex items-center gap-1 cursor-pointer">
               <input type="checkbox" checked={oppShrooms} onChange={e => setOppShrooms(e.target.checked)} className="w-3 h-3 accent-[var(--hot)]" />
@@ -271,7 +273,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Amnesia</span>
             </label>
           </div>
-          <div className="flex-1 pt-24 px-8 overflow-hidden flex flex-col">
+          <div className="flex-1 pt-12 pb-24 px-8 overflow-hidden flex flex-col">
             <RankedPlayerArea
               label="Bot"
               wpm={oppWpm}
