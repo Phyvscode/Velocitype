@@ -19,6 +19,21 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   
   const [startTime, setStartTime] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(120);
+
+  useEffect(() => {
+    if (!startTime) return;
+    const interval = setInterval(() => {
+      setTimeLeft(t => Math.max(0, t - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [startTime]);
+  
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const ss = s % 60;
+    return `0${m}:${ss < 10 ? '0' : ''}${ss}`;
+  };
+
   const [myWpm, setMyWpm] = useState(0);
   const [oppWpm, setOppWpm] = useState(0);
 
