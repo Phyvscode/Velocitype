@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from
 import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { LANGUAGES } from '@/lib/languages';
+import { THEMES } from '@/lib/themes';
 import { loadDictionary, DICTIONARY, applyScrewedEffects } from "@/lib/words";
 
 import { generateSentences } from '@/lib/quotes';
@@ -21,6 +22,8 @@ interface RankedMatchData {
     fontFamily?: string;
     bgTheme?: any;
     characters?: string[];
+  fullTheme?: string | null;
+    fullTheme?: any;
   };
 }
 
@@ -58,7 +61,7 @@ export interface RankedPlayerAreaProps {
 
 
 
-export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, cia, charge, dyslexiaActive, tripActive, blinkActive, joker1Active, joker2Active, joker3Active, characters = [] }: RankedPlayerAreaProps) {
+export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, cia, charge, dyslexiaActive, tripActive, blinkActive, joker1Active, joker2Active, joker3Active, characters = [], fullTheme }: RankedPlayerAreaProps) {
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
@@ -213,9 +216,13 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
   if (isOpponent && colorTheme) {
     const hexes = colorTheme.value.match(/#[0-9a-fA-F]{6}/g) || ['#f59e0b'];
     oppPrimaryHex = hexes[0];
-    const cssRules = colorTheme.isGradient ? `
+    
+    const oppThemeObj = fullTheme ? THEMES.find(t => t.name === fullTheme) : null;
+    const oppSubColor = oppThemeObj ? oppThemeObj.subColor : 'var(--sub, #64748b)';
+    
+    const cssRules = (colorTheme && colorTheme.isGradient) ? `
       #opponent-area span.text-slate-500 {
-        /* Un-typed letters stay slate */
+        color: ${oppSubColor} !important;
       }
       #opponent-area span:not(.text-slate-500):not(.exclude-theme) {
         background-image: ${colorTheme.value} !important;
@@ -223,11 +230,18 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
         -webkit-text-fill-color: transparent !important;
         color: transparent !important;
       }
-    ` : `
+    ` : (colorTheme ? `
+      #opponent-area span.text-slate-500 {
+        color: ${oppSubColor} !important;
+      }
       #opponent-area span:not(.text-slate-500):not(.exclude-theme) {
         color: ${colorTheme.value} !important;
       }
-    `;
+    ` : `
+      #opponent-area span.text-slate-500 {
+        color: ${oppSubColor} !important;
+      }
+    `);
     const bgRules = bgTheme ? (bgTheme.isGradient ? `background: ${bgTheme.value} !important; background-attachment: fixed !important;` : `background: ${bgTheme.value} !important;`) : '';
     
     oppStyle = `
@@ -335,18 +349,32 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
                       {charsAndSpace.map((char, cIdx) => {
                         const i = charIndex++;
                         let color = 'text-slate-500';
+                        let isUnTyped = false;
+                        
                         if (i < typedText.length) {
-                          color = typedText[i] === char ? 'correct-char' : 'text-red-500 underline exclude-theme';
+                          let isCorrect = typedText[i] === char;
+                          if (joker1Active) isCorrect = true; // Joker 1 makes all mistakes look correct
+                          
+                          color = isCorrect ? 'correct-char' : 'text-red-500 bg-red-500/20 exclude-theme';
                         } else if (i === typedText.length) {
                           color = 'text-slate-100 exclude-theme';
+                        } else {
+                          isUnTyped = true;
                         }
                         
                         if (!isOpponent && color === 'correct-char') {
                           color = 'text-[var(--hot)]';
                         }
+                        
+                        // Joker 3: Only every 5th letter is colored, the rest are blank/slate
+                        if (joker3Active && i < typedText.length && (i + 1) % 5 !== 0) {
+                          color = 'text-slate-500';
+                        }
 
-                        let styleObj: any = isOpponent && color === 'correct-char' ? {} : undefined;
-                        if (dyslexiaActive && color === 'text-slate-500') {
+                        let styleObj: any = {};
+                        
+
+                        if (dyslexiaActive && isUnTyped) {
                           color += ' dyslexia-char';
                         }
 
@@ -632,7 +660,8 @@ export default function RankedMode({ onBack }: Props) {
       language,
       colorTheme: user.colorTheme,
       fontFamily: user.fontFamily,
-      characters: selectedCharacters
+      characters: selectedCharacters,
+      fullTheme: localStorage.getItem('velocitype_full_theme')
     });
   };
 
@@ -963,6 +992,7 @@ export default function RankedMode({ onBack }: Props) {
           tripActive={myUpgrades >= 1}
           blinkActive={myUpgrades >= 3}
           characters={matchData.opponent.characters}
+          fullTheme={matchData.opponent.fullTheme}
         />
 
         {/* Center Divider - with timer shifted down */}
