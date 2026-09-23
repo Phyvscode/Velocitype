@@ -16,6 +16,15 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const [myShrooms, setMyShrooms] = useState(false);
   const [myDyslexia, setMyDyslexia] = useState(false);
   const [myBlink, setMyBlink] = useState(false);
+  
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [myWpm, setMyWpm] = useState(0);
+  const [oppWpm, setOppWpm] = useState(0);
+
+  const [myCia, setMyCia] = useState<{c: number, i: number, a: number}>({c: 0, i: 0, a: 0});
+  const [oppCia, setOppCia] = useState<{c: number, i: number, a: number}>({c: 0, i: 0, a: 0});
+
+
   const [mySequence, setMySequence] = useState<string[]>([]);
 
   const [oppShrooms, setOppShrooms] = useState(false);
@@ -152,11 +161,24 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               <input type="checkbox" checked={mySequence.includes('spam')} onChange={() => toggleSeq(mySequence, setMySequence, 'spam')} className="w-3 h-3 accent-[var(--hot)]" />
               <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Spam</span>
             </label>
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input type="checkbox" checked={mySequence.includes('joker1')} onChange={() => toggleSeq(mySequence, setMySequence, 'joker1')} className="w-3 h-3 accent-[var(--hot)]" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Delusion</span>
+            </label>
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input type="checkbox" checked={mySequence.includes('joker2')} onChange={() => toggleSeq(mySequence, setMySequence, 'joker2')} className="w-3 h-3 accent-[var(--hot)]" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Blindness</span>
+            </label>
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input type="checkbox" checked={mySequence.includes('joker3')} onChange={() => toggleSeq(mySequence, setMySequence, 'joker3')} className="w-3 h-3 accent-[var(--hot)]" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Amnesia</span>
+            </label>
           </div>
           <div className="flex-1 pt-24 px-8 overflow-hidden flex flex-col">
             <RankedPlayerArea
               label={user?.username || "Player"}
-              wpm={120}
+              wpm={myWpm}
+              cia={myCia}
               progress={(typedText.length / Math.max(1, myTargetText.length)) * 100}
               targetText={myTargetText}
               typedText={typedText}
@@ -201,11 +223,24 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               <input type="checkbox" checked={oppSequence.includes('spam')} onChange={() => toggleSeq(oppSequence, setOppSequence, 'spam')} className="w-3 h-3 accent-[var(--hot)]" />
               <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Spam</span>
             </label>
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input type="checkbox" checked={oppSequence.includes('joker1')} onChange={() => toggleSeq(oppSequence, setOppSequence, 'joker1')} className="w-3 h-3 accent-[var(--hot)]" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Delusion</span>
+            </label>
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input type="checkbox" checked={oppSequence.includes('joker2')} onChange={() => toggleSeq(oppSequence, setOppSequence, 'joker2')} className="w-3 h-3 accent-[var(--hot)]" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Blindness</span>
+            </label>
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input type="checkbox" checked={oppSequence.includes('joker3')} onChange={() => toggleSeq(oppSequence, setOppSequence, 'joker3')} className="w-3 h-3 accent-[var(--hot)]" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Amnesia</span>
+            </label>
           </div>
           <div className="flex-1 pt-24 px-8 overflow-hidden flex flex-col">
             <RankedPlayerArea
               label="Bot"
-              wpm={80}
+              wpm={oppWpm}
+              cia={oppCia}
               progress={(oppTypedText.length / Math.max(1, oppTargetText.length)) * 100}
               targetText={oppTargetText}
               typedText={oppTypedText}

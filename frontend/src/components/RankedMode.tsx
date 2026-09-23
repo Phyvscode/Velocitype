@@ -50,12 +50,15 @@ export interface RankedPlayerAreaProps {
   dyslexiaActive?: boolean;
   tripActive?: boolean;
   blinkActive?: boolean;
+  joker1Active?: boolean;
+  joker2Active?: boolean;
+  joker3Active?: boolean;
   characters?: string[];
 }
 
 
 
-export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, cia, charge, dyslexiaActive, tripActive, blinkActive, characters = [] }: RankedPlayerAreaProps) {
+export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, cia, charge, dyslexiaActive, tripActive, blinkActive, joker1Active, joker2Active, joker3Active, characters = [] }: RankedPlayerAreaProps) {
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
@@ -269,8 +272,8 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
       <div className="flex justify-between items-end mb-4 md:mb-8">
         
         <div className="flex flex-col items-end gap-1">
-          <span className="font-mono text-sm uppercase tracking-widest" style={{ color: isOpponent ? oppPrimaryHex : 'var(--hot)' }}>{wpm} WPM</span>
-          {!isOpponent && cia && (
+          {(!joker2Active || isOpponent) && <span className="font-mono text-sm uppercase tracking-widest" style={{ color: isOpponent ? oppPrimaryHex : 'var(--hot)' }}>{wpm} WPM</span>}
+          {!isOpponent && cia && !joker2Active && (
             <span className="font-mono text-[10px] text-slate-400 tracking-widest">
               <span className="text-emerald-400">{cia.c}</span>/
               <span className="text-red-500">{cia.i}</span>/
@@ -427,6 +430,24 @@ export default function RankedMode({ onBack }: Props) {
   const myLetterStatesRef = useRef<number[]>([]);
   const [oppCia, setOppCia] = useState<{c: number, i: number, a: number} | null>(null);
   const [myWpm, setMyWpm] = useState(0);
+  useEffect(() => {
+    if (gameState !== 'playing' || !startTime) return;
+    const interval = setInterval(() => {
+      const timeElapsed = (Date.now() - startTime) / 60000;
+      if (timeElapsed > 0) {
+        let correctCount = 0;
+        for (let i = 0; i < typedText.length; i++) {
+          if (typedText[i] === (myTargetText[i] || oppTargetText[i])) { // Roughly correct
+            correctCount++;
+          }
+        }
+        const wpm = Math.round((correctCount / 5) / timeElapsed);
+        setMyWpm(wpm);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [gameState, startTime, typedText, myTargetText, oppTargetText]);
+
   const [oppProgress, setOppProgress] = useState(0);
   const [oppWpm, setOppWpm] = useState(0);
   const [amIReady, setAmIReady] = useState(false);
@@ -811,7 +832,7 @@ export default function RankedMode({ onBack }: Props) {
             Select Characters (Max 3)
           </label>
           <div className="flex flex-wrap gap-6 items-center justify-start">
-            {['mushgirl', 'screwed'].map(charId => {
+            {['mushgirl', 'screwed', 'joker'].map(charId => {
               const isSelected = selectedCharacters.includes(charId);
               return (
                 <div 
@@ -904,6 +925,9 @@ export default function RankedMode({ onBack }: Props) {
           dyslexiaActive={oppAbilities.includes('dyslexia')}
           tripActive={oppAbilities.includes('shrooms')}
           blinkActive={oppAbilities.includes('blinking')}
+          joker1Active={oppAbilities.includes('joker1')}
+          joker2Active={oppAbilities.includes('joker2')}
+          joker3Active={oppAbilities.includes('joker3')}
           characters={selectedCharacters}
         />
         
@@ -1001,7 +1025,7 @@ export default function RankedMode({ onBack }: Props) {
             
             <div className="w-full space-y-4">
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 {[
                   { id: 'shrooms', name: 'Shrooms', cost: 30 },
                   { id: 'scramble', name: 'Scramble', cost: 30 },
@@ -1009,6 +1033,9 @@ export default function RankedMode({ onBack }: Props) {
                   { id: 'sabotage', name: 'Sabotage', cost: 60 },
                   { id: 'blinking', name: 'Blinking', cost: 100 },
                   { id: 'spam', name: 'Spam', cost: 100 },
+                  { id: 'joker1', name: 'Delusion', cost: 30 },
+                  { id: 'joker2', name: 'Blindness', cost: 60 },
+                  { id: 'joker3', name: 'Amnesia', cost: 100 },
                 ].map(ability => (
                   <button
                     key={ability.id}
