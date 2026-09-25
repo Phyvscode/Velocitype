@@ -411,6 +411,10 @@ export const initSocket = (httpServer: HttpServer) => {
         socket.to(data.matchId).emit('rankedOpponentUpgrades', { upgrades: data.upgrades });
       }
     });
+    
+    socket.on('rankedTimeWarp', (data: { matchId: string }) => {
+      socket.to(data.matchId).emit('rankedTimeWarp');
+    });
 
 
 
