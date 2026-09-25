@@ -242,7 +242,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               dyslexiaActive={myDyslexia}
               tripActive={myShrooms}
               blinkActive={myBlink}
-              characters={['mushgirl', 'screwed']}
+              characters={['mushgirl', 'screwed', 'joker']}
             />
           </div>
         </div>
@@ -304,7 +304,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               dyslexiaActive={oppDyslexia}
               tripActive={oppShrooms}
               blinkActive={oppBlink}
-              characters={['mushgirl', 'screwed']}
+              characters={['mushgirl', 'screwed', 'joker']}
             />
           </div>
         </div>
