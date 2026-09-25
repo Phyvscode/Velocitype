@@ -457,6 +457,8 @@ export default function RankedMode({ onBack }: Props) {
   const [myCia, setMyCia] = useState({c: 0, i: 0, a: 0});
   const myLetterStatesRef = useRef<number[]>([]);
   const [oppCia, setOppCia] = useState<{c: number, i: number, a: number} | null>(null);
+  const [gravity1Count, setGravity1Count] = useState(0);
+  const [showGravityPopup, setShowGravityPopup] = useState(false);
   const [myWpm, setMyWpm] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
 
@@ -562,6 +564,8 @@ export default function RankedMode({ onBack }: Props) {
       myLetterStatesRef.current = [];
       setOppCia(null);
       setOppProgress(0);
+      setGravity1Count(0);
+      setShowGravityPopup(false);
       setOppProgress(0);
       setOppWpm(0);
       
@@ -863,7 +867,7 @@ export default function RankedMode({ onBack }: Props) {
             Select Characters (Max 3)
           </label>
           <div className="flex flex-wrap gap-6 items-center justify-start">
-            {['mushgirl', 'screwed', 'joker'].map(charId => {
+            {['mushgirl', 'screwed', 'joker', 'gravity'].map(charId => {
               const isSelected = selectedCharacters.includes(charId);
               return (
                 <div 
@@ -1017,6 +1021,16 @@ export default function RankedMode({ onBack }: Props) {
         </div>
       </div>
 
+      {showGravityPopup && gameState === 'playing' && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm pointer-events-auto">
+           <div className="bg-red-950 border border-red-500 p-8 rounded-xl shadow-[0_0_50px_rgba(239,68,68,0.5)] text-center animate-bounce">
+              <h2 className="text-3xl text-red-500 font-display uppercase tracking-widest mb-4">Black Hole Sabotage!</h2>
+              <p className="text-red-200 font-mono text-sm tracking-widest mb-4">You have been sucked into a gravity well!</p>
+              <p className="text-white font-mono font-bold tracking-widest bg-red-900/50 p-4 rounded">Press CTRL + X to escape</p>
+           </div>
+        </div>
+      )}
+      
       {/* Overlays */}
       {gameState === 'waiting_ready' && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-20">
@@ -1074,6 +1088,9 @@ export default function RankedMode({ onBack }: Props) {
                   { id: 'joker1', name: 'Delusion', cost: 30 },
                   { id: 'joker2', name: 'Blindness', cost: 60 },
                   { id: 'joker3', name: 'Amnesia', cost: 100 },
+                  { id: 'gravity1', name: 'Time Warp', cost: 40 },
+                  { id: 'gravity2', name: 'Black Hole', cost: 70 },
+                  { id: 'gravity3', name: 'Event Horizon', cost: 110 },
                 ].map(ability => (
                   <button
                     key={ability.id}

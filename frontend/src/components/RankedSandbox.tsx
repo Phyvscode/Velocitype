@@ -53,6 +53,15 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const [oppShrooms, setOppShrooms] = useState(false);
   const [oppDyslexia, setOppDyslexia] = useState(false);
   const [oppBlink, setOppBlink] = useState(false);
+  
+  const [myGravity1, setMyGravity1] = useState(false);
+  const [myGravity2, setMyGravity2] = useState(false);
+  const [myGravity3, setMyGravity3] = useState(false);
+  const [oppGravity1, setOppGravity1] = useState(false);
+  const [oppGravity2, setOppGravity2] = useState(false);
+  const [oppGravity3, setOppGravity3] = useState(false);
+  const [showGravityPopup, setShowGravityPopup] = useState(false);
+  const [gravity1Count, setGravity1Count] = useState(0);
   const [oppSequence, setOppSequence] = useState<string[]>([]);
   
   const toggleSeq = (seq: string[], setSeq: React.Dispatch<React.SetStateAction<string[]>>, name: string) => {
@@ -127,6 +136,13 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+    if (showGravityPopup) {
+      if (e.ctrlKey && e.key.toLowerCase() === 'x') {
+        e.preventDefault();
+        setShowGravityPopup(false);
+      }
+      return;
+    }
       if (e.key === 'Escape') return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key.length === 1) {
@@ -249,7 +265,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               dyslexiaActive={myDyslexia}
               tripActive={myShrooms}
               blinkActive={myBlink}
-              characters={['mushgirl', 'screwed', 'joker']}
+              characters={['mushgirl', 'screwed', 'joker', 'gravity']}
             />
           </div>
         </div>
@@ -311,7 +327,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               dyslexiaActive={oppDyslexia}
               tripActive={oppShrooms}
               blinkActive={oppBlink}
-              characters={['mushgirl', 'screwed', 'joker']}
+              characters={['mushgirl', 'screwed', 'joker', 'gravity']}
             />
           </div>
         </div>
