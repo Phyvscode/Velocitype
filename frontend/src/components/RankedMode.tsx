@@ -334,7 +334,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
                 style={{
                   left: `${caretLeft}px`,
                   top: `${caretTop}px`,
-                  opacity: gameState === 'playing' ? 1 : 0,
+                  opacity: gameState === 'playing' && !joker1Active ? 1 : 0,
                   backgroundColor: isOpponent ? oppPrimaryHex : 'var(--hot)'
                 }}
               />
