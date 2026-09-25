@@ -1,0 +1,58 @@
+const puppeteer = require('puppeteer');
+
+(async () => {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  
+  page.on('console', msg => {
+    console.log('BROWSER LOG:', msg.text());
+  });
+  page.on('pageerror', err => {
+    console.log('PAGE ERROR:', err.message);
+  });
+  
+  await page.goto('http://localhost:5173/setup');
+  
+  await new Promise(r => setTimeout(r, 2000));
+  
+  // Login as guest
+  await page.evaluate(() => {
+    const inputs = document.querySelectorAll('input');
+    if (inputs.length > 0) {
+      inputs[0].value = 'testuser';
+      inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+      // React 16+ value setter
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+      nativeInputValueSetter.call(inputs[0], 'testuser');
+      inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+      
+      const btns = document.querySelectorAll('button');
+      const guestBtn = Array.from(btns).find(b => b.innerText.includes('Guest'));
+      if (guestBtn) guestBtn.click();
+    }
+  });
+  
+  await new Promise(r => setTimeout(r, 2000));
+
+  // Find Ranked Mode button and click it
+  await page.evaluate(() => {
+    const btns = document.querySelectorAll('button');
+    const rankedBtn = Array.from(btns).find(b => {
+      const h3 = b.querySelector('h3');
+      return h3 && h3.innerText.includes('RANKED MODE');
+    });
+    if (rankedBtn) {
+      console.log('Found Ranked Mode button, clicking...');
+      rankedBtn.click();
+    } else {
+      console.log('Ranked Mode button NOT FOUND');
+    }
+  });
+  
+  await new Promise(r => setTimeout(r, 2000));
+  
+  const bodyText = await page.evaluate(() => document.body.innerText);
+  console.log("BODY AFTER CLICK:\n" + bodyText.substring(0, 500));
+  
+  await browser.close();
+})();
