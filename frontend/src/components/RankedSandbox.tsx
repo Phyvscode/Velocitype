@@ -21,9 +21,16 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const [timeLeft, setTimeLeft] = useState(120);
 
   useEffect(() => {
+    setStartTime(Date.now());
+  }, []);
+
+  useEffect(() => {
     if (!startTime) return;
     const interval = setInterval(() => {
-      setTimeLeft(t => Math.max(0, t - 1));
+      setTimeLeft(t => {
+        if (t <= 1) return 120;
+        return t - 1;
+      });
     }, 1000);
     return () => clearInterval(interval);
   }, [startTime]);

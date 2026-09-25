@@ -1004,8 +1004,14 @@ export default function RankedMode({ onBack }: Props) {
           
           {gameState === 'playing' && (
             <div className="bg-background border-2 border-white rounded-full w-24 h-24 flex flex-col items-center justify-center font-display text-3xl text-slate-100 shadow-[0_0_20px_rgba(255,255,255,0.1)] z-30 pointer-events-auto relative">
-              {timeLeft}
-              <span className="text-xs text-[var(--hot)] font-mono mt-1">SEC</span>
+              {oppAbilities.includes('joker3') ? (
+                <div className="text-4xl text-slate-600 mt-2">???</div>
+              ) : (
+                <>
+                  {timeLeft}
+                  <span className="text-xs text-[var(--hot)] font-mono mt-1">SEC</span>
+                </>
+              )}
             </div>
           )}
         </div>
