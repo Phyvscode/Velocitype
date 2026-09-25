@@ -458,6 +458,24 @@ export default function RankedMode({ onBack }: Props) {
   const myLetterStatesRef = useRef<number[]>([]);
   const [oppCia, setOppCia] = useState<{c: number, i: number, a: number} | null>(null);
   const [myWpm, setMyWpm] = useState(0);
+  const [startTime, setStartTime] = useState<number | null>(null);
+
+
+  const [oppProgress, setOppProgress] = useState(0);
+  const [oppWpm, setOppWpm] = useState(0);
+  const [amIReady, setAmIReady] = useState(false);
+  const [scores, setScores] = useState<Record<string, number>>({});
+  const [matchWinner, setMatchWinner] = useState<string | null>(null);
+  const [eloChanges, setEloChanges] = useState<Record<string, number>>({});
+
+
+  const [myTargetText, setMyTargetText] = useState('');
+  const [oppTargetText, setOppTargetText] = useState('');
+
+  const [typedText, setTypedText] = useState('');
+  const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
+  const inputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (gameState !== 'playing' || !startTime) return;
     const interval = setInterval(() => {
@@ -475,22 +493,6 @@ export default function RankedMode({ onBack }: Props) {
     }, 1000);
     return () => clearInterval(interval);
   }, [gameState, startTime, typedText, myTargetText, oppTargetText]);
-
-  const [oppProgress, setOppProgress] = useState(0);
-  const [oppWpm, setOppWpm] = useState(0);
-  const [amIReady, setAmIReady] = useState(false);
-  const [scores, setScores] = useState<Record<string, number>>({});
-  const [matchWinner, setMatchWinner] = useState<string | null>(null);
-  const [eloChanges, setEloChanges] = useState<Record<string, number>>({});
-
-
-  const [myTargetText, setMyTargetText] = useState('');
-  const [oppTargetText, setOppTargetText] = useState('');
-
-  const [typedText, setTypedText] = useState('');
-  const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   // Opponent typing state
   const [oppTypedText, setOppTypedText] = useState('');
