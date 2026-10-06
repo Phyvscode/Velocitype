@@ -378,6 +378,22 @@ export default function SetupScreen({
   const [extraFinal, setExtraFinal] = useState('');
   const [enableCustom, setEnableCustom] = useState(false);
   const [enableExtra, setEnableExtra] = useState(false);
+
+  const handleCustomLettersChange = (val: string) => {
+    const raw = val.toLowerCase();
+    const seen = new Set();
+    let filtered = '';
+    for (const char of raw) {
+      if (char === ' ') {
+        filtered += char;
+      } else if (/[a-z]/.test(char) && !seen.has(char)) {
+        seen.add(char);
+        filtered += char;
+      }
+    }
+    setCustomLetters(filtered);
+  };
+
   const [durationWords, setDurationWords] = useState<string>('30');
   const [showCustomWords, setShowCustomWords] = useState<boolean>(false);
   const durWords = Math.max(1, Math.min(3600, parseInt(durationWords, 10) || 0));
@@ -1003,7 +1019,7 @@ export default function SetupScreen({
                             type="text"
                             placeholder="e.g. h t a d a f c a c"
                             value={customLetters}
-                            onChange={e => setCustomLetters(e.target.value)}
+                            onChange={e => handleCustomLettersChange(e.target.value)}
                             disabled={!enableCustom}
                             className="w-full bg-slate-800 border border-slate-700 p-3 rounded text-white font-mono text-sm focus:outline-none focus:border-[var(--hot)] transition-colors"
                           />
@@ -1231,7 +1247,7 @@ export default function SetupScreen({
                             type="text"
                             placeholder="e.g. h t a d a f c a c"
                             value={customLetters}
-                            onChange={e => setCustomLetters(e.target.value)}
+                            onChange={e => handleCustomLettersChange(e.target.value)}
                             disabled={!enableCustom}
                             className="w-full bg-slate-800 border border-slate-700 p-3 rounded text-white font-mono text-sm focus:outline-none focus:border-[var(--hot)] transition-colors"
                           />

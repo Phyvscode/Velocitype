@@ -241,33 +241,48 @@ export function filterWords(
   let pool: string[] = [];
   
   const hasExtra = !!(extraInitial || extraMiddle || extraFinal);
+  let hasCustom = false;
+  let customSet = new Set<string>();
+  let customArr: string[] = [];
   
   if (customLetters && customLetters.trim().length > 0) {
-    const letters = customLetters.split(/\s+/).filter(c => c.trim().length > 0).map(c => c.toLowerCase());
-    if (letters.length > 0) {
-      for (let i = 0; i < 300; i++) {
-        pool.push(generateGibberishWord(letters, minLen, maxLen, extraInitial, extraMiddle, extraFinal));
-      }
-      return pool;
+    customArr = customLetters.split(/\s+/).filter(c => c.trim().length > 0).map(c => c.toLowerCase());
+    if (customArr.length > 0) {
+      hasCustom = true;
+      customSet = new Set(customArr);
     }
   }
 
   const rowSet = new Set(activeRows);
   const dictMatches = DICTIONARY.filter(
-    (w) =>
-      w.word.length >= minLen &&
-      w.word.length <= maxLen &&
-      w.rows.every((r) => rowSet.has(r)) &&
-      (!extraInitial || w.word.startsWith(extraInitial)) &&
-      (!extraFinal || w.word.endsWith(extraFinal)) &&
-      (!extraMiddle || w.word.includes(extraMiddle))
+    (w) => {
+      if (w.word.length < minLen || w.word.length > maxLen) return false;
+      if (extraInitial && !w.word.startsWith(extraInitial)) return false;
+      if (extraFinal && !w.word.endsWith(extraFinal)) return false;
+      if (extraMiddle && !w.word.includes(extraMiddle)) return false;
+      
+      if (hasCustom) {
+         for (const char of w.word) {
+            if (!customSet.has(char)) return false;
+         }
+         return true;
+      } else {
+         return w.rows.every((r) => rowSet.has(r));
+      }
+    }
   ).map((w) => w.word);
+  
+  // Shuffle dictMatches internally so they are randomized but stay at the front
+  for (let i = dictMatches.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [dictMatches[i], dictMatches[j]] = [dictMatches[j], dictMatches[i]];
+  }
   
   pool = [...dictMatches];
 
-  // If there are extra requirements, or if the pool is empty, pad with gibberish
-  if (hasExtra && pool.length < 200) {
-    const allowedLetters = getLettersForRows(activeRows);
+  // If there are extra requirements or custom letters, pad with gibberish
+  if ((hasExtra || hasCustom) && pool.length < 200) {
+    const allowedLetters = hasCustom ? customArr : getLettersForRows(activeRows);
     while (pool.length < 200) {
       pool.push(generateGibberishWord(allowedLetters, minLen, maxLen, extraInitial, extraMiddle, extraFinal));
     }
