@@ -968,7 +968,7 @@ export default function SetupScreen({
             
             {activeMode === 'words' && (
               <div className="space-y-10">
-                <div className="flex flex-row items-start w-full">
+                <div className="flex flex-col items-start w-full">
                   <section className="shrink-0">
                     <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">1. Choose your key rows</h2>
                     <div className="grid sm:grid-cols-3 gap-4">
@@ -1196,7 +1196,7 @@ export default function SetupScreen({
 
             {activeMode === 'random-sentences' && (
               <div className="space-y-10">
-                <div className="flex flex-row items-start w-full">
+                <div className="flex flex-col items-start w-full">
                   <section className="shrink-0">
                     <h2 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-4">1. Choose your key rows</h2>
                     <div className="grid sm:grid-cols-3 gap-4">
