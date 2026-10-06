@@ -371,13 +371,34 @@ export default function SetupScreen({
   };
 
   const { user, stats, logout } = useAuth();
-  const [rows, setRows] = useState<RowKey[]>(['top', 'home', 'bottom']);
-  const [customLetters, setCustomLetters] = useState('');
-  const [extraInitial, setExtraInitial] = useState('');
-  const [extraMiddle, setExtraMiddle] = useState('');
-  const [extraFinal, setExtraFinal] = useState('');
-  const [enableCustom, setEnableCustom] = useState(false);
-  const [enableExtra, setEnableExtra] = useState(false);
+
+  const PREFS_KEY = 'velocitype_setup_prefs';
+  const getPrefs = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const p = localStorage.getItem(PREFS_KEY);
+        if (p) return JSON.parse(p);
+      }
+    } catch {}
+    return {};
+  };
+  const savePrefs = (updates: any) => {
+    try {
+      if (typeof window !== 'undefined') {
+        const p = getPrefs();
+        localStorage.setItem(PREFS_KEY, JSON.stringify({ ...p, ...updates }));
+      }
+    } catch {}
+  };
+  const prefs = getPrefs();
+
+  const [rows, setRows] = useState<RowKey[]>(prefs.rows ?? ['top', 'home', 'bottom']);
+  const [customLetters, setCustomLetters] = useState(prefs.customLetters ?? '');
+  const [extraInitial, setExtraInitial] = useState(prefs.extraInitial ?? '');
+  const [extraMiddle, setExtraMiddle] = useState(prefs.extraMiddle ?? '');
+  const [extraFinal, setExtraFinal] = useState(prefs.extraFinal ?? '');
+  const [enableCustom, setEnableCustom] = useState(prefs.enableCustom ?? false);
+  const [enableExtra, setEnableExtra] = useState(prefs.enableExtra ?? false);
 
   const handleCustomLettersChange = (val: string) => {
     const raw = val.toLowerCase();
@@ -394,25 +415,25 @@ export default function SetupScreen({
     setCustomLetters(filtered);
   };
 
-  const [durationWords, setDurationWords] = useState<string>('30');
+  const [durationWords, setDurationWords] = useState<string>(prefs.durationWords ?? '30');
   const [showCustomWords, setShowCustomWords] = useState<boolean>(false);
   const durWords = Math.max(1, Math.min(3600, parseInt(durationWords, 10) || 0));
-  const [limitModeWords, setLimitModeWords] = useState<'time' | 'words'>('time');
-  const [wordLimitWords, setWordLimitWords] = useState<string>('20');
+  const [limitModeWords, setLimitModeWords] = useState<'time' | 'words'>(prefs.limitModeWords ?? 'time');
+  const [wordLimitWords, setWordLimitWords] = useState<string>(prefs.wordLimitWords ?? '20');
 
-  const [durationFile, setDurationFile] = useState<string>('30');
+  const [durationFile, setDurationFile] = useState<string>(prefs.durationFile ?? '30');
   const [showCustomFile, setShowCustomFile] = useState<boolean>(false);
   const durFile = Math.max(1, Math.min(3600, parseInt(durationFile, 10) || 0));
 
-  const [fileSequential, setFileSequential] = useState<boolean>(false);
-  const [durationSentences, setDurationSentences] = useState<string>('30');
+  const [fileSequential, setFileSequential] = useState<boolean>(prefs.fileSequential ?? false);
+  const [durationSentences, setDurationSentences] = useState<string>(prefs.durationSentences ?? '30');
   const [showCustomSentences, setShowCustomSentences] = useState<boolean>(false);
   const durSentences = Math.max(1, Math.min(3600, parseInt(durationSentences, 10) || 0));
-  const [limitModeSentences, setLimitModeSentences] = useState<'time' | 'words'>('time');
-  const [wordLimitSentences, setWordLimitSentences] = useState<string>('10');
+  const [limitModeSentences, setLimitModeSentences] = useState<'time' | 'words'>(prefs.limitModeSentences ?? 'time');
+  const [wordLimitSentences, setWordLimitSentences] = useState<string>(prefs.wordLimitSentences ?? '10');
   
-  const [minLen, setMinLen] = useState<number | string>(2);
-  const [maxLen, setMaxLen] = useState<number | string>(8);
+  const [minLen, setMinLen] = useState<number | string>(prefs.minLen ?? 2);
+  const [maxLen, setMaxLen] = useState<number | string>(prefs.maxLen ?? 8);
   const [error, setError] = useState<string>('');
   const historyIdxRef = useRef<number>(
     typeof window !== 'undefined' && window.history.state?.idx !== undefined
@@ -458,7 +479,7 @@ export default function SetupScreen({
     }
   };
 
-  const [sentenceTheme, setSentenceTheme] = useState<string>('');
+  const [sentenceTheme, setSentenceTheme] = useState<string>(prefs.sentenceTheme ?? '');
 
   const [parsedDoc, setParsedDoc] = useState<ParsedDocument | null>(null);
   const [startPage, setStartPage] = useState<number | string>(1);
