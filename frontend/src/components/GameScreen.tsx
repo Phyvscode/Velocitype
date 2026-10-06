@@ -32,7 +32,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export default function GameScreen({ config, onFinish, onQuit, onProgress, hideHeader }: Props) {
-  const { rows, duration, minLen, maxLen, customSentences } = config;
+  const { rows, duration, minLen, maxLen, customSentences, customLetters, extraInitial, extraMiddle, extraFinal } = config;
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig>(getLayoutConfig());
   
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function GameScreen({ config, onFinish, onQuit, onProgress, hideH
     return () => window.removeEventListener('layoutConfigChanged', handleLayoutChange);
   }, []);
 
-  const pool = useMemo(() => customSentences && customSentences.length > 0 ? customSentences : filterWords(rows as RowKey[], minLen, maxLen), [rows, minLen, maxLen, customSentences]);
+  const pool = useMemo(() => customSentences && customSentences.length > 0 ? customSentences : filterWords(rows as RowKey[], minLen, maxLen, customLetters, extraInitial, extraMiddle, extraFinal), [rows, minLen, maxLen, customSentences, customLetters, extraInitial, extraMiddle, extraFinal]);
 
   // A shuffled queue of all pool words; when exhausted, reshuffle for a fresh cycle.
   // If sequential is true (for file mode), we just use the sentences in their original order.

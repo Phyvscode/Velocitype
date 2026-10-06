@@ -16,14 +16,18 @@ export async function generateSentences(
   minWords: number,
   maxWords: number,
   count: number = 20,
-  theme?: string
+  theme?: string,
+  customLetters?: string,
+  extraInitial?: string,
+  extraMiddle?: string,
+  extraFinal?: string
 ): Promise<string[]> {
   let sentences: string[] = [];
   
   if (apiKey && apiKey.trim().length > 0) {
     sentences = await generateWithGemini(apiKey.trim(), rows, minWords, maxWords, count, theme);
   } else if (rows.length > 0) {
-    sentences = await generateRandomDictionarySentences(rows, minWords, maxWords, count);
+    sentences = await generateRandomDictionarySentences(rows, minWords, maxWords, count, customLetters, extraInitial, extraMiddle, extraFinal);
   } else {
     sentences = await generateMarkovSentences(minWords, maxWords, count);
   }
@@ -63,7 +67,7 @@ async function generateWithGemini(apiKey: string, rows: RowKey[], minWords: numb
     return parsed;
   } catch (err) {
     console.error("LLM Error, falling back...", err);
-    return generateRandomDictionarySentences(rows, minWords, maxWords, count);
+    return generateRandomDictionarySentences(rows, minWords, maxWords, count, customLetters, extraInitial, extraMiddle, extraFinal);
   }
 }
 
@@ -127,8 +131,8 @@ async function generateMarkovSentences(minWords: number, maxWords: number, count
 }
 
 // 3. COMMON WORDS FALLBACK (FOR RESTRICTED ROWS)
-async function generateRandomDictionarySentences(rows: RowKey[], minWords: number, maxWords: number, count: number): Promise<string[]> {
-  const pool = filterWords(rows, 1, 15);
+async function generateRandomDictionarySentences(rows: RowKey[], minWords: number, maxWords: number, count: number, customLetters?: string, extraInitial?: string, extraMiddle?: string, extraFinal?: string): Promise<string[]> {
+  const pool = filterWords(rows, 1, 15, customLetters, extraInitial, extraMiddle, extraFinal);
   
   const sentences: string[] = [];
   for (let i = 0; i < count; i++) {
