@@ -523,7 +523,7 @@ export default function RankedMode({ onBack }: Props) {
   const [oppTypedText, setOppTypedText] = useState('');
   const [oppActiveKeys, setOppActiveKeys] = useState<Set<string>>(new Set());
 
-  const [selectedCharacters, setSelectedCharacters] = useState<string[]>(['mushgirl']);
+  const [selectedCharacters, setSelectedCharacters] = useState<string[]>([]);
   const [myAbilities, setMyAbilities] = useState<string[]>([]);
   const [oppAbilities, setOppAbilities] = useState<string[]>([]);
   const oppAbilitiesRef = useRef<string[]>([]);
@@ -884,9 +884,10 @@ export default function RankedMode({ onBack }: Props) {
         ) : (
           <button 
             onClick={handleJoinQueue}
-            className="w-full py-5 border border-[var(--hot)] text-[var(--hot)] bg-[var(--hot)]/10 font-mono text-sm uppercase tracking-widest hover:bg-[var(--hot)] hover:text-black transition-colors rounded shadow-[0_0_15px_var(--color-hot-soft)]"
+            disabled={selectedCharacters.length !== 3}
+            className={`w-full py-5 border font-mono text-sm uppercase tracking-widest transition-colors rounded ${selectedCharacters.length === 3 ? 'border-[var(--hot)] text-[var(--hot)] bg-[var(--hot)]/10 hover:bg-[var(--hot)] hover:text-black shadow-[0_0_15px_var(--color-hot-soft)]' : 'border-slate-700 text-slate-500 bg-slate-800/50 cursor-not-allowed'}`}
           >
-            Play Ranked
+            {selectedCharacters.length === 3 ? 'Play Ranked' : `Select 3 Characters (${selectedCharacters.length}/3)`}
           </button>
         )}
         </div>

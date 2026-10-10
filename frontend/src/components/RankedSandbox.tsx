@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { RankedPlayerArea } from './RankedMode';
 import { generateSentences } from "@/lib/quotes";
 import { applyScrewedEffects } from "@/lib/words";
+import { AnimatedCharacter } from './AnimatedCharacter';
 
 import { useAuth } from '../contexts/AuthContext';
 
