@@ -57,11 +57,13 @@ export interface RankedPlayerAreaProps {
   joker2Active?: boolean;
   joker3Active?: boolean;
   characters?: string[];
+  goldenLetters?: Set<number>;
+  buffedAbilities?: string[];
 }
 
 
 
-export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, cia, charge, dyslexiaActive, tripActive, blinkActive, joker1Active, joker2Active, joker3Active, characters = [], fullTheme }: RankedPlayerAreaProps) {
+export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, cia, charge, dyslexiaActive, tripActive, blinkActive, joker1Active, joker2Active, joker3Active, characters = [], goldenLetters = new Set(), fullTheme, buffedAbilities = [] }: RankedPlayerAreaProps) {
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
@@ -99,6 +101,20 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
 
   
   
+
+  useEffect(() => {
+    if (selectedCharacters.includes('moneyguy')) {
+      const newGolden = new Set<number>();
+      for (let i = 0; i < myTargetText.length; i++) {
+        if (myTargetText[i] !== ' ' && Math.random() < 0.3) {
+          newGolden.add(i);
+        }
+      }
+      goldenLettersRef.current = newGolden;
+      claimedGoldenRef.current = new Set();
+    }
+  }, [myTargetText, selectedCharacters]);
+  
   useEffect(() => {
     if (!tripActive) {
       setTripLevel(0);
@@ -122,6 +138,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
   
   useEffect(() => {
     if (!dyslexiaActive) return;
+    const intervalMs = buffedAbilities.includes('dyslexia') ? 1500 : 3000;
     const interval = setInterval(() => {
       if (!containerRef.current) return;
       const letters = Array.from(containerRef.current.querySelectorAll('.dyslexia-char')) as HTMLElement[];
@@ -148,6 +165,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
 
 
   useEffect(() => {
+    const blinkInterval = buffedAbilities.includes('blinking') ? 2000 : 5000;
     if (!blinkActive) {
       setBlinkStyle('');
       return;
@@ -164,7 +182,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
         setTimeout(() => {
           setBlinkStyle('');
           active = false;
-        }, 5000); // Wait enough time for either animation to finish (flicker is 5s, blink is 2s)
+        }, blinkInterval); // Wait enough time for either animation to finish (flicker is 5s, blink is 2s)
       }
     };
     
@@ -286,8 +304,8 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
       <div className="flex justify-between items-end mb-4 md:mb-8">
         
         <div className="flex flex-col items-end gap-1">
-          {(!joker2Active || isOpponent) && <span className="font-mono text-sm uppercase tracking-widest" style={{ color: isOpponent ? oppPrimaryHex : 'var(--hot)' }}>{wpm} WPM</span>}
-          {!isOpponent && cia && !joker2Active && (
+          {/* HIDDEN STATS */ false && <span className="font-mono text-sm uppercase tracking-widest" style={{ color: isOpponent ? oppPrimaryHex : 'var(--hot)' }}>{wpm} WPM</span>}
+          {/* HIDDEN CIA */ false && (
             <span className="font-mono text-[10px] text-slate-400 tracking-widest">
               <span className="text-emerald-400">{cia.c}</span>/
               <span className="text-red-500">{cia.i}</span>/
@@ -350,6 +368,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
                         const i = charIndex++;
                         let color = 'text-slate-500';
                         let isUnTyped = false;
+                        if (goldenLetters.has(i) && !isOpponent) color = 'text-yellow-400 font-bold drop-shadow-[0_0_8px_rgba(250,204,21,0.6)] exclude-theme';
                         
                         if (i < typedText.length) {
                           let isCorrect = typedText[i] === char;
@@ -367,7 +386,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
                         }
                         
                         // Joker 3: Only every 5th letter is colored, the rest are blank/slate
-                        if (joker3Active && i < typedText.length && (i + 1) % 5 !== 0) {
+                        if (joker3Active && i < typedText.length && (i + 1) % (buffedAbilities.includes('joker3') ? 3 : 5) !== 0) {
                           color = 'text-slate-500';
                         }
 
@@ -419,13 +438,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
         <span className="font-mono text-xs text-slate-500">{charge}%</span>
       </div>
       
-      {gameState === 'playing' && characters.length > 0 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 pointer-events-none z-10 flex gap-4">
-          {characters.map((charId, idx) => (
-            <AnimatedCharacter key={idx} id={charId} className="h-48 object-contain" />
-          ))}
-        </div>
-      )}
+      {/* OLD CHARS MOVED */}
     </div>
   );
 }
@@ -446,6 +459,16 @@ export default function RankedMode({ onBack }: Props) {
   const [currentRound, setCurrentRound] = useState(0);
   const [myProgress, setMyProgress] = useState(0);
   const [myCharge, setMyCharge] = useState(0);
+  const [myCoins, setMyCoins] = useState(0);
+  const [myHearts, setMyHearts] = useState(0);
+  const myCoinsRef = useRef(0);
+  const myHeartsRef = useRef(0);
+  const goldenLettersRef = useRef<Set<number>>(new Set());
+  const claimedGoldenRef = useRef<Set<number>>(new Set());
+  const [myBuffedAbilities, setMyBuffedAbilities] = useState<string[]>([]);
+  const prevValLengthRef = useRef(0);
+  const [showAbilitySelect, setShowAbilitySelect] = useState<'moneyguy1' | 'moneyguy2' | null>(null);
+  const [showBuffSelect, setShowBuffSelect] = useState(false);
   const [myBestLetter, setMyBestLetter] = useState<string | null>(null);
   const [myWorstLetter, setMyWorstLetter] = useState<string | null>(null);
   const [oppBestLetter, setOppBestLetter] = useState<string | null>(null);
@@ -570,12 +593,8 @@ export default function RankedMode({ onBack }: Props) {
       setOppWpm(0);
       
       let newTargetText = sentencesRef.current[data.round] || sentencesRef.current[0] || "Hello world.";
-      if (matchDataRef.current?.opponent.characters?.includes("screwed") && oppUpgradesRef.current >= 1) {
-        newTargetText = applyScrewedEffects(newTargetText, {
-          scramble: oppUpgradesRef.current >= 1,
-          sabotage: oppUpgradesRef.current >= 2,
-          spam: oppUpgradesRef.current >= 3
-        }, myWorstLetterRef.current);
+      if (matchDataRef.current?.opponent.characters?.includes("screwed")) {
+        newTargetText = applyScrewedEffects(newTargetText, oppAbilitiesRef.current, myWorstLetterRef.current);
       }
 
       setMyTargetText(newTargetText);
@@ -730,9 +749,20 @@ export default function RankedMode({ onBack }: Props) {
       const isMatch = val[i] === target[i];
       const currState = myLetterStatesRef.current[i] || 0;
       if (isMatch) {
-        if (currState === 0) myLetterStatesRef.current[i] = 1;
+        if (currState === 0) {
+          myLetterStatesRef.current[i] = 1;
+          if (goldenLettersRef.current.has(i) && !claimedGoldenRef.current.has(i)) {
+            claimedGoldenRef.current.add(i);
+            setMyCoins(c => c + 5);
+            myCoinsRef.current += 5;
+          }
+        }
         else if (currState === 2) myLetterStatesRef.current[i] = 3;
       } else {
+        if (currState === 0 || currState === 1) {
+          setMyHearts(h => h + 3);
+          myHeartsRef.current += 3;
+        }
         myLetterStatesRef.current[i] = 2;
       }
     }
@@ -747,7 +777,7 @@ export default function RankedMode({ onBack }: Props) {
     const newCia = { c: tempC, i: tempI, a: tempA };
     setMyCia(newCia);
     
-    if (tempC > prevC) {
+    if (tempC > prevC && !selectedCharacters.includes('moneyguy')) {
       const newCharge = Math.min(100, myChargeRef.current + (tempC - prevC));
       setMyCharge(newCharge);
       myChargeRef.current = newCharge;
@@ -867,7 +897,7 @@ export default function RankedMode({ onBack }: Props) {
             Select Characters (Max 3)
           </label>
           <div className="flex flex-wrap gap-6 items-center justify-start">
-            {['mushgirl', 'screwed', 'joker', 'gravity'].map(charId => {
+            {['mushgirl', 'screwed', 'joker', 'gravity', 'moneyguy'].map(charId => {
               const isSelected = selectedCharacters.includes(charId);
               return (
                 <div 
@@ -945,7 +975,7 @@ export default function RankedMode({ onBack }: Props) {
       </div>
 
       {/* Split Screen Area */}
-      <div className="flex-1 flex flex-col md:flex-row relative">
+      <div className="flex-1 flex flex-col relative w-full max-w-5xl mx-auto px-4 md:px-8">
         {/* My Side (Left) */}
         <RankedPlayerArea
           label="Your Area"
@@ -957,13 +987,15 @@ export default function RankedMode({ onBack }: Props) {
           gameState={gameState}
           cia={myCia}
           charge={myCharge}
-          dyslexiaActive={oppAbilities.includes('dyslexia')}
-          tripActive={oppAbilities.includes('shrooms')}
-          blinkActive={oppAbilities.includes('blinking')}
-          joker1Active={oppAbilities.includes('joker1')}
-          joker2Active={oppAbilities.includes('joker2')}
-          joker3Active={oppAbilities.includes('joker3')}
+          dyslexiaActive={oppAbilities.includes('dyslexia') || oppAbilities.includes('dyslexia_buffed')}
+          tripActive={oppAbilities.includes('shrooms') || oppAbilities.includes('shrooms_buffed')}
+          blinkActive={oppAbilities.includes('blinking') || oppAbilities.includes('blinking_buffed')}
+          joker1Active={oppAbilities.includes('joker1') || oppAbilities.includes('joker1_buffed')}
+          joker2Active={oppAbilities.includes('joker2') || oppAbilities.includes('joker2_buffed')}
+          joker3Active={oppAbilities.includes('joker3') || oppAbilities.includes('joker3_buffed')}
+          buffedAbilities={oppAbilities.filter(a => a.endsWith('_buffed')).map(a => a.replace('_buffed', ''))}
           characters={selectedCharacters}
+          goldenLetters={goldenLettersRef.current}
         />
         
         {/* Hidden Input for me */}
@@ -979,32 +1011,11 @@ export default function RankedMode({ onBack }: Props) {
           autoFocus
         />
 
-        {/* Opponent Side (Right) */}
-        <RankedPlayerArea
-          label="Opponent Area"
-          wpm={oppWpm}
-          progress={oppProgress}
-          targetText={oppTargetText || myTargetText}
-          typedText={oppTypedText}
-          activeKeys={oppActiveKeys}
-          gameState={gameState}
-          isOpponent
-          colorTheme={matchData.opponent.colorTheme}
-          fontFamily={matchData.opponent.fontFamily}
-          bgTheme={matchData.opponent.bgTheme}
-          cia={oppCia}
-          charge={oppCharge}
-          dyslexiaActive={myUpgrades >= 2}
-          tripActive={myUpgrades >= 1}
-          blinkActive={myUpgrades >= 3}
-          characters={matchData.opponent.characters}
-          fullTheme={matchData.opponent.fullTheme}
-        />
-
-        {/* Center Divider - with timer shifted down */}
-        <div className="hidden md:block absolute left-1/2 top-0 bottom-0 -translate-x-1/2 z-30 pointer-events-none flex flex-col justify-end pb-32">
+        {/* OPPONENT AREA HIDDEN */}
+{/* Center Divider - with timer shifted down */}
+        <div className="absolute left-1/2 top-4 -translate-x-1/2 z-30 pointer-events-none flex flex-col justify-start">
           {/* Explicit white separator line */}
-          <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/50 -translate-x-1/2 z-20 pointer-events-none" />
+          {/* HIDDEN DIVIDER */}
           
           {gameState === 'playing' && (
             <div className="bg-background border-2 border-white rounded-full w-24 h-24 flex flex-col items-center justify-center font-display text-3xl text-slate-100 shadow-[0_0_20px_rgba(255,255,255,0.1)] z-30 pointer-events-auto relative">
@@ -1021,6 +1032,115 @@ export default function RankedMode({ onBack }: Props) {
         </div>
       </div>
 
+
+      {/* Modals for Money Guy */}
+      {showAbilitySelect && (
+        <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-[var(--hot)] p-8 rounded max-w-2xl w-full">
+            <h3 className="font-display text-2xl text-[var(--hot)] uppercase tracking-widest mb-2">Bribe: Select Ability</h3>
+            <p className="text-slate-400 font-mono text-xs mb-6">Choose an ability from a character not currently in the game.</p>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { id: 'shrooms', name: 'Shrooms', cost: 30, char: 'mushgirl' },
+                { id: 'dyslexia', name: 'Dyslexia', cost: 60, char: 'mushgirl' },
+                { id: 'blinking', name: 'Blinking', cost: 100, char: 'mushgirl' },
+                { id: 'scramble', name: 'Scramble', cost: 30, char: 'screwed' },
+                { id: 'sabotage', name: 'Sabotage', cost: 60, char: 'screwed' },
+                { id: 'spam', name: 'Spam', cost: 100, char: 'screwed' },
+                { id: 'joker1', name: 'Delusion', cost: 30, char: 'joker' },
+                { id: 'joker2', name: 'Blindness', cost: 60, char: 'joker' },
+                { id: 'joker3', name: 'Amnesia', cost: 100, char: 'joker' },
+                { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity' },
+                { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity' },
+                { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity' }
+              ].filter(a => !selectedCharacters.includes(a.char)).map(ability => (
+                <button
+                  key={ability.id}
+                  onClick={() => {
+                    const getMG = (c) => c <= 40 ? {c:100,h:20} : c <= 70 ? {c:150,h:10} : {c:300,h:30};
+                    const baseCost = showAbilitySelect === 'moneyguy1' ? 30 : 60;
+                    const mgCost = getMG(baseCost);
+                    
+                    setMyCoins(c => c - mgCost.c);
+                    setMyHearts(h => h - mgCost.h);
+                    myCoinsRef.current -= mgCost.c;
+                    myHeartsRef.current -= mgCost.h;
+                    
+                    const newAbilities = [...myAbilities, showAbilitySelect, ability.id];
+                    setMyAbilities(newAbilities);
+                    if (typeof socket !== 'undefined' && socket) {
+                       socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newSocketAbilities });
+                    }
+                    setShowAbilitySelect(null);
+                  }}
+                  className="py-3 px-2 border border-slate-700 bg-slate-800 font-mono text-xs uppercase tracking-widest hover:bg-slate-700 transition-colors text-white"
+                >
+                  {ability.name}
+                  <div className="text-[9px] text-slate-500 mt-1 capitalize">{ability.char}</div>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowAbilitySelect(null)} className="mt-6 text-xs font-mono text-slate-500 hover:text-white uppercase tracking-widest">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {showBuffSelect && (
+        <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-yellow-500 p-8 rounded max-w-md w-full">
+            <h3 className="font-display text-2xl text-yellow-500 uppercase tracking-widest mb-2">Invest: Double Effect</h3>
+            <p className="text-slate-400 font-mono text-xs mb-6">Select an active ability to double its effect permanently!</p>
+            <div className="flex flex-col gap-4">
+              {myAbilities.filter(a => !a.startsWith('moneyguy')).length === 0 ? (
+                <div className="text-red-400 text-xs font-mono">You have no active abilities to buff!</div>
+              ) : myAbilities.filter(a => !a.startsWith('moneyguy')).map(abilityId => {
+                 const name = [
+                    { id: 'shrooms', name: 'Shrooms' }, { id: 'dyslexia', name: 'Dyslexia' }, { id: 'blinking', name: 'Blinking' },
+                    { id: 'scramble', name: 'Scramble' }, { id: 'sabotage', name: 'Sabotage' }, { id: 'spam', name: 'Spam' },
+                    { id: 'joker1', name: 'Delusion' }, { id: 'joker2', name: 'Blindness' }, { id: 'joker3', name: 'Amnesia' },
+                    { id: 'gravity1', name: 'Time Warp' }, { id: 'gravity2', name: 'Black Hole' }, { id: 'gravity3', name: 'Event Horizon' }
+                 ].find(x => x.id === abilityId)?.name || abilityId;
+                 
+                 const isBuffed = myBuffedAbilities.includes(abilityId);
+
+                 return (
+                  <button
+                    key={abilityId}
+                    disabled={isBuffed}
+                    onClick={() => {
+                      const getMG = (c) => c <= 40 ? {c:100,h:20} : c <= 70 ? {c:150,h:10} : {c:300,h:30};
+                      const mgCost = getMG(100); // Invest cost
+                      
+                      setMyCoins(c => c - mgCost.c);
+                      setMyHearts(h => h - mgCost.h);
+                      myCoinsRef.current -= mgCost.c;
+                      myHeartsRef.current -= mgCost.h;
+                      
+                      const newAbilities = [...myAbilities, 'moneyguy3'];
+                      setMyAbilities(newAbilities);
+                      
+                      const newBuffs = [...myBuffedAbilities, abilityId];
+                      setMyBuffedAbilities(newBuffs);
+                      const newSocketAbilities = [...newAbilities, abilityId + '_buffed'];
+
+                      
+                      if (typeof socket !== 'undefined' && socket) {
+                         socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newSocketAbilities });
+                      }
+                      setShowBuffSelect(false);
+                    }}
+                    className={`py-3 px-2 border border-slate-700 bg-slate-800 font-mono text-xs uppercase tracking-widest ${isBuffed ? 'opacity-50' : 'hover:bg-yellow-500 hover:text-black cursor-pointer'} transition-colors`}
+                  >
+                    {name} {isBuffed ? '(Already Buffed)' : ''}
+                  </button>
+                 );
+              })}
+            </div>
+            <button onClick={() => setShowBuffSelect(false)} className="mt-6 text-xs font-mono text-slate-500 hover:text-white uppercase tracking-widest">Cancel</button>
+          </div>
+        </div>
+      )}
+  
       {showGravityPopup && gameState === 'playing' && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm pointer-events-auto">
            <div className="bg-red-950 border border-red-500 p-8 rounded-xl shadow-[0_0_50px_rgba(239,68,68,0.5)] text-center animate-bounce">
@@ -1031,6 +1151,64 @@ export default function RankedMode({ onBack }: Props) {
         </div>
       )}
       
+      
+      {/* Bottom Stats & Right Side Characters */}
+      {gameState === 'playing' && (
+        <>
+          {/* Bottom Bar: Stats */}
+          <div className="fixed bottom-0 left-0 w-full px-12 py-6 flex justify-between items-end pointer-events-none z-30 bg-gradient-to-t from-background via-background/80 to-transparent">
+            {/* My Stats */}
+            <div className="flex flex-col gap-2 pointer-events-auto">
+              <h3 className="font-display text-xl text-[var(--hot)] tracking-widest uppercase">You</h3>
+              {(!oppAbilities.includes('joker2') && !oppAbilities.includes('joker2_buffed')) && (
+                <div className="font-mono text-3xl text-white tracking-widest">{myWpm} <span className="text-sm text-slate-500">WPM</span></div>
+              )}
+              {myCia && (
+                <div className="font-mono text-sm text-slate-400 tracking-widest">
+                  <span className="text-emerald-400">{myCia.c}</span>/
+                  <span className="text-red-500">{myCia.i}</span>/
+                  <span className="text-amber-400">{myCia.a}</span>
+                </div>
+              )}
+              <div className="font-mono text-xs text-slate-500">{myCharge}% Charge</div>
+            </div>
+
+            {/* Opponent Stats */}
+            <div className="flex flex-col gap-2 text-right pointer-events-auto">
+              <h3 className="font-display text-xl text-red-500 tracking-widest uppercase">Opponent</h3>
+              {(!myAbilities.includes('joker2') && !myBuffedAbilities.includes('joker2')) && (
+                <div className="font-mono text-3xl text-white tracking-widest">{oppWpm} <span className="text-sm text-slate-500">WPM</span></div>
+              )}
+              {oppCia && (
+                <div className="font-mono text-sm text-slate-400 tracking-widest">
+                  <span className="text-emerald-400">{oppCia.c}</span>/
+                  <span className="text-red-500">{oppCia.i}</span>/
+                  <span className="text-amber-400">{oppCia.a}</span>
+                </div>
+              )}
+              <div className="font-mono text-xs text-slate-500">{oppCharge}% Charge</div>
+            </div>
+          </div>
+
+          {/* Right Side Characters */}
+          <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 pointer-events-none z-40 max-h-screen overflow-hidden justify-center">
+            {/* Opponent Character(s) */}
+            {matchData?.opponent.characters?.map((charId, idx) => (
+              <div key={'opp-'+idx} className="w-24 h-24 rounded-full border-4 border-red-500/50 bg-red-900/20 overflow-hidden flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                <AnimatedCharacter id={charId} className="h-32 object-cover mt-4" />
+              </div>
+            ))}
+            
+            {/* My Character(s) */}
+            {selectedCharacters.map((charId, idx) => (
+              <div key={'my-'+idx} className="w-24 h-24 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_20px_var(--color-hot-soft)]">
+                <AnimatedCharacter id={charId} className="h-32 object-cover mt-4" />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       {/* Overlays */}
       {gameState === 'waiting_ready' && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-20">
@@ -1056,7 +1234,14 @@ export default function RankedMode({ onBack }: Props) {
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-20">
           <div className="bg-slate-900 border border-slate-700 p-8 rounded flex flex-col items-center gap-6 max-w-md w-full">
             <h3 className="font-display text-3xl text-[var(--hot)] uppercase tracking-widest">Upgrade Shop</h3>
-            <div className="font-mono text-sm text-slate-300">Available Charge: <span className="text-[var(--hot)]">{myCharge}</span></div>
+            {selectedCharacters.includes('moneyguy') ? (
+      <div className="font-mono text-sm text-slate-300 flex gap-4">
+        <span>Coins: <span className="text-yellow-400">{myCoins}</span></span>
+        <span>Hearts: <span className="text-red-400">{myHearts}</span></span>
+      </div>
+    ) : (
+      <div className="font-mono text-sm text-slate-300">Available Charge: <span className="text-[var(--hot)]">{myCharge}</span></div>
+    )}
             <div className="flex w-full justify-between gap-8 mb-4">
               <div className="flex-1 border border-slate-700 p-4 rounded bg-slate-800/50">
                 <div className="text-[var(--hot)] text-xs font-mono uppercase mb-2">You</div>
@@ -1077,43 +1262,95 @@ export default function RankedMode({ onBack }: Props) {
             
             <div className="w-full space-y-4">
               
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { id: 'shrooms', name: 'Shrooms', cost: 30 },
-                  { id: 'scramble', name: 'Scramble', cost: 30 },
-                  { id: 'dyslexia', name: 'Dyslexia', cost: 60 },
-                  { id: 'sabotage', name: 'Sabotage', cost: 60 },
-                  { id: 'blinking', name: 'Blinking', cost: 100 },
-                  { id: 'spam', name: 'Spam', cost: 100 },
-                  { id: 'joker1', name: 'Delusion', cost: 30 },
-                  { id: 'joker2', name: 'Blindness', cost: 60 },
-                  { id: 'joker3', name: 'Amnesia', cost: 100 },
-                  { id: 'gravity1', name: 'Time Warp', cost: 40 },
-                  { id: 'gravity2', name: 'Black Hole', cost: 70 },
-                  { id: 'gravity3', name: 'Event Horizon', cost: 110 },
-                ].map(ability => (
-                  <button
-                    key={ability.id}
-                    onClick={() => {
-                      if (myCharge >= ability.cost && !myAbilities.includes(ability.id)) {
-                        setMyCharge(c => c - ability.cost);
-                        myChargeRef.current -= ability.cost;
-                        const newAbilities = [...myAbilities, ability.id];
-                        setMyAbilities(newAbilities);
-                        socket?.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newAbilities });
-                      }
-                    }}
-                    disabled={myCharge < ability.cost || myAbilities.includes(ability.id)}
-                    className="w-full py-3 px-2 border border-slate-700 bg-slate-800 font-mono text-xs uppercase tracking-widest disabled:opacity-50 hover:bg-slate-700 transition-colors flex flex-col items-center justify-center gap-1"
-                  >
-                    <span className={myAbilities.includes(ability.id) ? "text-emerald-400" : ""}>
-                      {ability.name}
-                    </span>
-                    <span className="text-[10px] text-[var(--hot)]">{ability.cost} Charge</span>
-                  </button>
-                ))}
-              </div>
+              
+{(() => {
+  const ALL_ABILITIES = [
+    { id: 'shrooms', name: 'Shrooms', cost: 30, char: 'mushgirl' },
+    { id: 'dyslexia', name: 'Dyslexia', cost: 60, char: 'mushgirl' },
+    { id: 'blinking', name: 'Blinking', cost: 100, char: 'mushgirl' },
+    { id: 'scramble', name: 'Scramble', cost: 30, char: 'screwed' },
+    { id: 'sabotage', name: 'Sabotage', cost: 60, char: 'screwed' },
+    { id: 'spam', name: 'Spam', cost: 100, char: 'screwed' },
+    { id: 'joker1', name: 'Delusion', cost: 30, char: 'joker' },
+    { id: 'joker2', name: 'Blindness', cost: 60, char: 'joker' },
+    { id: 'joker3', name: 'Amnesia', cost: 100, char: 'joker' },
+    { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity' },
+    { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity' },
+    { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity' },
+    { id: 'moneyguy1', name: 'Bribe I', cost: 30, char: 'moneyguy' },
+    { id: 'moneyguy2', name: 'Bribe II', cost: 60, char: 'moneyguy' },
+    { id: 'moneyguy3', name: 'Invest', cost: 100, char: 'moneyguy' }
+  ];
 
+  const getMG = (cost) => {
+    if (cost <= 40) return { c: 100, h: 20 };
+    if (cost <= 70) return { c: 150, h: 10 };
+    return { c: 300, h: 30 };
+  };
+
+  const isMG = selectedCharacters.includes('moneyguy');
+  const shopAbilities = ALL_ABILITIES.filter(a => selectedCharacters.includes(a.char));
+
+  return (
+    <div className="grid grid-cols-3 gap-3 mb-6">
+      {shopAbilities.map(ability => {
+        const hasIt = myAbilities.includes(ability.id) || myBuffedAbilities.includes(ability.id);
+        const mgCost = getMG(ability.cost);
+        const canAfford = isMG ? (myCoins >= mgCost.c && myHearts >= mgCost.h) : (myCharge >= ability.cost);
+        
+        return (
+          <button
+            key={ability.id}
+            onClick={() => {
+              if (canAfford && !hasIt) {
+                if (ability.char === 'moneyguy') {
+                  if (ability.id === 'moneyguy3') {
+                    setShowBuffSelect(true);
+                  } else {
+                    setShowAbilitySelect(ability.id);
+                  }
+                  return; 
+                }
+                
+                if (isMG) {
+                  setMyCoins(c => c - mgCost.c);
+                  setMyHearts(h => h - mgCost.h);
+                  myCoinsRef.current -= mgCost.c;
+                  myHeartsRef.current -= mgCost.h;
+                } else {
+                  setMyCharge(c => c - ability.cost);
+                  myChargeRef.current -= ability.cost;
+                }
+                const newAbilities = [...myAbilities, ability.id];
+                setMyAbilities(newAbilities);
+                if (typeof socket !== 'undefined' && socket) {
+                   socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newSocketAbilities });
+                }
+              }
+            }}
+            disabled={!canAfford || hasIt}
+            className={`w-full py-3 px-2 border border-slate-700 bg-slate-800 font-mono text-xs uppercase tracking-widest ${(!canAfford || hasIt) ? 'opacity-50' : 'hover:bg-slate-700 cursor-pointer'} transition-colors flex flex-col items-center justify-center gap-1 relative`}
+          >
+            {myBuffedAbilities.includes(ability.id) && (
+               <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-[9px] px-1 rounded font-bold">BUFFED</span>
+            )}
+            <span className={hasIt ? "text-emerald-400" : ""}>
+              {ability.name}
+            </span>
+            {isMG ? (
+              <div className="flex gap-2 text-[9px]">
+                <span className="text-yellow-400">{mgCost.c}c</span>
+                <span className="text-red-400">{mgCost.h}h</span>
+              </div>
+            ) : (
+              <span className="text-[10px] text-[var(--hot)]">{ability.cost} Charge</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+})()}
               {myUpgrades === 3 && (
                 <div className="text-center font-mono text-sm text-emerald-400 uppercase tracking-widest">
                   Max Upgrades Reached!

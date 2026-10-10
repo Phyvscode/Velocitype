@@ -9,8 +9,8 @@ interface AnimatedCharacterProps {
 export function AnimatedCharacter({ id, className = "h-48 object-contain", staticMode = false }: AnimatedCharacterProps) {
   const [frame, setFrame] = useState(1);
 
-  const frameCount = id === 'screwed' ? 42 : id === 'joker' ? 6 : id === 'gravity' ? 4 : 8;
-  const fps = id === 'screwed' ? 10 : id === 'gravity' ? 6 : 7.8;
+  const frameCount = id === 'screwed' ? 42 : id === 'joker' ? 6 : id === 'gravity' ? 4 : id === 'moneyguy' ? 2 : 8;
+  const fps = id === 'screwed' ? 10 : id === 'gravity' ? 6 : id === 'moneyguy' ? 2 : 7.8;
 
   useEffect(() => {
     if (staticMode) return;
@@ -34,6 +34,9 @@ export function AnimatedCharacter({ id, className = "h-48 object-contain", stati
   } else if (id === 'gravity') {
     const frameStr = String(frame).padStart(4, '0');
     src = `/characters/Gravity/gravity-drop-idle_${frameStr}.png`;
+  } else if (id === 'moneyguy') {
+    const frameStr = String(frame).padStart(4, '0');
+    src = `/characters/moneyguy/moneyguy_${frameStr}.png`;
   }
 
   if (!src) return null;

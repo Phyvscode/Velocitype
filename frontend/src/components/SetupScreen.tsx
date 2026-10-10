@@ -560,6 +560,11 @@ export default function SetupScreen({
   };
 
   const handleStartFile = () => {
+
+    savePrefs({
+      rows, customLetters, extraInitial, extraMiddle, extraFinal, enableCustom, enableExtra, durWords, durFile, durSentences, minLen, maxLen, limitModeWords, wordLimitWords, limitModeSentences, wordLimitSentences
+    });
+
     if (!parsedDoc) {
       setFileError('Please upload a file first.');
       return;
@@ -602,6 +607,11 @@ export default function SetupScreen({
   };
 
   const handleStartRandomSentences = async () => {
+
+    savePrefs({
+      rows, customLetters, extraInitial, extraMiddle, extraFinal, enableCustom, enableExtra, durWords, durFile, durSentences, minLen, maxLen, limitModeWords, wordLimitWords, limitModeSentences, wordLimitSentences
+    });
+
     // Ensure the selected language dictionary is fully loaded before filtering
     await loadDictionary();
 
@@ -687,6 +697,11 @@ export default function SetupScreen({
   };
 
   const handleStart = async () => {
+
+    savePrefs({
+      rows, customLetters, extraInitial, extraMiddle, extraFinal, enableCustom, enableExtra, durWords, durFile, durSentences, minLen, maxLen, limitModeWords, wordLimitWords, limitModeSentences, wordLimitSentences
+    });
+
     if (rows.length === 0 && !enableCustom) {
       setError('Select at least one key row.');
       setTimeout(() => setError(''), 3000);
