@@ -103,17 +103,17 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
   
 
   useEffect(() => {
-    if (selectedCharacters.includes('moneyguy')) {
+    if (characters.includes('moneyguy')) {
       const newGolden = new Set<number>();
-      for (let i = 0; i < myTargetText.length; i++) {
-        if (myTargetText[i] !== ' ' && Math.random() < 0.3) {
+      for (let i = 0; i < targetText.length; i++) {
+        if (targetText[i] !== ' ' && Math.random() < 0.3) {
           newGolden.add(i);
         }
       }
       goldenLettersRef.current = newGolden;
       claimedGoldenRef.current = new Set();
     }
-  }, [myTargetText, selectedCharacters]);
+  }, [targetText, characters]);
   
   useEffect(() => {
     if (!tripActive) {
@@ -1070,7 +1070,7 @@ export default function RankedMode({ onBack }: Props) {
                     const newAbilities = [...myAbilities, showAbilitySelect, ability.id];
                     setMyAbilities(newAbilities);
                     if (typeof socket !== 'undefined' && socket) {
-                       socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newSocketAbilities });
+                       socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newAbilities });
                     }
                     setShowAbilitySelect(null);
                   }}
@@ -1126,7 +1126,7 @@ export default function RankedMode({ onBack }: Props) {
 
                       
                       if (typeof socket !== 'undefined' && socket) {
-                         socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newSocketAbilities });
+                         socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newAbilities });
                       }
                       setShowBuffSelect(false);
                     }}
@@ -1325,7 +1325,7 @@ export default function RankedMode({ onBack }: Props) {
                 const newAbilities = [...myAbilities, ability.id];
                 setMyAbilities(newAbilities);
                 if (typeof socket !== 'undefined' && socket) {
-                   socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newSocketAbilities });
+                   socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newAbilities });
                 }
               }
             }}
@@ -1352,7 +1352,7 @@ export default function RankedMode({ onBack }: Props) {
     </div>
   );
 })()}
-              {myUpgrades === 3 && (
+              {myAbilities.length >= 3 && (
                 <div className="text-center font-mono text-sm text-emerald-400 uppercase tracking-widest">
                   Max Upgrades Reached!
                 </div>
