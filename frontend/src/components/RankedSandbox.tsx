@@ -12,6 +12,7 @@ interface RankedSandboxProps {
 
 export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const { user } = useAuth();
+  const gameState = 'playing';
   
   // My states
   const selectedCharacters = ['mushgirl', 'screwed', 'joker', 'gravity', 'moneyguy'];
