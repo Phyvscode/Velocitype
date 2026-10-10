@@ -101,19 +101,6 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
 
   
   
-
-  useEffect(() => {
-    if (characters.includes('moneyguy')) {
-      const newGolden = new Set<number>();
-      for (let i = 0; i < targetText.length; i++) {
-        if (targetText[i] !== ' ' && Math.random() < 0.3) {
-          newGolden.add(i);
-        }
-      }
-      goldenLettersRef.current = newGolden;
-      claimedGoldenRef.current = new Set();
-    }
-  }, [targetText, characters]);
   
   useEffect(() => {
     if (!tripActive) {
@@ -468,6 +455,19 @@ export default function RankedMode({ onBack }: Props) {
   const [myBuffedAbilities, setMyBuffedAbilities] = useState<string[]>([]);
   const prevValLengthRef = useRef(0);
   const [showAbilitySelect, setShowAbilitySelect] = useState<'moneyguy1' | 'moneyguy2' | null>(null);
+
+  useEffect(() => {
+    if (selectedCharacters.includes('moneyguy')) {
+      const newGolden = new Set<number>();
+      for (let i = 0; i < myTargetText.length; i++) {
+        if (myTargetText[i] !== ' ' && Math.random() < 0.3) {
+          newGolden.add(i);
+        }
+      }
+      goldenLettersRef.current = newGolden;
+      claimedGoldenRef.current = new Set();
+    }
+  }, [myTargetText, selectedCharacters]);
   const [showBuffSelect, setShowBuffSelect] = useState(false);
   const [myBestLetter, setMyBestLetter] = useState<string | null>(null);
   const [myWorstLetter, setMyWorstLetter] = useState<string | null>(null);
