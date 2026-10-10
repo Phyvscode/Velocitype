@@ -911,11 +911,11 @@ export default function RankedMode({ onBack }: Props) {
                       setSelectedCharacters(prev => [...prev, charId]);
                     }
                   }}
-                  className={`cursor-pointer w-28 h-28 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${
+                  className={`cursor-pointer w-40 h-40 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all ${
                     isSelected ? 'border-cyan-400 bg-cyan-950/40' : 'border-slate-800 hover:border-slate-600 bg-slate-900/50'
                   }`}
                 >
-                  <AnimatedCharacter id={charId} className="h-40 object-contain scale-[1.3] transform-gpu" staticMode />
+                  <AnimatedCharacter id={charId} className="h-56 object-contain scale-[1.3] transform-gpu" staticMode />
                 </div>
               );
             })}
@@ -1192,18 +1192,11 @@ export default function RankedMode({ onBack }: Props) {
           </div>
 
           {/* Right Side Characters */}
-          <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 pointer-events-none z-40 max-h-screen overflow-hidden justify-center">
-            {/* Opponent Character(s) */}
-            {matchData?.opponent.characters?.map((charId, idx) => (
-              <div key={'opp-'+idx} className="w-24 h-24 rounded-full border-4 border-red-500/50 bg-red-900/20 overflow-hidden flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.3)]">
-                <AnimatedCharacter id={charId} className="h-32 object-cover mt-4" />
-              </div>
-            ))}
-            
+          <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 pointer-events-none z-40 max-h-screen overflow-hidden justify-center scale-90 sm:scale-100 origin-right">
             {/* My Character(s) */}
             {selectedCharacters.map((charId, idx) => (
-              <div key={'my-'+idx} className="w-24 h-24 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_20px_var(--color-hot-soft)]">
-                <AnimatedCharacter id={charId} className="h-32 object-cover mt-4" />
+              <div key={'my-'+idx} className="w-40 h-40 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_20px_var(--color-hot-soft)]">
+                <AnimatedCharacter id={charId} className="h-48 object-cover mt-4" />
               </div>
             ))}
           </div>
