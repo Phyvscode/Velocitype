@@ -8,7 +8,7 @@ interface AnimatedCharacterProps {
 }
 
 export function AnimatedCharacter({ id, className = "h-48 object-contain", staticMode = false, style }: AnimatedCharacterProps) {
-  const [frame, setFrame] = useState(1);
+  const [frame, setFrame] = useState(staticMode && id === 'moneyguy' ? 4 : 1);
 
   const frameCount = id === 'screwed' ? 42 : id === 'joker' ? 6 : id === 'gravity' ? 4 : id === 'moneyguy' ? 15 : 8;
   const fps = id === 'screwed' ? 10 : id === 'gravity' ? 6 : id === 'moneyguy' ? 10 : 7.8;
@@ -17,10 +17,15 @@ export function AnimatedCharacter({ id, className = "h-48 object-contain", stati
     if (staticMode) return;
     
     const int = setInterval(() => {
-      setFrame(f => (f >= frameCount ? 1 : f + 1));
+      setFrame(f => {
+        if (id === 'moneyguy') {
+          return f >= 15 ? 4 : f + 1;
+        }
+        return f >= frameCount ? 1 : f + 1;
+      });
     }, 1000 / fps);
     return () => clearInterval(int);
-  }, [staticMode, frameCount, fps]);
+  }, [staticMode, frameCount, fps, id]);
 
   // Map IDs to their paths
   let src = "";

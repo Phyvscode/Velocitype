@@ -1259,7 +1259,9 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                     ? { transform: 'scale(2)' }
                     : charId === 'joker'
                       ? { transform: 'scale(1.65)' }
-                      : undefined;
+                      : charId === 'moneyguy'
+                        ? { transform: 'scale(1.3)' }
+                        : undefined;
 
               return (
                 <div 
