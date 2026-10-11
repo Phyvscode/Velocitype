@@ -4,9 +4,10 @@ interface AnimatedCharacterProps {
   id: string;
   className?: string;
   staticMode?: boolean;
+  style?: React.CSSProperties;
 }
 
-export function AnimatedCharacter({ id, className = "h-48 object-contain", staticMode = false }: AnimatedCharacterProps) {
+export function AnimatedCharacter({ id, className = "h-48 object-contain", staticMode = false, style }: AnimatedCharacterProps) {
   const [frame, setFrame] = useState(1);
 
   const frameCount = id === 'screwed' ? 42 : id === 'joker' ? 6 : id === 'gravity' ? 4 : id === 'moneyguy' ? 15 : 8;
@@ -42,6 +43,6 @@ export function AnimatedCharacter({ id, className = "h-48 object-contain", stati
   if (!src) return null;
 
   return (
-    <img src={src} className={className} alt={id} />
+    <img src={src} className={className} style={style} alt={id} />
   );
 }

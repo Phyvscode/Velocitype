@@ -1199,11 +1199,15 @@ export default function RankedMode({ onBack }: Props) {
           >
             {/* My Character(s) */}
             {selectedCharacters.map((charId, idx) => {
-              const scaleClass = charId === 'joker'
-                ? 'scale-[1.65] transform-gpu'
-                : ['mushgirl', 'screwed'].includes(charId)
-                  ? 'scale-[2] transform-gpu'
-                  : '';
+              const charStyle: React.CSSProperties | undefined = 
+                charId === 'screwed'
+                  ? { transform: 'scale(-2, 2)' }
+                  : charId === 'mushgirl'
+                    ? { transform: 'scale(2)' }
+                    : charId === 'joker'
+                      ? { transform: 'scale(1.65)' }
+                      : undefined;
+
               return (
                 <div 
                   key={'my-'+idx} 
@@ -1211,7 +1215,8 @@ export default function RankedMode({ onBack }: Props) {
                 >
                   <AnimatedCharacter 
                     id={charId} 
-                    className={`h-[82%] object-cover mt-2 ${scaleClass}`} 
+                    className="h-[82%] object-cover mt-2 transform-gpu" 
+                    style={charStyle}
                   />
                 </div>
               );
