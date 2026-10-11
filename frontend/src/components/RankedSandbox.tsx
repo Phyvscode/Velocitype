@@ -253,7 +253,12 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                         {selectionIndex + 1}
                       </span>
                     )}
-                    <AnimatedCharacter id={char.id} className="h-44 object-contain scale-[1.2] transform-gpu" staticMode />
+                    <AnimatedCharacter 
+                      id={char.id} 
+                      className="h-44 object-contain scale-[1.2] transform-gpu" 
+                      style={char.id === 'screwed' ? { transform: 'scale(-1.2, 1.2)' } : undefined}
+                      staticMode 
+                    />
                   </div>
                   <div className="text-center">
                     <span className={`font-display text-sm tracking-widest uppercase block ${isSelected ? 'text-[var(--hot)]' : 'text-slate-300'}`}>

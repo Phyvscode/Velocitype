@@ -968,7 +968,12 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                     isSelected ? 'border-cyan-400 bg-cyan-950/40' : 'border-slate-800 hover:border-slate-600 bg-slate-900/50'
                   }`}
                 >
-                  <AnimatedCharacter id={charId} className="h-56 object-contain scale-[1.3] transform-gpu" staticMode />
+                  <AnimatedCharacter 
+                    id={charId} 
+                    className="h-56 object-contain scale-[1.3] transform-gpu" 
+                    style={charId === 'screwed' ? { transform: 'scale(-1.3, 1.3)' } : undefined}
+                    staticMode 
+                  />
                 </div>
               );
             })}
