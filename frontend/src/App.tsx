@@ -249,7 +249,7 @@ function App() {
       )}
 
       {screen === 'ranked' && (
-        <RankedMode onBack={() => navigate('setup')} />
+        <RankedMode onBack={() => navigate('setup')} onOpenAuth={() => openAuth('login')} />
       )}
 
       {screen === 'setup' && (

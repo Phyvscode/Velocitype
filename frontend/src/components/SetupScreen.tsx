@@ -1387,7 +1387,13 @@ export default function SetupScreen({
                   </button>
 
                   <button
-                    onClick={onOpenRanked}
+                    onClick={() => {
+                      if (!user) {
+                        onOpenAuth();
+                      } else {
+                        onOpenRanked();
+                      }
+                    }}
                     className="flex-1 group relative p-8 border border-slate-800 rounded-lg bg-slate-900/30 hover:bg-slate-800/50 hover:border-[var(--hot)] transition-all duration-300 text-left overflow-hidden"
                   >
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 group-hover:scale-110 transition-all duration-500">

@@ -34,6 +34,7 @@ interface RankedMatchState {
 
 interface Props {
   onBack: () => void;
+  onOpenAuth?: () => void;
 }
 
 export interface RankedPlayerAreaProps {
@@ -430,7 +431,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
   );
 }
 
-export default function RankedMode({ onBack }: Props) {
+export default function RankedMode({ onBack, onOpenAuth }: Props) {
   const { user } = useAuth();
   const { socket, isConnected } = useSocket();
   const [language, setLanguage] = useState('english');
@@ -446,6 +447,8 @@ export default function RankedMode({ onBack }: Props) {
   const [currentRound, setCurrentRound] = useState(0);
   const [myProgress, setMyProgress] = useState(0);
   const [myCharge, setMyCharge] = useState(0);
+  const myChargeRef = useRef(0);
+  const [oppCharge, setOppCharge] = useState(0);
   const [myCoins, setMyCoins] = useState(0);
   const [myHearts, setMyHearts] = useState(0);
   const myCoinsRef = useRef(0);
@@ -455,6 +458,65 @@ export default function RankedMode({ onBack }: Props) {
   const [myBuffedAbilities, setMyBuffedAbilities] = useState<string[]>([]);
   const prevValLengthRef = useRef(0);
   const [showAbilitySelect, setShowAbilitySelect] = useState<'moneyguy1' | 'moneyguy2' | null>(null);
+  const [showBuffSelect, setShowBuffSelect] = useState(false);
+
+  const [myBestLetter, setMyBestLetter] = useState<string | null>(null);
+  const [myWorstLetter, setMyWorstLetter] = useState<string | null>(null);
+  const [oppBestLetter, setOppBestLetter] = useState<string | null>(null);
+  const [oppWorstLetter, setOppWorstLetter] = useState<string | null>(null);
+  const myLetterStatsRef = useRef<Record<string, {c: number, i: number}>>({});
+  const myWorstLetterRef = useRef<string | null>(null);
+
+  const [myCia, setMyCia] = useState({c: 0, i: 0, a: 0});
+  const myLetterStatesRef = useRef<number[]>([]);
+  const [oppCia, setOppCia] = useState<{c: number, i: number, a: number} | null>(null);
+  const [gravity1Count, setGravity1Count] = useState(0);
+  const [showGravityPopup, setShowGravityPopup] = useState(false);
+  const [myWpm, setMyWpm] = useState(0);
+  const [startTime, setStartTime] = useState<number | null>(null);
+
+  const [oppProgress, setOppProgress] = useState(0);
+  const [oppWpm, setOppWpm] = useState(0);
+  const [amIReady, setAmIReady] = useState(false);
+  const [scores, setScores] = useState<Record<string, number>>({});
+  const [matchWinner, setMatchWinner] = useState<string | null>(null);
+  const [eloChanges, setEloChanges] = useState<Record<string, number>>({});
+
+  const [myTargetText, setMyTargetText] = useState('');
+  const [oppTargetText, setOppTargetText] = useState('');
+
+  const [typedText, setTypedText] = useState('');
+  const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Opponent typing state
+  const [oppTypedText, setOppTypedText] = useState('');
+  const [oppActiveKeys, setOppActiveKeys] = useState<Set<string>>(new Set());
+
+  const [selectedCharacters, setSelectedCharacters] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('velocitype_ranked_chars') || localStorage.getItem('velocitype_sandbox_characters');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === 3) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+  const [myAbilities, setMyAbilities] = useState<string[]>([]);
+  const [oppAbilities, setOppAbilities] = useState<string[]>([]);
+  const oppAbilitiesRef = useRef<string[]>([]);
+
+  const [frame, setFrame] = useState(1);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('velocitype_ranked_chars', JSON.stringify(selectedCharacters));
+    } catch {}
+  }, [selectedCharacters]);
+
+  useEffect(() => { oppAbilitiesRef.current = oppAbilities; }, [oppAbilities]);
+  useEffect(() => { myWorstLetterRef.current = myWorstLetter; }, [myWorstLetter]);
 
   useEffect(() => {
     if (selectedCharacters.includes('moneyguy')) {
@@ -468,38 +530,6 @@ export default function RankedMode({ onBack }: Props) {
       claimedGoldenRef.current = new Set();
     }
   }, [myTargetText, selectedCharacters]);
-  const [showBuffSelect, setShowBuffSelect] = useState(false);
-  const [myBestLetter, setMyBestLetter] = useState<string | null>(null);
-  const [myWorstLetter, setMyWorstLetter] = useState<string | null>(null);
-  const [oppBestLetter, setOppBestLetter] = useState<string | null>(null);
-  const [oppWorstLetter, setOppWorstLetter] = useState<string | null>(null);
-  const myLetterStatsRef = useRef<Record<string, {c: number, i: number}>>({});
-
-  const myChargeRef = useRef(0);
-  const [oppCharge, setOppCharge] = useState(0);
-  const [myCia, setMyCia] = useState({c: 0, i: 0, a: 0});
-  const myLetterStatesRef = useRef<number[]>([]);
-  const [oppCia, setOppCia] = useState<{c: number, i: number, a: number} | null>(null);
-  const [gravity1Count, setGravity1Count] = useState(0);
-  const [showGravityPopup, setShowGravityPopup] = useState(false);
-  const [myWpm, setMyWpm] = useState(0);
-  const [startTime, setStartTime] = useState<number | null>(null);
-
-
-  const [oppProgress, setOppProgress] = useState(0);
-  const [oppWpm, setOppWpm] = useState(0);
-  const [amIReady, setAmIReady] = useState(false);
-  const [scores, setScores] = useState<Record<string, number>>({});
-  const [matchWinner, setMatchWinner] = useState<string | null>(null);
-  const [eloChanges, setEloChanges] = useState<Record<string, number>>({});
-
-
-  const [myTargetText, setMyTargetText] = useState('');
-  const [oppTargetText, setOppTargetText] = useState('');
-
-  const [typedText, setTypedText] = useState('');
-  const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (gameState !== 'playing' || !startTime) return;
@@ -518,20 +548,6 @@ export default function RankedMode({ onBack }: Props) {
     }, 1000);
     return () => clearInterval(interval);
   }, [gameState, startTime, typedText, myTargetText, oppTargetText]);
-
-  // Opponent typing state
-  const [oppTypedText, setOppTypedText] = useState('');
-  const [oppActiveKeys, setOppActiveKeys] = useState<Set<string>>(new Set());
-
-  const [selectedCharacters, setSelectedCharacters] = useState<string[]>([]);
-  const [myAbilities, setMyAbilities] = useState<string[]>([]);
-  const [oppAbilities, setOppAbilities] = useState<string[]>([]);
-  const oppAbilitiesRef = useRef<string[]>([]);
-  useEffect(() => { oppAbilitiesRef.current = oppAbilities; }, [oppAbilities]);
-  const myWorstLetterRef = useRef<string | null>(null);
-  useEffect(() => { myWorstLetterRef.current = myWorstLetter; }, [myWorstLetter]);
-
-  const [frame, setFrame] = useState(1);
 
   useEffect(() => {
     if (gameState !== 'playing') return;
@@ -843,17 +859,54 @@ export default function RankedMode({ onBack }: Props) {
   };
 
   if (!user) {
-    return <div className="text-center p-12 text-[var(--hot)] font-mono text-sm uppercase tracking-widest">Please log in to play Ranked.</div>;
+    return (
+      <div className="w-full max-w-lg mx-auto p-12 flex flex-col items-center gap-6 text-center">
+        <button 
+          onClick={onBack}
+          className="self-start text-slate-400 hover:text-white uppercase tracking-widest text-sm font-mono transition-colors flex items-center gap-2 cursor-pointer"
+        >
+          <span>&larr;</span> Back
+        </button>
+        <div className="text-[var(--hot)] font-mono text-base uppercase tracking-widest font-bold">Please log in to play Ranked.</div>
+        <p className="font-mono text-xs text-slate-400 uppercase tracking-widest">Ranked matchmaking requires an active account to track your ELO and stats.</p>
+        {onOpenAuth && (
+          <button 
+            onClick={onOpenAuth}
+            className="px-8 py-3 border border-[var(--hot)] text-black bg-[var(--hot)] hover:bg-white font-mono text-xs uppercase tracking-widest font-bold rounded shadow-[0_0_15px_var(--color-hot-soft)] transition-all cursor-pointer"
+          >
+            Log In / Sign Up
+          </button>
+        )}
+      </div>
+    );
   }
 
   if (!isConnected) {
-    return <div className="text-center p-12 text-slate-500 font-mono text-sm uppercase tracking-widest animate-pulse">Connecting to server...</div>;
+    return (
+      <div className="w-full max-w-lg mx-auto p-12 flex flex-col items-center gap-6 text-center">
+        <button 
+          onClick={onBack}
+          className="self-start text-slate-400 hover:text-white uppercase tracking-widest text-sm font-mono transition-colors flex items-center gap-2 cursor-pointer"
+        >
+          <span>&larr;</span> Back
+        </button>
+        <div className="text-slate-500 font-mono text-sm uppercase tracking-widest animate-pulse">Connecting to server...</div>
+      </div>
+    );
   }
 
   // 1. Setup / Queueing Screen
   if (!matchData) {
     return (
-      <div className="w-full max-w-[1400px] mx-auto flex flex-col items-center justify-center gap-12 pt-12 relative">
+      <div className="w-full max-w-[1400px] mx-auto flex flex-col items-center justify-center gap-8 pt-8 relative">
+        <div className="w-full px-8 flex justify-between items-center">
+          <button 
+            onClick={onBack}
+            className="text-slate-400 hover:text-white uppercase tracking-widest text-sm font-mono transition-colors flex items-center gap-2 cursor-pointer"
+          >
+            <span>&larr;</span> Back
+          </button>
+        </div>
         <div className="w-full max-w-lg bg-slate-900/50 border border-slate-800 p-8 rounded flex flex-col items-center gap-8">
         <h2 className="font-display text-3xl tracking-widest text-[var(--hot)] uppercase">Ranked Queue</h2>
         
