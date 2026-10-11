@@ -430,14 +430,20 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             className="fixed right-4 top-[84px] bottom-[168px] flex flex-col justify-between items-end z-40 pointer-events-none"
           >
             {/* My Characters */}
-            {selectedCharacters.map((charId, idx) => (
-              <div 
-                key={'my-'+idx} 
-                className="w-[calc((100dvh-270px)/3)] h-[calc((100dvh-270px)/3)] shrink-0 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_25px_var(--color-hot-soft)]"
-              >
-                <AnimatedCharacter id={charId} className="h-[82%] object-cover mt-2" />
-              </div>
-            ))}
+            {selectedCharacters.map((charId, idx) => {
+              const is2x = ['mushgirl', 'screwed', 'joker'].includes(charId);
+              return (
+                <div 
+                  key={'my-'+idx} 
+                  className="w-[calc((100dvh-270px)/3)] h-[calc((100dvh-270px)/3)] shrink-0 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_25px_var(--color-hot-soft)]"
+                >
+                  <AnimatedCharacter 
+                    id={charId} 
+                    className={`h-[82%] object-cover mt-2 ${is2x ? 'scale-[2] transform-gpu' : ''}`} 
+                  />
+                </div>
+              );
+            })}
           </div>
         </>
       )}
