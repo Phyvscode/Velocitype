@@ -431,7 +431,11 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           >
             {/* My Characters */}
             {selectedCharacters.map((charId, idx) => {
-              const is2x = ['mushgirl', 'screwed', 'joker'].includes(charId);
+              const scaleClass = charId === 'joker'
+                ? 'scale-[1.65] transform-gpu'
+                : ['mushgirl', 'screwed'].includes(charId)
+                  ? 'scale-[2] transform-gpu'
+                  : '';
               return (
                 <div 
                   key={'my-'+idx} 
@@ -439,7 +443,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                 >
                   <AnimatedCharacter 
                     id={charId} 
-                    className={`h-[82%] object-cover mt-2 ${is2x ? 'scale-[2] transform-gpu' : ''}`} 
+                    className={`h-[82%] object-cover mt-2 ${scaleClass}`} 
                   />
                 </div>
               );
