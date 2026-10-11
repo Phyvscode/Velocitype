@@ -12,10 +12,20 @@ interface RankedSandboxProps {
 
 export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const { user } = useAuth();
+  const [selectedCharacters, setSelectedCharacters] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('velocitype_sandbox_characters');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === 3) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+  const [isSandboxReady, setIsSandboxReady] = useState(false);
   const gameState = 'playing';
   
   // My states
-  const selectedCharacters = ['mushgirl', 'screwed', 'joker', 'gravity', 'moneyguy'];
   const [myShrooms, setMyShrooms] = useState(false);
   const [myDyslexia, setMyDyslexia] = useState(false);
   const [myBlink, setMyBlink] = useState(false);
@@ -188,15 +198,116 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     };
   }, [myTargetText]);
 
+  if (!isSandboxReady) {
+    return (
+      <div className="w-screen h-[100dvh] flex flex-col bg-background overflow-hidden relative">
+        <div className="flex justify-between items-center p-6 border-b border-slate-800 bg-slate-950/50 z-50">
+          <button 
+            onClick={onBack}
+            className="text-slate-400 hover:text-white uppercase tracking-widest text-sm font-mono transition-colors flex items-center gap-2 cursor-pointer"
+          >
+            <span>&larr;</span> Back to Menu
+          </button>
+          <div className="font-mono text-xs text-[var(--hot)] uppercase tracking-widest">
+            Sandbox Character Selection
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center p-8 max-w-4xl mx-auto w-full text-center">
+          <h2 className="font-display text-4xl tracking-widest text-white uppercase mb-2">
+            Select 3 Characters
+          </h2>
+          <p className="font-mono text-xs text-slate-400 uppercase tracking-widest mb-10">
+            Choose exactly 3 characters to test with in the Sandbox arena ({selectedCharacters.length}/3 selected)
+          </p>
+
+          <div className="flex flex-wrap gap-8 items-center justify-center mb-12">
+            {[
+              { id: 'mushgirl', name: 'Mushgirl', role: 'Psych / Trippy' },
+              { id: 'screwed', name: 'Screwed', role: 'Text Disruptor' },
+              { id: 'joker', name: 'Joker', role: 'Mental Illusion' },
+              { id: 'gravity', name: 'Gravity', role: 'Physics Well' },
+              { id: 'moneyguy', name: 'Money Guy', role: 'Economy & Buffs' },
+            ].map(char => {
+              const isSelected = selectedCharacters.includes(char.id);
+              const selectionIndex = selectedCharacters.indexOf(char.id);
+              return (
+                <div 
+                  key={char.id}
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedCharacters(prev => prev.filter(c => c !== char.id));
+                    } else if (selectedCharacters.length < 3) {
+                      setSelectedCharacters(prev => [...prev, char.id]);
+                    }
+                  }}
+                  className="flex flex-col items-center gap-3 cursor-pointer group"
+                >
+                  <div className={`relative w-36 h-36 rounded-full border-4 flex items-center justify-center overflow-hidden transition-all duration-300 ${
+                    isSelected 
+                      ? 'border-[var(--hot)] bg-[var(--hot)]/20 shadow-[0_0_25px_var(--color-hot-soft)] scale-105' 
+                      : 'border-slate-800 hover:border-slate-600 bg-slate-900/50 group-hover:scale-102 opacity-70 hover:opacity-100'
+                  }`}>
+                    {isSelected && (
+                      <span className="absolute top-2 right-2 bg-[var(--hot)] text-black font-mono font-bold text-xs w-6 h-6 rounded-full flex items-center justify-center z-20">
+                        {selectionIndex + 1}
+                      </span>
+                    )}
+                    <AnimatedCharacter id={char.id} className="h-44 object-contain scale-[1.2] transform-gpu" staticMode />
+                  </div>
+                  <div className="text-center">
+                    <span className={`font-display text-sm tracking-widest uppercase block ${isSelected ? 'text-[var(--hot)]' : 'text-slate-300'}`}>
+                      {char.name}
+                    </span>
+                    <span className="font-mono text-[10px] text-slate-500 uppercase tracking-widest block">
+                      {char.role}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => {
+              if (selectedCharacters.length === 3) {
+                try {
+                  localStorage.setItem('velocitype_sandbox_characters', JSON.stringify(selectedCharacters));
+                } catch {}
+                setIsSandboxReady(true);
+              }
+            }}
+            disabled={selectedCharacters.length !== 3}
+            className={`py-4 px-12 rounded-lg font-mono text-sm uppercase tracking-widest transition-all ${
+              selectedCharacters.length === 3
+                ? 'border border-[var(--hot)] text-black bg-[var(--hot)] hover:bg-white shadow-[0_0_25px_var(--color-hot-soft)] cursor-pointer scale-100 hover:scale-105 font-bold'
+                : 'border border-slate-800 text-slate-600 bg-slate-900/40 cursor-not-allowed'
+            }`}
+          >
+            {selectedCharacters.length === 3 ? 'Enter Sandbox →' : `Select 3 Characters (${selectedCharacters.length}/3)`}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-screen h-[100dvh] flex flex-col bg-background overflow-hidden relative">
       <div className="flex justify-between items-center p-6 border-b border-slate-800 bg-slate-950/50 z-50">
-        <button 
-          onClick={onBack}
-          className="text-slate-400 hover:text-white uppercase tracking-widest text-sm font-mono transition-colors flex items-center gap-2"
-        >
-          <span>&larr;</span> Exit Sandbox
-        </button>
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={onBack}
+            className="text-slate-400 hover:text-white uppercase tracking-widest text-sm font-mono transition-colors flex items-center gap-2 cursor-pointer"
+          >
+            <span>&larr;</span> Exit Sandbox
+          </button>
+          <button 
+            onClick={() => setIsSandboxReady(false)}
+            className="text-slate-500 hover:text-[var(--hot)] uppercase tracking-widest text-xs font-mono transition-colors border border-slate-800 hover:border-[var(--hot)] px-3 py-1.5 rounded cursor-pointer"
+          >
+            Change Characters ({selectedCharacters.length}/3)
+          </button>
+        </div>
         <div className="font-mono text-xs text-[var(--hot)] uppercase tracking-widest">
           Ranked Test Mode
         </div>
@@ -274,7 +385,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             </label>
           </div>
           
-                <div className="flex-1 pt-12 pb-24 pl-8 pr-[520px] overflow-hidden flex flex-col">
+                <div className="flex-1 pt-12 pb-24 pl-8 pr-[calc(((100dvh-170px)/3)+32px)] overflow-hidden flex flex-col">
 
       {/* Bottom Stats & Right Side Characters */}
       {gameState === 'playing' && (
@@ -316,16 +427,15 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
 
           {/* Right Side Characters */}
           <div 
-            className="fixed right-4 top-4 flex flex-col gap-6 pointer-events-auto z-40 max-h-[calc(100vh-120px)] overflow-y-auto items-end"
-            style={{ scrollbarWidth: 'none' }}
+            className="fixed right-4 top-4 bottom-24 flex flex-col justify-between items-end z-40 pointer-events-none"
           >
             {/* My Characters */}
             {selectedCharacters.map((charId, idx) => (
               <div 
                 key={'my-'+idx} 
-                className="w-[480px] h-[480px] shrink-0 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_25px_var(--color-hot-soft)]"
+                className="w-[calc((100dvh-170px)/3)] h-[calc((100dvh-170px)/3)] shrink-0 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_25px_var(--color-hot-soft)]"
               >
-                <AnimatedCharacter id={charId} className="h-[384px] object-cover mt-4" />
+                <AnimatedCharacter id={charId} className="h-[82%] object-cover mt-2" />
               </div>
             ))}
           </div>

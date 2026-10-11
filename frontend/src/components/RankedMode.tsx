@@ -978,7 +978,7 @@ export default function RankedMode({ onBack }: Props) {
       {/* Split Screen Area */}
       <div className="flex-1 flex flex-col relative w-full max-w-5xl mx-auto px-4 md:px-8">
         {/* My Side (Left) */}
-        <div className="flex-1 pr-[520px] flex flex-col min-h-0">
+        <div className="flex-1 pr-[calc(((100dvh-170px)/3)+32px)] flex flex-col min-h-0">
           <RankedPlayerArea
             label="Your Area"
             wpm={myWpm}
@@ -1195,16 +1195,15 @@ export default function RankedMode({ onBack }: Props) {
 
           {/* Right Side Characters */}
           <div 
-            className="fixed right-4 top-4 flex flex-col gap-6 pointer-events-auto z-40 max-h-[calc(100vh-120px)] overflow-y-auto items-end"
-            style={{ scrollbarWidth: 'none' }}
+            className="fixed right-4 top-4 bottom-24 flex flex-col justify-between items-end z-40 pointer-events-none"
           >
             {/* My Character(s) */}
             {selectedCharacters.map((charId, idx) => (
               <div 
                 key={'my-'+idx} 
-                className="w-[480px] h-[480px] shrink-0 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_25px_var(--color-hot-soft)]"
+                className="w-[calc((100dvh-170px)/3)] h-[calc((100dvh-170px)/3)] shrink-0 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_25px_var(--color-hot-soft)]"
               >
-                <AnimatedCharacter id={charId} className="h-[384px] object-cover mt-4" />
+                <AnimatedCharacter id={charId} className="h-[82%] object-cover mt-2" />
               </div>
             ))}
           </div>
