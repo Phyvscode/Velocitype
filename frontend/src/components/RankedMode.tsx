@@ -978,26 +978,28 @@ export default function RankedMode({ onBack }: Props) {
       {/* Split Screen Area */}
       <div className="flex-1 flex flex-col relative w-full max-w-5xl mx-auto px-4 md:px-8">
         {/* My Side (Left) */}
-        <RankedPlayerArea
-          label="Your Area"
-          wpm={myWpm}
-          progress={myProgress}
-          targetText={myTargetText}
-          typedText={typedText}
-          activeKeys={activeKeys}
-          gameState={gameState}
-          cia={myCia}
-          charge={myCharge}
-          dyslexiaActive={oppAbilities.includes('dyslexia') || oppAbilities.includes('dyslexia_buffed')}
-          tripActive={oppAbilities.includes('shrooms') || oppAbilities.includes('shrooms_buffed')}
-          blinkActive={oppAbilities.includes('blinking') || oppAbilities.includes('blinking_buffed')}
-          joker1Active={oppAbilities.includes('joker1') || oppAbilities.includes('joker1_buffed')}
-          joker2Active={oppAbilities.includes('joker2') || oppAbilities.includes('joker2_buffed')}
-          joker3Active={oppAbilities.includes('joker3') || oppAbilities.includes('joker3_buffed')}
-          buffedAbilities={oppAbilities.filter(a => a.endsWith('_buffed')).map(a => a.replace('_buffed', ''))}
-          characters={selectedCharacters}
-          goldenLetters={goldenLettersRef.current}
-        />
+        <div className="flex-1 pr-[520px] flex flex-col min-h-0">
+          <RankedPlayerArea
+            label="Your Area"
+            wpm={myWpm}
+            progress={myProgress}
+            targetText={myTargetText}
+            typedText={typedText}
+            activeKeys={activeKeys}
+            gameState={gameState}
+            cia={myCia}
+            charge={myCharge}
+            dyslexiaActive={oppAbilities.includes('dyslexia') || oppAbilities.includes('dyslexia_buffed')}
+            tripActive={oppAbilities.includes('shrooms') || oppAbilities.includes('shrooms_buffed')}
+            blinkActive={oppAbilities.includes('blinking') || oppAbilities.includes('blinking_buffed')}
+            joker1Active={oppAbilities.includes('joker1') || oppAbilities.includes('joker1_buffed')}
+            joker2Active={oppAbilities.includes('joker2') || oppAbilities.includes('joker2_buffed')}
+            joker3Active={oppAbilities.includes('joker3') || oppAbilities.includes('joker3_buffed')}
+            buffedAbilities={oppAbilities.filter(a => a.endsWith('_buffed')).map(a => a.replace('_buffed', ''))}
+            characters={selectedCharacters}
+            goldenLetters={goldenLettersRef.current}
+          />
+        </div>
         
         {/* Hidden Input for me */}
         <input 
@@ -1192,11 +1194,17 @@ export default function RankedMode({ onBack }: Props) {
           </div>
 
           {/* Right Side Characters */}
-          <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 pointer-events-none z-40 max-h-screen overflow-hidden justify-center scale-90 sm:scale-100 origin-right">
+          <div 
+            className="fixed right-4 top-4 flex flex-col gap-6 pointer-events-auto z-40 max-h-[calc(100vh-120px)] overflow-y-auto items-end"
+            style={{ scrollbarWidth: 'none' }}
+          >
             {/* My Character(s) */}
             {selectedCharacters.map((charId, idx) => (
-              <div key={'my-'+idx} className="w-40 h-40 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_20px_var(--color-hot-soft)]">
-                <AnimatedCharacter id={charId} className="h-48 object-cover mt-4" />
+              <div 
+                key={'my-'+idx} 
+                className="w-[480px] h-[480px] shrink-0 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_25px_var(--color-hot-soft)]"
+              >
+                <AnimatedCharacter id={charId} className="h-[384px] object-cover mt-4" />
               </div>
             ))}
           </div>

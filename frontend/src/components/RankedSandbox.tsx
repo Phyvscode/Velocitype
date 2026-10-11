@@ -274,7 +274,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             </label>
           </div>
           
-                <div className="flex-1 pt-12 pb-24 px-8 overflow-hidden flex flex-col">
+                <div className="flex-1 pt-12 pb-24 pl-8 pr-[520px] overflow-hidden flex flex-col">
 
       {/* Bottom Stats & Right Side Characters */}
       {gameState === 'playing' && (
@@ -315,11 +315,17 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           </div>
 
           {/* Right Side Characters */}
-          <div className="fixed right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 pointer-events-none z-40 max-h-screen overflow-hidden justify-center scale-90 sm:scale-100 origin-right">
+          <div 
+            className="fixed right-4 top-4 flex flex-col gap-6 pointer-events-auto z-40 max-h-[calc(100vh-120px)] overflow-y-auto items-end"
+            style={{ scrollbarWidth: 'none' }}
+          >
             {/* My Characters */}
             {selectedCharacters.map((charId, idx) => (
-              <div key={'my-'+idx} className="w-40 h-40 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_10px_var(--color-hot-soft)]">
-                <AnimatedCharacter id={charId} className="h-48 object-cover mt-4" />
+              <div 
+                key={'my-'+idx} 
+                className="w-[480px] h-[480px] shrink-0 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_25px_var(--color-hot-soft)]"
+              >
+                <AnimatedCharacter id={charId} className="h-[384px] object-cover mt-4" />
               </div>
             ))}
           </div>
