@@ -227,7 +227,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
   }, [updateCaretPosition]);
 
   // Extract opponent colors if available
-  let oppPrimaryHex = '#fbbf24';
+  let oppPrimaryHex = '#ef4444';
   let oppStyle = '';
   if (isOpponent && colorTheme) {
     const hexes = colorTheme.value.match(/#[0-9a-fA-F]{6}/g) || ['#f59e0b'];
@@ -353,7 +353,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
                         const i = charIndex++;
                         let color = 'text-slate-500';
                         let isUnTyped = false;
-                        if (goldenLetters.has(i) && !isOpponent) color = 'text-yellow-400 font-bold drop-shadow-[0_0_8px_rgba(250,204,21,0.6)] exclude-theme';
+                        if (goldenLetters.has(i)) color = 'text-yellow-400 font-bold drop-shadow-[0_0_8px_rgba(250,204,21,0.6)] exclude-theme';
                         
                         if (i < typedText.length) {
                           let isCorrect = typedText[i] === char;
@@ -368,6 +368,8 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
                         
                         if (!isOpponent && color === 'correct-char') {
                           color = 'text-[var(--hot)]';
+                        } else if (isOpponent && color === 'correct-char' && !colorTheme) {
+                          color = 'text-red-400';
                         }
                         
                         // Joker 3: Only every 5th letter is colored, the rest are blank/slate

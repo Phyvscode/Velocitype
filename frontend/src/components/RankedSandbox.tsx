@@ -191,6 +191,10 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const oppSpeedSamplesRef = useRef<number[]>([]);
   const oppLastCharsRef = useRef<number>(0);
   const oppWorstLetterRef = useRef<string | null>('a');
+  const oppGoldenLettersRef = useRef<Set<number>>(new Set());
+
+  // Active POV: 'you' or 'opp'
+  const [activePov, setActivePov] = useState<'you' | 'opp'>('you');
 
   // Gravity Sabotage Popup
   const [showGravityPopup, setShowGravityPopup] = useState(false);
@@ -234,6 +238,17 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     } else {
       goldenLettersRef.current = new Set();
       claimedGoldenRef.current = new Set();
+    }
+
+    // Opponent Golden letters (if opponent has moneyguy1 active)
+    if (selectedCharacters.includes('moneyguy') && oppAbilitiesRef.current.includes('moneyguy1')) {
+      const oppGold = new Set<number>();
+      for (let i = 0; i < oppText.length; i++) {
+        if (oppText[i] !== ' ' && Math.random() < 0.25) oppGold.add(i);
+      }
+      oppGoldenLettersRef.current = oppGold;
+    } else {
+      oppGoldenLettersRef.current = new Set();
     }
 
     // Build queues for both auto-typers with 60% / 20% / 20% logic
@@ -529,6 +544,8 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             setOppRawWpm(Math.round((next.length / 5) / timeElapsed));
             setOppAccuracy(Math.round((bC / next.length) * 100));
           }
+          setOppActiveKeys(new Set([ch.toUpperCase()]));
+          setTimeout(() => setOppActiveKeys(new Set()), 40);
         }
         nextDelay = ch === ' ' ? 115 + Math.random() * 40 : 75 + Math.random() * 30;
       } else if (action.type === 'backspace') {
@@ -546,6 +563,8 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             else bI++;
           }
           setOppCia({ c: bC, i: bI, a: bA });
+          setOppActiveKeys(new Set(['BACKSPACE']));
+          setTimeout(() => setOppActiveKeys(new Set()), 40);
         }
         nextDelay = 60 + Math.random() * 25;
       }
@@ -575,6 +594,11 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           setShowGravityPopup(false);
           showGravityPopupRef.current = false;
         }
+        return;
+      }
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        setActivePov(p => p === 'you' ? 'opp' : 'you');
         return;
       }
       if (gameState !== 'playing') return;
@@ -771,8 +795,35 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           </div>
         </div>
 
-        {/* Auto-Play Toggle */}
-        <div className="flex items-center gap-3">
+        {/* Right Controls: POV Toggle & Auto-Play Toggle */}
+        <div className="flex items-center gap-4">
+          {/* POV Switcher */}
+          <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-full p-1 shadow-inner">
+            <button
+              onClick={() => setActivePov('you')}
+              className={`flex items-center gap-1.5 font-mono text-xs uppercase tracking-wider px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
+                activePov === 'you'
+                  ? 'bg-[var(--hot)] text-black font-bold shadow-[0_0_15px_var(--color-hot-soft)]'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${activePov === 'you' ? 'bg-black' : 'bg-emerald-400'} inline-block`} />
+              Your POV
+            </button>
+            <button
+              onClick={() => setActivePov('opp')}
+              className={`flex items-center gap-1.5 font-mono text-xs uppercase tracking-wider px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
+                activePov === 'opp'
+                  ? 'bg-red-500 text-white font-bold shadow-[0_0_15px_rgba(239,68,68,0.5)]'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${activePov === 'opp' ? 'bg-white' : 'bg-red-400'} inline-block`} />
+              Opponent POV
+            </button>
+          </div>
+
+          {/* Auto-Play Toggle */}
           <button
             onClick={() => setAutoPlay(p => !p)}
             className={`font-mono text-xs uppercase tracking-widest px-3 py-1.5 rounded border transition-colors cursor-pointer ${
@@ -788,6 +839,14 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
 
       {/* Main Playing Area */}
       <div className="flex-1 w-full flex h-full relative">
+        {/* Opponent POV Floating Indicator */}
+        {activePov === 'opp' && gameState === 'playing' && (
+          <div className="absolute top-28 left-1/2 -translate-x-1/2 z-20 px-3.5 py-1 bg-red-500/10 border border-red-500/30 rounded-full text-red-400 font-mono text-[11px] uppercase tracking-widest flex items-center gap-2 backdrop-blur-sm shadow-[0_0_15px_rgba(239,68,68,0.2)] pointer-events-none">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping inline-block" />
+            Spectating Opponent POV (Press Tab to Switch)
+          </div>
+        )}
+
         {/* Center Round Timer (identical to Ranked Mode, click to finish round in Sandbox) */}
         <div className="absolute left-1/2 top-4 -translate-x-1/2 z-30 pointer-events-none flex flex-col justify-start">
           {gameState === 'playing' && (
@@ -796,12 +855,12 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               title="Click to finish round (Sandbox shortcut)"
               className="bg-background border-2 border-white rounded-full w-24 h-24 flex flex-col items-center justify-center font-display text-3xl text-slate-100 shadow-[0_0_20px_rgba(255,255,255,0.1)] z-30 pointer-events-auto relative cursor-pointer hover:border-[var(--hot)] transition-colors"
             >
-              {oppAbilities.includes('joker3') ? (
+              {(activePov === 'you' ? oppAbilities : myAbilities).includes('joker3') ? (
                 <div className="text-4xl text-slate-600 mt-2">???</div>
               ) : (
                 <>
                   {timeLeft}
-                  <span className="text-xs text-[var(--hot)] font-mono mt-1">SEC</span>
+                  <span className={`text-xs ${activePov === 'you' ? 'text-[var(--hot)]' : 'text-red-500'} font-mono mt-1`}>SEC</span>
                 </>
               )}
             </div>
@@ -811,25 +870,33 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         {/* Target Text Area & Centered Keyboard */}
         <div className="flex-1 w-full flex flex-col min-h-0 justify-center items-center relative">
           <RankedPlayerArea
-            label="Your Area"
-            wpm={myWpm}
-            progress={(typedText.length / Math.max(1, myTargetText.length)) * 100}
-            targetText={myTargetText}
-            typedText={typedText}
-            activeKeys={activeKeys}
+            label={activePov === 'you' ? "Your Area" : "Opponent's Area"}
+            wpm={activePov === 'you' ? myWpm : oppWpm}
+            progress={
+              activePov === 'you'
+                ? (typedText.length / Math.max(1, myTargetText.length)) * 100
+                : (oppTypedText.length / Math.max(1, oppTargetText.length)) * 100
+            }
+            targetText={activePov === 'you' ? myTargetText : oppTargetText}
+            typedText={activePov === 'you' ? typedText : oppTypedText}
+            activeKeys={activePov === 'you' ? activeKeys : oppActiveKeys}
             gameState={gameState}
-            isOpponent={false}
-            charge={myCharge}
-            cia={myCia}
-            dyslexiaActive={oppAbilities.includes('dyslexia')}
-            tripActive={oppAbilities.includes('shrooms')}
-            blinkActive={oppAbilities.includes('blinking')}
-            joker1Active={oppAbilities.includes('joker1')}
-            joker2Active={oppAbilities.includes('joker2')}
-            joker3Active={oppAbilities.includes('joker3')}
+            isOpponent={activePov === 'opp'}
+            charge={activePov === 'you' ? myCharge : oppCharge}
+            cia={activePov === 'you' ? myCia : oppCia}
+            dyslexiaActive={activePov === 'you' ? oppAbilities.includes('dyslexia') : myAbilities.includes('dyslexia')}
+            tripActive={activePov === 'you' ? oppAbilities.includes('shrooms') : myAbilities.includes('shrooms')}
+            blinkActive={activePov === 'you' ? oppAbilities.includes('blinking') : myAbilities.includes('blinking')}
+            joker1Active={activePov === 'you' ? oppAbilities.includes('joker1') : myAbilities.includes('joker1')}
+            joker2Active={activePov === 'you' ? oppAbilities.includes('joker2') : myAbilities.includes('joker2')}
+            joker3Active={activePov === 'you' ? oppAbilities.includes('joker3') : myAbilities.includes('joker3')}
             characters={selectedCharacters}
-            goldenLetters={goldenLettersRef.current}
-            buffedAbilities={oppAbilities.filter(a => a.endsWith('_buffed')).map(a => a.replace('_buffed', ''))}
+            goldenLetters={activePov === 'you' ? goldenLettersRef.current : oppGoldenLettersRef.current}
+            buffedAbilities={
+              activePov === 'you'
+                ? oppAbilities.filter(a => a.endsWith('_buffed')).map(a => a.replace('_buffed', ''))
+                : myAbilities.filter(a => a.endsWith('_buffed')).map(a => a.replace('_buffed', ''))
+            }
           />
         </div>
 
@@ -838,8 +905,22 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           <>
             <div className="fixed bottom-0 left-0 w-full px-12 py-6 flex justify-between items-end pointer-events-none z-30 bg-gradient-to-t from-background via-background/80 to-transparent">
               {/* You Stats */}
-              <div className="flex flex-col gap-2 pointer-events-auto">
-                <h3 className="font-display text-xl text-[var(--hot)] tracking-widest uppercase">You</h3>
+              <div 
+                onClick={() => setActivePov('you')}
+                className={`flex flex-col gap-2 pointer-events-auto p-4 rounded-xl transition-all cursor-pointer ${
+                  activePov === 'you'
+                    ? 'bg-slate-900/80 border border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30'
+                    : 'bg-slate-950/40 border border-slate-800/40 opacity-70 hover:opacity-100 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display text-xl text-[var(--hot)] tracking-widest uppercase">You</h3>
+                  {activePov === 'you' && (
+                    <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold tracking-wider">
+                      Watching POV
+                    </span>
+                  )}
+                </div>
                 {!oppAbilities.includes('joker2') && (
                   <div className="font-mono text-3xl text-white tracking-widest">
                     {myWpm} <span className="text-sm text-slate-500">WPM</span>
@@ -884,8 +965,22 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               </div>
 
               {/* Opponent Stats */}
-              <div className="flex flex-col gap-2 text-right pointer-events-auto items-end">
-                <h3 className="font-display text-xl text-red-500 tracking-widest uppercase">Opponent</h3>
+              <div 
+                onClick={() => setActivePov('opp')}
+                className={`flex flex-col gap-2 text-right pointer-events-auto items-end p-4 rounded-xl transition-all cursor-pointer ${
+                  activePov === 'opp'
+                    ? 'bg-slate-900/80 border border-red-500/60 shadow-[0_0_20px_rgba(239,68,68,0.2)] ring-1 ring-red-500/30'
+                    : 'bg-slate-950/40 border border-slate-800/40 opacity-70 hover:opacity-100 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {activePov === 'opp' && (
+                    <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-bold tracking-wider">
+                      Watching POV
+                    </span>
+                  )}
+                  <h3 className="font-display text-xl text-red-500 tracking-widest uppercase">Opponent</h3>
+                </div>
                 {!myAbilities.includes('joker2') && (
                   <div className="font-mono text-3xl text-white tracking-widest">
                     {oppWpm} <span className="text-sm text-slate-500">WPM</span>
@@ -940,7 +1035,11 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                 return (
                   <div
                     key={'my-' + idx}
-                    className="w-[calc((100dvh-380px)/3)] h-[calc((100dvh-380px)/3)] shrink-0 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_25px_var(--color-hot-soft)]"
+                    className={`w-[calc((100dvh-380px)/3)] h-[calc((100dvh-380px)/3)] shrink-0 rounded-full border-4 overflow-hidden flex items-center justify-center transition-all ${
+                      activePov === 'you'
+                        ? 'border-[var(--hot)]/50 bg-[var(--hot)]/10 shadow-[0_0_25px_var(--color-hot-soft)]'
+                        : 'border-red-500/50 bg-red-500/10 shadow-[0_0_25px_rgba(239,68,68,0.3)]'
+                    }`}
                   >
                     <AnimatedCharacter
                       id={charId}
