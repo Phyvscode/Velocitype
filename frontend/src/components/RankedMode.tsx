@@ -421,12 +421,12 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
           <div className="w-10 h-4 rounded-sm border-2 border-slate-700 relative overflow-hidden flex bg-slate-900/50">
             <div 
               className="h-full bg-[var(--hot)] transition-all duration-200" 
-              style={{ width: `${charge}%` }}
+              style={{ width: joker2Active ? '0%' : `${charge}%` }}
             />
           </div>
           <div className="w-[3px] h-2 bg-slate-700 rounded-r-sm" />
         </div>
-        <span className="font-mono text-xs text-slate-500">{charge}%</span>
+        <span className="font-mono text-xs text-slate-500">{joker2Active ? '???' : `${charge}%`}</span>
       </div>
       
       {/* OLD CHARS MOVED */}
@@ -1286,78 +1286,106 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
           {/* Bottom Bar: Stats */}
           <div className="fixed bottom-0 left-0 w-full px-12 py-6 flex justify-between items-end pointer-events-none z-30 bg-gradient-to-t from-background via-background/80 to-transparent">
             {/* My Stats */}
-            <div className="flex flex-col gap-2 pointer-events-auto">
-              <h3 className="font-display text-xl text-[var(--hot)] tracking-widest uppercase">You</h3>
-              {(!oppAbilities.includes('joker2') && !oppAbilities.includes('joker2_buffed')) && (
-                <div className="font-mono text-3xl text-white tracking-widest">{myWpm} <span className="text-sm text-slate-500">WPM</span></div>
-              )}
-              {myCia && (
-                <div className="font-mono text-sm text-slate-400 tracking-widest">
-                  <span className="text-emerald-400">{myCia.c}</span>/
-                  <span className="text-red-500">{myCia.i}</span>/
-                  <span className="text-amber-400">{myCia.a}</span>
-                </div>
-              )}
-              <div className="font-mono text-xs text-slate-500">{myCharge}% Charge</div>
-              
-              <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80">
-                <div>
-                  <div className="font-mono text-sm text-white tracking-widest">
-                    {(!oppAbilities.includes('joker2') && !oppAbilities.includes('joker2_buffed')) ? myRawWpm : '???'} <span className="text-[10px] text-slate-400">RAW WPM</span>
-                  </div>
-                  <div className="font-mono text-[9px] text-slate-500 tracking-tight">Speed before error penalties</div>
-                </div>
-                <div>
-                  <div className="font-mono text-sm text-white tracking-widest">
-                    {myAccuracy}% <span className="text-[10px] text-slate-400">ACC</span>
-                  </div>
-                  <div className="font-mono text-[9px] text-slate-500 tracking-tight">Typing correctness</div>
-                </div>
-                <div>
-                  <div className="font-mono text-sm text-white tracking-widest">
-                    {myConsistency}% <span className="text-[10px] text-slate-400">CONSISTENCY</span>
-                  </div>
-                  <div className="font-mono text-[9px] text-slate-500 tracking-tight">How stable speed was</div>
-                </div>
-              </div>
-            </div>
+            {(() => {
+              const isMyBlind = oppAbilities.includes('joker2') || oppAbilities.includes('joker2_buffed');
+              const isOppBlind = myAbilities.includes('joker2') || myBuffedAbilities.includes('joker2');
 
-            {/* Opponent Stats */}
-            <div className="flex flex-col gap-2 text-right pointer-events-auto items-end">
-              <h3 className="font-display text-xl text-red-500 tracking-widest uppercase">Opponent</h3>
-              {(!myAbilities.includes('joker2') && !myBuffedAbilities.includes('joker2')) && (
-                <div className="font-mono text-3xl text-white tracking-widest">{oppWpm} <span className="text-sm text-slate-500">WPM</span></div>
-              )}
-              {oppCia && (
-                <div className="font-mono text-sm text-slate-400 tracking-widest">
-                  <span className="text-emerald-400">{oppCia.c}</span>/
-                  <span className="text-red-500">{oppCia.i}</span>/
-                  <span className="text-amber-400">{oppCia.a}</span>
-                </div>
-              )}
-              <div className="font-mono text-xs text-slate-500">{oppCharge}% Charge</div>
+              return (
+                <>
+                  <div className="flex flex-col gap-2 pointer-events-auto">
+                    <h3 className="font-display text-xl text-[var(--hot)] tracking-widest uppercase">You</h3>
+                    <div className="font-mono text-3xl text-white tracking-widest">
+                      {isMyBlind ? '???' : myWpm} <span className="text-sm text-slate-500">WPM</span>
+                    </div>
+                    {myCia && (
+                      <div className="font-mono text-sm text-slate-400 tracking-widest">
+                        {isMyBlind ? (
+                          <span className="text-slate-500">??? / ??? / ???</span>
+                        ) : (
+                          <>
+                            <span className="text-emerald-400">{myCia.c}</span>/
+                            <span className="text-red-500">{myCia.i}</span>/
+                            <span className="text-amber-400">{myCia.a}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    {selectedCharacters.includes('moneyguy') ? (
+                      <div className="font-mono text-xs text-slate-300 flex gap-3">
+                        <span className="text-yellow-400 font-bold">{isMyBlind ? '???' : myCoins} Coins</span>
+                        <span className="text-red-400 font-bold">{isMyBlind ? '???' : myHearts} Hearts</span>
+                      </div>
+                    ) : (
+                      <div className="font-mono text-xs text-slate-500">{isMyBlind ? '???' : `${myCharge}%`} Charge</div>
+                    )}
+                    
+                    <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80">
+                      <div>
+                        <div className="font-mono text-sm text-white tracking-widest">
+                          {isMyBlind ? '???' : myRawWpm} <span className="text-[10px] text-slate-400">RAW WPM</span>
+                        </div>
+                        <div className="font-mono text-[9px] text-slate-500 tracking-tight">Speed before error penalties</div>
+                      </div>
+                      <div>
+                        <div className="font-mono text-sm text-white tracking-widest">
+                          {isMyBlind ? '???' : `${myAccuracy}%`} <span className="text-[10px] text-slate-400">ACC</span>
+                        </div>
+                        <div className="font-mono text-[9px] text-slate-500 tracking-tight">Typing correctness</div>
+                      </div>
+                      <div>
+                        <div className="font-mono text-sm text-white tracking-widest">
+                          {isMyBlind ? '???' : `${myConsistency}%`} <span className="text-[10px] text-slate-400">CONSISTENCY</span>
+                        </div>
+                        <div className="font-mono text-[9px] text-slate-500 tracking-tight">How stable speed was</div>
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80 items-end">
-                <div>
-                  <div className="font-mono text-sm text-white tracking-widest">
-                    {(!myAbilities.includes('joker2') && !myBuffedAbilities.includes('joker2')) ? oppRawWpm : '???'} <span className="text-[10px] text-slate-400">RAW WPM</span>
+                  {/* Opponent Stats */}
+                  <div className="flex flex-col gap-2 text-right pointer-events-auto items-end">
+                    <h3 className="font-display text-xl text-red-500 tracking-widest uppercase">Opponent</h3>
+                    <div className="font-mono text-3xl text-white tracking-widest">
+                      {isOppBlind ? '???' : oppWpm} <span className="text-sm text-slate-500">WPM</span>
+                    </div>
+                    {oppCia && (
+                      <div className="font-mono text-sm text-slate-400 tracking-widest">
+                        {isOppBlind ? (
+                          <span className="text-slate-500">??? / ??? / ???</span>
+                        ) : (
+                          <>
+                            <span className="text-emerald-400">{oppCia.c}</span>/
+                            <span className="text-red-500">{oppCia.i}</span>/
+                            <span className="text-amber-400">{oppCia.a}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    <div className="font-mono text-xs text-slate-500">{isOppBlind ? '???' : `${oppCharge}%`} Charge</div>
+
+                    <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80 items-end">
+                      <div>
+                        <div className="font-mono text-sm text-white tracking-widest">
+                          {isOppBlind ? '???' : oppRawWpm} <span className="text-[10px] text-slate-400">RAW WPM</span>
+                        </div>
+                        <div className="font-mono text-[9px] text-slate-500 tracking-tight">Speed before error penalties</div>
+                      </div>
+                      <div>
+                        <div className="font-mono text-sm text-white tracking-widest">
+                          {isOppBlind ? '???' : `${oppAccuracy}%`} <span className="text-[10px] text-slate-400">ACC</span>
+                        </div>
+                        <div className="font-mono text-[9px] text-slate-500 tracking-tight">Typing correctness</div>
+                      </div>
+                      <div>
+                        <div className="font-mono text-sm text-white tracking-widest">
+                          {isOppBlind ? '???' : `${oppConsistency}%`} <span className="text-[10px] text-slate-400">CONSISTENCY</span>
+                        </div>
+                        <div className="font-mono text-[9px] text-slate-500 tracking-tight">How stable speed was</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="font-mono text-[9px] text-slate-500 tracking-tight">Speed before error penalties</div>
-                </div>
-                <div>
-                  <div className="font-mono text-sm text-white tracking-widest">
-                    {oppAccuracy}% <span className="text-[10px] text-slate-400">ACC</span>
-                  </div>
-                  <div className="font-mono text-[9px] text-slate-500 tracking-tight">Typing correctness</div>
-                </div>
-                <div>
-                  <div className="font-mono text-sm text-white tracking-widest">
-                    {oppConsistency}% <span className="text-[10px] text-slate-400">CONSISTENCY</span>
-                  </div>
-                  <div className="font-mono text-[9px] text-slate-500 tracking-tight">How stable speed was</div>
-                </div>
-              </div>
-            </div>
+                </>
+              );
+            })()}
           </div>
 
           {/* Right Side Characters */}

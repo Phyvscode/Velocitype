@@ -116,7 +116,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
       const saved = localStorage.getItem('velocitype_sandbox_characters');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length === 3) return parsed;
+        if (Array.isArray(parsed) && parsed.length >= 1 && parsed.length <= 3) return parsed;
       }
     } catch {}
     return ['mushgirl', 'screwed', 'joker'];
@@ -141,6 +141,18 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const oppAbilitiesRef = useRef<string[]>([]);
   useEffect(() => { myAbilitiesRef.current = myAbilities; }, [myAbilities]);
   useEffect(() => { oppAbilitiesRef.current = oppAbilities; }, [oppAbilities]);
+
+  // Ensure active abilities always match currently selected characters
+  useEffect(() => {
+    setMyAbilities(prev => prev.filter(id => {
+      const ab = ALL_SANDBOX_ABILITIES.find(a => a.id === id);
+      return ab ? selectedCharacters.includes(ab.char) : true;
+    }));
+    setOppAbilities(prev => prev.filter(id => {
+      const ab = ALL_SANDBOX_ABILITIES.find(a => a.id === id);
+      return ab ? selectedCharacters.includes(ab.char) : true;
+    }));
+  }, [selectedCharacters]);
 
   // Timer state
   const [timeLeft, setTimeLeft] = useState(60);
@@ -293,7 +305,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
 
   // Enter sandbox
   const handleEnterSandbox = () => {
-    if (selectedCharacters.length === 3) {
+    if (selectedCharacters.length >= 1 && selectedCharacters.length <= 3) {
       try {
         localStorage.setItem('velocitype_sandbox_characters', JSON.stringify(selectedCharacters));
       } catch {}
@@ -686,10 +698,10 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
 
         <div className="flex-1 flex flex-col items-center justify-center p-8 max-w-4xl mx-auto w-full text-center">
           <h2 className="font-display text-4xl tracking-widest text-white uppercase mb-2">
-            Select 3 Characters
+            Select Characters
           </h2>
           <p className="font-mono text-xs text-slate-400 uppercase tracking-widest mb-10">
-            Choose 3 characters for the automated Sandbox showdown ({selectedCharacters.length}/3 selected)
+            Choose 1 to 3 characters for the automated Sandbox showdown ({selectedCharacters.length}/3 selected)
           </p>
 
           <div className="flex flex-wrap gap-8 items-center justify-center mb-12">
@@ -746,14 +758,14 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
 
           <button
             onClick={handleEnterSandbox}
-            disabled={selectedCharacters.length !== 3}
+            disabled={selectedCharacters.length === 0}
             className={`py-4 px-12 rounded-lg font-mono text-sm uppercase tracking-widest transition-all ${
-              selectedCharacters.length === 3
+              selectedCharacters.length >= 1
                 ? 'border border-[var(--hot)] text-black bg-[var(--hot)] hover:bg-white shadow-[0_0_25px_var(--color-hot-soft)] cursor-pointer scale-100 hover:scale-105 font-bold'
                 : 'border border-slate-800 text-slate-600 bg-slate-900/40 cursor-not-allowed'
             }`}
           >
-            {selectedCharacters.length === 3 ? 'Enter Sandbox →' : `Select 3 Characters (${selectedCharacters.length}/3)`}
+            {selectedCharacters.length >= 1 ? `Enter Sandbox (${selectedCharacters.length}) →` : 'Select at least 1 Character (0/3)'}
           </button>
         </div>
       </div>
@@ -902,117 +914,134 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           <>
             <div className="fixed bottom-0 left-0 w-full px-12 py-6 flex justify-between items-end pointer-events-none z-30 bg-gradient-to-t from-background via-background/80 to-transparent">
               {/* You Stats */}
-              <div 
-                onClick={() => setActivePov('you')}
-                className={`flex flex-col gap-2 pointer-events-auto p-4 rounded-xl transition-all cursor-pointer ${
-                  activePov === 'you'
-                    ? 'bg-slate-900/80 border border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30'
-                    : 'bg-slate-950/40 border border-slate-800/40 opacity-70 hover:opacity-100 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <h3 className="font-display text-xl text-[var(--hot)] tracking-widest uppercase">You</h3>
-                  {activePov === 'you' && (
-                    <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold tracking-wider">
-                      Watching POV
-                    </span>
-                  )}
-                </div>
-                {!oppAbilities.includes('joker2') && (
-                  <div className="font-mono text-3xl text-white tracking-widest">
-                    {myWpm} <span className="text-sm text-slate-500">WPM</span>
-                  </div>
-                )}
-                {myCia && (
-                  <div className="font-mono text-sm text-slate-400 tracking-widest">
-                    <span className="text-emerald-400">{myCia.c}</span>/
-                    <span className="text-red-500">{myCia.i}</span>/
-                    <span className="text-amber-400">{myCia.a}</span>
-                  </div>
-                )}
-                {selectedCharacters.includes('moneyguy') ? (
-                  <div className="font-mono text-xs text-slate-300 flex gap-3">
-                    <span className="text-yellow-400 font-bold">{myCoins} Coins</span>
-                    <span className="text-red-400 font-bold">{myHearts} Hearts</span>
-                  </div>
-                ) : (
-                  <div className="font-mono text-xs text-slate-500">{myCharge}% Charge</div>
-                )}
+              {(() => {
+                const isMyBlind = oppAbilities.includes('joker2');
+                const isOppBlind = myAbilities.includes('joker2');
 
-                <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80">
-                  <div>
-                    <div className="font-mono text-sm text-white tracking-widest">
-                      {!oppAbilities.includes('joker2') ? myRawWpm : '???'} <span className="text-[10px] text-slate-400">RAW WPM</span>
-                    </div>
-                    <div className="font-mono text-[9px] text-slate-500 tracking-tight">Speed before error penalties</div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-sm text-white tracking-widest">
-                      {myAccuracy}% <span className="text-[10px] text-slate-400">ACC</span>
-                    </div>
-                    <div className="font-mono text-[9px] text-slate-500 tracking-tight">Typing correctness</div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-sm text-white tracking-widest">
-                      {myConsistency}% <span className="text-[10px] text-slate-400">CONSISTENCY</span>
-                    </div>
-                    <div className="font-mono text-[9px] text-slate-500 tracking-tight">How stable speed was</div>
-                  </div>
-                </div>
-              </div>
+                return (
+                  <>
+                    <div 
+                      onClick={() => setActivePov('you')}
+                      className={`flex flex-col gap-2 pointer-events-auto p-4 rounded-xl transition-all cursor-pointer ${
+                        activePov === 'you'
+                          ? 'bg-slate-900/80 border border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30'
+                          : 'bg-slate-950/40 border border-slate-800/40 opacity-70 hover:opacity-100 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display text-xl text-[var(--hot)] tracking-widest uppercase">You</h3>
+                        {activePov === 'you' && (
+                          <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold tracking-wider">
+                            Watching POV
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-mono text-3xl text-white tracking-widest">
+                        {isMyBlind ? '???' : myWpm} <span className="text-sm text-slate-500">WPM</span>
+                      </div>
+                      {myCia && (
+                        <div className="font-mono text-sm text-slate-400 tracking-widest">
+                          {isMyBlind ? (
+                            <span className="text-slate-500">??? / ??? / ???</span>
+                          ) : (
+                            <>
+                              <span className="text-emerald-400">{myCia.c}</span>/
+                              <span className="text-red-500">{myCia.i}</span>/
+                              <span className="text-amber-400">{myCia.a}</span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      {selectedCharacters.includes('moneyguy') ? (
+                        <div className="font-mono text-xs text-slate-300 flex gap-3">
+                          <span className="text-yellow-400 font-bold">{isMyBlind ? '???' : myCoins} Coins</span>
+                          <span className="text-red-400 font-bold">{isMyBlind ? '???' : myHearts} Hearts</span>
+                        </div>
+                      ) : (
+                        <div className="font-mono text-xs text-slate-500">{isMyBlind ? '???' : `${myCharge}%`} Charge</div>
+                      )}
 
-              {/* Opponent Stats */}
-              <div 
-                onClick={() => setActivePov('opp')}
-                className={`flex flex-col gap-2 text-right pointer-events-auto items-end p-4 rounded-xl transition-all cursor-pointer ${
-                  activePov === 'opp'
-                    ? 'bg-slate-900/80 border border-red-500/60 shadow-[0_0_20px_rgba(239,68,68,0.2)] ring-1 ring-red-500/30'
-                    : 'bg-slate-950/40 border border-slate-800/40 opacity-70 hover:opacity-100 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {activePov === 'opp' && (
-                    <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-bold tracking-wider">
-                      Watching POV
-                    </span>
-                  )}
-                  <h3 className="font-display text-xl text-red-500 tracking-widest uppercase">Opponent</h3>
-                </div>
-                {!myAbilities.includes('joker2') && (
-                  <div className="font-mono text-3xl text-white tracking-widest">
-                    {oppWpm} <span className="text-sm text-slate-500">WPM</span>
-                  </div>
-                )}
-                {oppCia && (
-                  <div className="font-mono text-sm text-slate-400 tracking-widest">
-                    <span className="text-emerald-400">{oppCia.c}</span>/
-                    <span className="text-red-500">{oppCia.i}</span>/
-                    <span className="text-amber-400">{oppCia.a}</span>
-                  </div>
-                )}
-                <div className="font-mono text-xs text-slate-500">{oppCharge}% Charge</div>
+                      <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80">
+                        <div>
+                          <div className="font-mono text-sm text-white tracking-widest">
+                            {isMyBlind ? '???' : myRawWpm} <span className="text-[10px] text-slate-400">RAW WPM</span>
+                          </div>
+                          <div className="font-mono text-[9px] text-slate-500 tracking-tight">Speed before error penalties</div>
+                        </div>
+                        <div>
+                          <div className="font-mono text-sm text-white tracking-widest">
+                            {isMyBlind ? '???' : `${myAccuracy}%`} <span className="text-[10px] text-slate-400">ACC</span>
+                          </div>
+                          <div className="font-mono text-[9px] text-slate-500 tracking-tight">Typing correctness</div>
+                        </div>
+                        <div>
+                          <div className="font-mono text-sm text-white tracking-widest">
+                            {isMyBlind ? '???' : `${myConsistency}%`} <span className="text-[10px] text-slate-400">CONSISTENCY</span>
+                          </div>
+                          <div className="font-mono text-[9px] text-slate-500 tracking-tight">How stable speed was</div>
+                        </div>
+                      </div>
+                    </div>
 
-                <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80 items-end">
-                  <div>
-                    <div className="font-mono text-sm text-white tracking-widest">
-                      {!myAbilities.includes('joker2') ? oppRawWpm : '???'} <span className="text-[10px] text-slate-400">RAW WPM</span>
+                    {/* Opponent Stats */}
+                    <div 
+                      onClick={() => setActivePov('opp')}
+                      className={`flex flex-col gap-2 text-right pointer-events-auto items-end p-4 rounded-xl transition-all cursor-pointer ${
+                        activePov === 'opp'
+                          ? 'bg-slate-900/80 border border-red-500/60 shadow-[0_0_20px_rgba(239,68,68,0.2)] ring-1 ring-red-500/30'
+                          : 'bg-slate-950/40 border border-slate-800/40 opacity-70 hover:opacity-100 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {activePov === 'opp' && (
+                          <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-bold tracking-wider">
+                            Watching POV
+                          </span>
+                        )}
+                        <h3 className="font-display text-xl text-red-500 tracking-widest uppercase">Opponent</h3>
+                      </div>
+                      <div className="font-mono text-3xl text-white tracking-widest">
+                        {isOppBlind ? '???' : oppWpm} <span className="text-sm text-slate-500">WPM</span>
+                      </div>
+                      {oppCia && (
+                        <div className="font-mono text-sm text-slate-400 tracking-widest">
+                          {isOppBlind ? (
+                            <span className="text-slate-500">??? / ??? / ???</span>
+                          ) : (
+                            <>
+                              <span className="text-emerald-400">{oppCia.c}</span>/
+                              <span className="text-red-500">{oppCia.i}</span>/
+                              <span className="text-amber-400">{oppCia.a}</span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      <div className="font-mono text-xs text-slate-500">{isOppBlind ? '???' : `${oppCharge}%`} Charge</div>
+
+                      <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80 items-end">
+                        <div>
+                          <div className="font-mono text-sm text-white tracking-widest">
+                            {isOppBlind ? '???' : oppRawWpm} <span className="text-[10px] text-slate-400">RAW WPM</span>
+                          </div>
+                          <div className="font-mono text-[9px] text-slate-500 tracking-tight">Speed before error penalties</div>
+                        </div>
+                        <div>
+                          <div className="font-mono text-sm text-white tracking-widest">
+                            {isOppBlind ? '???' : `${oppAccuracy}%`} <span className="text-[10px] text-slate-400">ACC</span>
+                          </div>
+                          <div className="font-mono text-[9px] text-slate-500 tracking-tight">Typing correctness</div>
+                        </div>
+                        <div>
+                          <div className="font-mono text-sm text-white tracking-widest">
+                            {isOppBlind ? '???' : `${oppConsistency}%`} <span className="text-[10px] text-slate-400">CONSISTENCY</span>
+                          </div>
+                          <div className="font-mono text-[9px] text-slate-500 tracking-tight">How stable speed was</div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="font-mono text-[9px] text-slate-500 tracking-tight">Speed before error penalties</div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-sm text-white tracking-widest">
-                      {oppAccuracy}% <span className="text-[10px] text-slate-400">ACC</span>
-                    </div>
-                    <div className="font-mono text-[9px] text-slate-500 tracking-tight">Typing correctness</div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-sm text-white tracking-widest">
-                      {oppConsistency}% <span className="text-[10px] text-slate-400">CONSISTENCY</span>
-                    </div>
-                    <div className="font-mono text-[9px] text-slate-500 tracking-tight">How stable speed was</div>
-                  </div>
-                </div>
-              </div>
+                  </>
+                );
+              })()}
             </div>
 
             {/* Right Side 3 Circles */}
@@ -1078,81 +1107,95 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             </div>
 
             {/* Choose Abilities for BOTH Players */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left Column: Your Abilities */}
-              <div className="bg-slate-950/60 border border-slate-800 p-5 rounded-lg flex flex-col gap-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <h4 className="font-display text-lg text-[var(--hot)] uppercase tracking-wider">Your Abilities</h4>
-                  <span className="font-mono text-[10px] text-slate-500 uppercase">Affects Opponent</span>
-                </div>
-                <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-                  {ALL_SANDBOX_ABILITIES.map(ab => {
-                    const active = myAbilities.includes(ab.id);
-                    return (
-                      <div
-                        key={'my-ab-' + ab.id}
-                        onClick={() => toggleMyAbility(ab.id)}
-                        className={`p-3 rounded border text-left cursor-pointer transition-all flex items-center justify-between ${
-                          active
-                            ? 'border-emerald-500/80 bg-emerald-500/10'
-                            : 'border-slate-800 bg-slate-900/40 hover:border-slate-700'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-bold text-white uppercase">{ab.name}</span>
-                            <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{ab.char}</span>
-                          </div>
-                          <p className="font-mono text-[10px] text-slate-400 mt-1">{ab.desc}</p>
-                        </div>
-                        <span className={`font-mono text-xs uppercase px-2 py-1 rounded font-bold ${
-                          active ? 'bg-emerald-500 text-black' : 'bg-slate-800 text-slate-500'
-                        }`}>
-                          {active ? 'ACTIVE' : 'OFF'}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+            {(() => {
+              const availableAbilities = ALL_SANDBOX_ABILITIES.filter(ab => selectedCharacters.includes(ab.char));
 
-              {/* Right Column: Opponent Abilities */}
-              <div className="bg-slate-950/60 border border-slate-800 p-5 rounded-lg flex flex-col gap-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <h4 className="font-display text-lg text-red-500 uppercase tracking-wider">Opponent's Abilities</h4>
-                  <span className="font-mono text-[10px] text-slate-500 uppercase">Affects You</span>
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Left Column: Your Abilities */}
+                  <div className="bg-slate-950/60 border border-slate-800 p-5 rounded-lg flex flex-col gap-4">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <h4 className="font-display text-lg text-[var(--hot)] uppercase tracking-wider">Your Abilities</h4>
+                      <span className="font-mono text-[10px] text-slate-500 uppercase">Affects Opponent</span>
+                    </div>
+                    <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                      {availableAbilities.length === 0 ? (
+                        <p className="text-slate-500 font-mono text-xs">No abilities available for selected characters.</p>
+                      ) : (
+                        availableAbilities.map(ab => {
+                          const active = myAbilities.includes(ab.id);
+                          return (
+                            <div
+                              key={'my-ab-' + ab.id}
+                              onClick={() => toggleMyAbility(ab.id)}
+                              className={`p-3 rounded border text-left cursor-pointer transition-all flex items-center justify-between ${
+                                active
+                                  ? 'border-emerald-500/80 bg-emerald-500/10'
+                                  : 'border-slate-800 bg-slate-900/40 hover:border-slate-700'
+                              }`}
+                            >
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-xs font-bold text-white uppercase">{ab.name}</span>
+                                  <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{ab.char}</span>
+                                </div>
+                                <p className="font-mono text-[10px] text-slate-400 mt-1">{ab.desc}</p>
+                              </div>
+                              <span className={`font-mono text-xs uppercase px-2 py-1 rounded font-bold ${
+                                active ? 'bg-emerald-500 text-black' : 'bg-slate-800 text-slate-500'
+                              }`}>
+                                {active ? 'ACTIVE' : 'OFF'}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Opponent Abilities */}
+                  <div className="bg-slate-950/60 border border-slate-800 p-5 rounded-lg flex flex-col gap-4">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <h4 className="font-display text-lg text-red-500 uppercase tracking-wider">Opponent's Abilities</h4>
+                      <span className="font-mono text-[10px] text-slate-500 uppercase">Affects You</span>
+                    </div>
+                    <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                      {availableAbilities.length === 0 ? (
+                        <p className="text-slate-500 font-mono text-xs">No abilities available for selected characters.</p>
+                      ) : (
+                        availableAbilities.map(ab => {
+                          const active = oppAbilities.includes(ab.id);
+                          return (
+                            <div
+                              key={'opp-ab-' + ab.id}
+                              onClick={() => toggleOppAbility(ab.id)}
+                              className={`p-3 rounded border text-left cursor-pointer transition-all flex items-center justify-between ${
+                                active
+                                  ? 'border-red-500/80 bg-red-500/10'
+                                  : 'border-slate-800 bg-slate-900/40 hover:border-slate-700'
+                              }`}
+                            >
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-xs font-bold text-white uppercase">{ab.name}</span>
+                                  <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{ab.char}</span>
+                                </div>
+                                <p className="font-mono text-[10px] text-slate-400 mt-1">{ab.desc}</p>
+                              </div>
+                              <span className={`font-mono text-xs uppercase px-2 py-1 rounded font-bold ${
+                                active ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-500'
+                              }`}>
+                                {active ? 'ACTIVE' : 'OFF'}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-                  {ALL_SANDBOX_ABILITIES.map(ab => {
-                    const active = oppAbilities.includes(ab.id);
-                    return (
-                      <div
-                        key={'opp-ab-' + ab.id}
-                        onClick={() => toggleOppAbility(ab.id)}
-                        className={`p-3 rounded border text-left cursor-pointer transition-all flex items-center justify-between ${
-                          active
-                            ? 'border-red-500/80 bg-red-500/10'
-                            : 'border-slate-800 bg-slate-900/40 hover:border-slate-700'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-bold text-white uppercase">{ab.name}</span>
-                            <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{ab.char}</span>
-                          </div>
-                          <p className="font-mono text-[10px] text-slate-400 mt-1">{ab.desc}</p>
-                        </div>
-                        <span className={`font-mono text-xs uppercase px-2 py-1 rounded font-bold ${
-                          active ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-500'
-                        }`}>
-                          {active ? 'ACTIVE' : 'OFF'}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Next Round CTA Button */}
             <div className="flex justify-center pt-2">
