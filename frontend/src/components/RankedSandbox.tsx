@@ -134,6 +134,25 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const autoPlayRef = useRef(true);
   useEffect(() => { autoPlayRef.current = autoPlay; }, [autoPlay]);
 
+  // Speed multiplier: 1x, 2x, 4x in a loop (Sandbox only)
+  const [speed, setSpeed] = useState<1 | 2 | 4>(1);
+  const speedRef = useRef<1 | 2 | 4>(1);
+  useEffect(() => { speedRef.current = speed; }, [speed]);
+
+  const toggleSpeed = () => {
+    setSpeed(prev => (prev === 1 ? 2 : prev === 2 ? 4 : 1));
+  };
+
+  const virtualTimeRef = useRef<{ lastRealTime: number; accumulatedMs: number }>({ lastRealTime: Date.now(), accumulatedMs: 0 });
+
+  const getVirtualTimeElapsedMinutes = useCallback(() => {
+    const now = Date.now();
+    const delta = now - virtualTimeRef.current.lastRealTime;
+    virtualTimeRef.current.lastRealTime = now;
+    virtualTimeRef.current.accumulatedMs += delta * speedRef.current;
+    return Math.max(0.005, virtualTimeRef.current.accumulatedMs / 60000);
+  }, []);
+
   // Abilities
   const [myAbilities, setMyAbilities] = useState<string[]>([]);
   const [oppAbilities, setOppAbilities] = useState<string[]>([]);
@@ -297,6 +316,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     const now = Date.now();
     setStartTime(now);
     startTimeRef.current = now;
+    virtualTimeRef.current = { lastRealTime: now, accumulatedMs: 0 };
 
     await generateNewRoundText();
     setGameState('playing');
@@ -356,7 +376,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     }
   }, [myScore, oppScore]);
 
-  // Round countdown timer and speed sampler (Runs like Ranked)
+  // Round countdown timer and speed sampler (Runs like Ranked, scaled by speed)
   useEffect(() => {
     if (gameState !== 'playing' || !startTime) return;
 
@@ -377,7 +397,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
       });
 
       // Sample speed deltas for consistency
-      const timeElapsed = (Date.now() - startTime) / 60000;
+      const timeElapsed = getVirtualTimeElapsedMinutes();
       if (timeElapsed > 0) {
         // Player consistency sample
         const myCharsThisSec = Math.max(0, typedTextRef.current.length - myLastCharsRef.current);
@@ -393,14 +413,15 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         oppSpeedSamplesRef.current.push(oppInstantRaw);
         setOppConsistency(computeConsistency(oppSpeedSamplesRef.current));
       }
-    }, 1000);
+    }, Math.round(1000 / speed));
 
     return () => clearInterval(interval);
-  }, [gameState, startTime, handleEndRound]);
+  }, [gameState, startTime, handleEndRound, speed, getVirtualTimeElapsedMinutes]);
 
   // --- AUTO-TYPER FOR YOU ---
   const scheduleMyNextStep = useCallback((delay: number) => {
     if (myTimeoutRef.current) clearTimeout(myTimeoutRef.current);
+    const actualDelay = Math.max(8, Math.round(delay / speedRef.current));
     myTimeoutRef.current = setTimeout(() => {
       if (!autoPlayRef.current || gameStateRef.current !== 'playing') return;
 
@@ -413,7 +434,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             showGravityPopupRef.current = false;
             gravityEscapingRef.current = false;
             scheduleMyNextStep(100);
-          }, 1200);
+          }, Math.max(40, Math.round(1200 / speedRef.current)));
         }
         return;
       }
@@ -466,7 +487,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           setMyCia({ c: tempC, i: tempI, a: tempA });
           setMyCharge(c => Math.min(100, c + 1));
 
-          const timeElapsed = (Date.now() - (startTimeRef.current || Date.now())) / 60000;
+          const timeElapsed = getVirtualTimeElapsedMinutes();
           if (timeElapsed > 0) {
             setMyWpm(Math.round((tempC / 5) / timeElapsed));
             setMyRawWpm(Math.round((next.length / 5) / timeElapsed));
@@ -474,7 +495,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           }
 
           setActiveKeys(new Set([ch.toUpperCase()]));
-          setTimeout(() => setActiveKeys(new Set()), 40);
+          setTimeout(() => setActiveKeys(new Set()), Math.max(15, Math.round(40 / speedRef.current)));
         }
         nextDelay = ch === ' ' ? 115 + Math.random() * 40 : 75 + Math.random() * 30;
       } else if (action.type === 'backspace') {
@@ -493,18 +514,19 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           }
           setMyCia({ c: tempC, i: tempI, a: tempA });
           setActiveKeys(new Set(['BACKSPACE']));
-          setTimeout(() => setActiveKeys(new Set()), 40);
+          setTimeout(() => setActiveKeys(new Set()), Math.max(15, Math.round(40 / speedRef.current)));
         }
         nextDelay = 60 + Math.random() * 25;
       }
 
       scheduleMyNextStep(nextDelay);
-    }, delay);
-  }, []);
+    }, actualDelay);
+  }, [getVirtualTimeElapsedMinutes]);
 
   // --- AUTO-TYPER FOR OPPONENT ---
   const scheduleOppNextStep = useCallback((delay: number) => {
     if (oppTimeoutRef.current) clearTimeout(oppTimeoutRef.current);
+    const actualDelay = Math.max(8, Math.round(delay / speedRef.current));
     oppTimeoutRef.current = setTimeout(() => {
       if (gameStateRef.current !== 'playing') return;
 
@@ -546,14 +568,14 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           setOppCia({ c: bC, i: bI, a: bA });
           setOppCharge(c => Math.min(100, c + 1));
 
-          const timeElapsed = (Date.now() - (startTimeRef.current || Date.now())) / 60000;
+          const timeElapsed = getVirtualTimeElapsedMinutes();
           if (timeElapsed > 0) {
             setOppWpm(Math.round((bC / 5) / timeElapsed));
             setOppRawWpm(Math.round((next.length / 5) / timeElapsed));
             setOppAccuracy(Math.round((bC / next.length) * 100));
           }
           setOppActiveKeys(new Set([ch.toUpperCase()]));
-          setTimeout(() => setOppActiveKeys(new Set()), 40);
+          setTimeout(() => setOppActiveKeys(new Set()), Math.max(15, Math.round(40 / speedRef.current)));
         }
         nextDelay = ch === ' ' ? 115 + Math.random() * 40 : 75 + Math.random() * 30;
       } else if (action.type === 'backspace') {
@@ -572,14 +594,28 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           }
           setOppCia({ c: bC, i: bI, a: bA });
           setOppActiveKeys(new Set(['BACKSPACE']));
-          setTimeout(() => setOppActiveKeys(new Set()), 40);
+          setTimeout(() => setOppActiveKeys(new Set()), Math.max(15, Math.round(40 / speedRef.current)));
         }
         nextDelay = 60 + Math.random() * 25;
       }
 
       scheduleOppNextStep(nextDelay);
-    }, delay);
-  }, []);
+    }, actualDelay);
+  }, [getVirtualTimeElapsedMinutes]);
+
+  // Immediately apply speed change to running auto-typers
+  useEffect(() => {
+    if (gameState === 'playing' && isSandboxReady) {
+      if (myTimeoutRef.current) {
+        clearTimeout(myTimeoutRef.current);
+        scheduleMyNextStep(20);
+      }
+      if (oppTimeoutRef.current) {
+        clearTimeout(oppTimeoutRef.current);
+        scheduleOppNextStep(20);
+      }
+    }
+  }, [speed, gameState, isSandboxReady, scheduleMyNextStep, scheduleOppNextStep]);
 
   // Launch auto-typers when playing
   useEffect(() => {
@@ -830,6 +866,21 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               Opponent POV
             </button>
           </div>
+
+          {/* Speed Toggle (1x -> 2x -> 4x -> 1x loop) */}
+          <button
+            onClick={toggleSpeed}
+            className={`font-mono text-xs uppercase tracking-widest px-3 py-1.5 rounded border transition-all cursor-pointer font-bold flex items-center gap-1.5 ${
+              speed === 4
+                ? 'border-purple-500/80 bg-purple-500/20 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.3)]'
+                : speed === 2
+                  ? 'border-cyan-500/80 bg-cyan-500/20 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+                  : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-600'
+            }`}
+            title="Speed multiplier (1x -> 2x -> 4x loop)"
+          >
+            <span>⏩</span> Speed: {speed}x
+          </button>
 
           {/* Auto-Play Toggle */}
           <button
