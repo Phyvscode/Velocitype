@@ -227,27 +227,23 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     myTargetTextRef.current = myText;
     oppTargetTextRef.current = oppText;
 
-    // Golden letters for Money Guy (only if Bribe I / moneyguy1 is active)
-    if (selectedCharacters.includes('moneyguy') && myAbilitiesRef.current.includes('moneyguy1')) {
+    // Golden letters for Money Guy (cast in raised gold)
+    if (selectedCharacters.includes('moneyguy')) {
       const gold = new Set<number>();
       for (let i = 0; i < myText.length; i++) {
-        if (myText[i] !== ' ' && Math.random() < 0.25) gold.add(i);
+        if (myText[i] !== ' ' && Math.random() < 0.30) gold.add(i);
       }
       goldenLettersRef.current = gold;
       claimedGoldenRef.current = new Set();
-    } else {
-      goldenLettersRef.current = new Set();
-      claimedGoldenRef.current = new Set();
-    }
 
-    // Opponent Golden letters (if opponent has moneyguy1 active)
-    if (selectedCharacters.includes('moneyguy') && oppAbilitiesRef.current.includes('moneyguy1')) {
       const oppGold = new Set<number>();
       for (let i = 0; i < oppText.length; i++) {
-        if (oppText[i] !== ' ' && Math.random() < 0.25) oppGold.add(i);
+        if (oppText[i] !== ' ' && Math.random() < 0.30) oppGold.add(i);
       }
       oppGoldenLettersRef.current = oppGold;
     } else {
+      goldenLettersRef.current = new Set();
+      claimedGoldenRef.current = new Set();
       oppGoldenLettersRef.current = new Set();
     }
 
@@ -872,6 +868,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           <RankedPlayerArea
             label={activePov === 'you' ? "Your Area" : "Opponent's Area"}
             wpm={activePov === 'you' ? myWpm : oppWpm}
+            fontFamily={user?.fontFamily}
             progress={
               activePov === 'you'
                 ? (typedText.length / Math.max(1, myTargetText.length)) * 100

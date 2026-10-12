@@ -313,7 +313,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
 
         <div 
           className="relative w-full select-none font-mono tracking-wide text-center trip-text-target trip-text-glow"
-          style={{ fontSize: 'clamp(14px, 1.8vw, 24px)' }}
+          style={{ fontSize: 'clamp(14px, 1.8vw, 24px)', fontFamily: fontFamily ? `"${fontFamily}", monospace` : undefined }}
         >
           <div 
             className="overflow-hidden relative"
@@ -353,23 +353,27 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
                         const i = charIndex++;
                         let color = 'text-slate-500';
                         let isUnTyped = false;
-                        if (goldenLetters.has(i)) color = 'text-yellow-400 font-bold drop-shadow-[0_0_8px_rgba(250,204,21,0.6)] exclude-theme';
-                        
+                        const isGolden = goldenLetters.has(i);
+
                         if (i < typedText.length) {
                           let isCorrect = typedText[i] === char;
                           if (joker1Active) isCorrect = true; // Joker 1 makes all mistakes look correct
                           
-                          color = isCorrect ? 'correct-char' : 'text-red-500 bg-red-500/20 exclude-theme';
+                          if (isCorrect) {
+                            if (isGolden) {
+                              color = 'gold-raised-char gold-typed-correct exclude-theme';
+                            } else {
+                              color = !isOpponent ? 'text-[var(--hot)]' : (colorTheme ? 'correct-char' : 'text-red-400');
+                            }
+                          } else {
+                            color = 'text-red-500 bg-red-500/20 exclude-theme';
+                          }
+                        } else if (isGolden) {
+                          color = 'gold-raised-char exclude-theme';
                         } else if (i === typedText.length) {
                           color = 'text-slate-100 exclude-theme';
                         } else {
                           isUnTyped = true;
-                        }
-                        
-                        if (!isOpponent && color === 'correct-char') {
-                          color = 'text-[var(--hot)]';
-                        } else if (isOpponent && color === 'correct-char' && !colorTheme) {
-                          color = 'text-red-400';
                         }
                         
                         // Joker 3: Only every 5th letter is colored, the rest are blank/slate
