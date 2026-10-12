@@ -223,8 +223,8 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     myTargetTextRef.current = myText;
     oppTargetTextRef.current = oppText;
 
-    // Golden letters for Money Guy
-    if (selectedCharacters.includes('moneyguy')) {
+    // Golden letters for Money Guy (only if Bribe I / moneyguy1 is active)
+    if (selectedCharacters.includes('moneyguy') && myAbilitiesRef.current.includes('moneyguy1')) {
       const gold = new Set<number>();
       for (let i = 0; i < myText.length; i++) {
         if (myText[i] !== ' ' && Math.random() < 0.25) gold.add(i);
@@ -427,7 +427,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               myLetterStatesRef.current[charIdx] = 3; // Amended!
             }
           } else {
-            if (currState === 0 || currState === 1) {
+            if ((currState === 0 || currState === 1) && myAbilitiesRef.current.includes('moneyguy2')) {
               setMyHearts(h => h + 3);
             }
             myLetterStatesRef.current[charIdx] = 2; // Incorrect
