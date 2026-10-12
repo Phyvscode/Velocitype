@@ -130,6 +130,17 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const [roundWinner, setRoundWinner] = useState<'You' | 'Opponent' | 'Tie' | null>(null);
   const [matchWinner, setMatchWinner] = useState<'You' | 'Opponent' | null>(null);
 
+  // Target winner decision for upcoming round & higher WPM
+  const [targetWinner, setTargetWinner] = useState<'you' | 'opp' | 'auto'>('you');
+  const [winnerWpm, setWinnerWpm] = useState<number>(120);
+  const [loserWpm, setLoserWpm] = useState<number>(65);
+  const targetWinnerRef = useRef<'you' | 'opp' | 'auto'>('you');
+  const winnerWpmRef = useRef<number>(120);
+  const loserWpmRef = useRef<number>(65);
+  useEffect(() => { targetWinnerRef.current = targetWinner; }, [targetWinner]);
+  useEffect(() => { winnerWpmRef.current = winnerWpm; }, [winnerWpm]);
+  useEffect(() => { loserWpmRef.current = loserWpm; }, [loserWpm]);
+
   const [autoPlay, setAutoPlay] = useState(true);
   const autoPlayRef = useRef(true);
   useEffect(() => { autoPlayRef.current = autoPlay; }, [autoPlay]);
@@ -338,13 +349,60 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     }
   };
 
+  // Handle manual/override setting of round winner on round finished screen
+  const handleSetRoundWinner = useCallback((winner: 'You' | 'Opponent' | 'Tie') => {
+    if (winner === roundWinner) return;
+    let newMyScore = myScore;
+    let newOppScore = oppScore;
+
+    if (roundWinner === 'You') newMyScore = Math.max(0, newMyScore - 1);
+    else if (roundWinner === 'Opponent') newOppScore = Math.max(0, newOppScore - 1);
+
+    if (winner === 'You') newMyScore += 1;
+    else if (winner === 'Opponent') newOppScore += 1;
+
+    setMyScore(newMyScore);
+    setOppScore(newOppScore);
+    setRoundWinner(winner);
+
+    if (newMyScore >= 5 || newOppScore >= 5) {
+      setMatchWinner(newMyScore >= 5 ? 'You' : 'Opponent');
+      setGameState('match_finished');
+      gameStateRef.current = 'match_finished';
+    }
+  }, [roundWinner, myScore, oppScore]);
+
+  // WPM delay scaling for auto-typers
+  const getDelayForWpm = useCallback((targetWpm: number, isSpace: boolean, isBackspace: boolean = false) => {
+    const scale = 85 / Math.max(30, targetWpm);
+    if (isBackspace) {
+      return Math.round((60 + Math.random() * 25) * scale);
+    }
+    if (isSpace) {
+      return Math.round((115 + Math.random() * 40) * scale);
+    }
+    return Math.round((75 + Math.random() * 30) * scale);
+  }, []);
+
+  const getMyTargetWpm = useCallback(() => {
+    if (targetWinnerRef.current === 'you') return winnerWpmRef.current;
+    if (targetWinnerRef.current === 'opp') return loserWpmRef.current;
+    return 85;
+  }, []);
+
+  const getOppTargetWpm = useCallback(() => {
+    if (targetWinnerRef.current === 'opp') return winnerWpmRef.current;
+    if (targetWinnerRef.current === 'you') return loserWpmRef.current;
+    return 85;
+  }, []);
+
   // End Round logic
   const handleEndRound = useCallback(() => {
     if (gameStateRef.current !== 'playing') return;
     if (myTimeoutRef.current) clearTimeout(myTimeoutRef.current);
     if (oppTimeoutRef.current) clearTimeout(oppTimeoutRef.current);
 
-    // Determine round winner by correct characters
+    // Determine round winner: if a target winner was chosen with higher WPM, award to them
     const myCorrect = myLetterStatesRef.current.filter(x => x === 1 || x === 3).length;
     const oppCorrect = oppLetterStatesRef.current.filter(x => x === 1 || x === 3).length;
 
@@ -352,16 +410,26 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     let nextMyScore = myScore;
     let nextOppScore = oppScore;
 
-    if (myCorrect > oppCorrect) {
+    if (targetWinnerRef.current === 'you') {
       winner = 'You';
       nextMyScore = myScore + 1;
       setMyScore(nextMyScore);
-    } else if (oppCorrect > myCorrect) {
+    } else if (targetWinnerRef.current === 'opp') {
       winner = 'Opponent';
       nextOppScore = oppScore + 1;
       setOppScore(nextOppScore);
     } else {
-      winner = 'Tie';
+      if (myCorrect > oppCorrect) {
+        winner = 'You';
+        nextMyScore = myScore + 1;
+        setMyScore(nextMyScore);
+      } else if (oppCorrect > myCorrect) {
+        winner = 'Opponent';
+        nextOppScore = oppScore + 1;
+        setOppScore(nextOppScore);
+      } else {
+        winner = 'Tie';
+      }
     }
     setRoundWinner(winner);
 
@@ -497,7 +565,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           setActiveKeys(new Set([ch.toUpperCase()]));
           setTimeout(() => setActiveKeys(new Set()), Math.max(15, Math.round(40 / speedRef.current)));
         }
-        nextDelay = ch === ' ' ? 115 + Math.random() * 40 : 75 + Math.random() * 30;
+        nextDelay = getDelayForWpm(getMyTargetWpm(), ch === ' ', false);
       } else if (action.type === 'backspace') {
         const prev = typedTextRef.current;
         if (prev.length > 0) {
@@ -516,12 +584,12 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           setActiveKeys(new Set(['BACKSPACE']));
           setTimeout(() => setActiveKeys(new Set()), Math.max(15, Math.round(40 / speedRef.current)));
         }
-        nextDelay = 60 + Math.random() * 25;
+        nextDelay = getDelayForWpm(getMyTargetWpm(), false, true);
       }
 
       scheduleMyNextStep(nextDelay);
     }, actualDelay);
-  }, [getVirtualTimeElapsedMinutes]);
+  }, [getVirtualTimeElapsedMinutes, getDelayForWpm, getMyTargetWpm]);
 
   // --- AUTO-TYPER FOR OPPONENT ---
   const scheduleOppNextStep = useCallback((delay: number) => {
@@ -577,7 +645,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           setOppActiveKeys(new Set([ch.toUpperCase()]));
           setTimeout(() => setOppActiveKeys(new Set()), Math.max(15, Math.round(40 / speedRef.current)));
         }
-        nextDelay = ch === ' ' ? 115 + Math.random() * 40 : 75 + Math.random() * 30;
+        nextDelay = getDelayForWpm(getOppTargetWpm(), ch === ' ', false);
       } else if (action.type === 'backspace') {
         const prev = oppTypedTextRef.current;
         if (prev.length > 0) {
@@ -596,14 +664,14 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           setOppActiveKeys(new Set(['BACKSPACE']));
           setTimeout(() => setOppActiveKeys(new Set()), Math.max(15, Math.round(40 / speedRef.current)));
         }
-        nextDelay = 60 + Math.random() * 25;
+        nextDelay = getDelayForWpm(getOppTargetWpm(), false, true);
       }
 
       scheduleOppNextStep(nextDelay);
     }, actualDelay);
-  }, [getVirtualTimeElapsedMinutes]);
+  }, [getVirtualTimeElapsedMinutes, getDelayForWpm, getOppTargetWpm]);
 
-  // Immediately apply speed change to running auto-typers
+  // Immediately apply speed or target winner change to running auto-typers
   useEffect(() => {
     if (gameState === 'playing' && isSandboxReady) {
       if (myTimeoutRef.current) {
@@ -615,7 +683,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         scheduleOppNextStep(20);
       }
     }
-  }, [speed, gameState, isSandboxReady, scheduleMyNextStep, scheduleOppNextStep]);
+  }, [speed, targetWinner, winnerWpm, loserWpm, gameState, isSandboxReady, scheduleMyNextStep, scheduleOppNextStep]);
 
   // Launch auto-typers when playing
   useEffect(() => {
@@ -866,6 +934,21 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               Opponent POV
             </button>
           </div>
+
+          {/* Winner Selector Badge (Higher WPM) */}
+          <button
+            onClick={() => setTargetWinner(w => w === 'you' ? 'opp' : w === 'opp' ? 'auto' : 'you')}
+            className={`font-mono text-xs uppercase tracking-widest px-3 py-1.5 rounded border transition-all cursor-pointer font-bold flex items-center gap-1.5 ${
+              targetWinner === 'you'
+                ? 'border-[var(--hot)] bg-[var(--hot)]/10 text-[var(--hot)] shadow-[0_0_15px_var(--color-hot-soft)]'
+                : targetWinner === 'opp'
+                  ? 'border-red-500 bg-red-500/10 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]'
+                  : 'border-blue-500/80 bg-blue-500/10 text-blue-300'
+            }`}
+            title="Click to cycle who will win with higher WPM"
+          >
+            <span>🏆</span> Winner: {targetWinner === 'you' ? `You (~${winnerWpm} WPM)` : targetWinner === 'opp' ? `Opponent (~${winnerWpm} WPM)` : 'Equal (~85 WPM)'}
+          </button>
 
           {/* Speed Toggle (1x -> 2x -> 4x -> 1x loop) */}
           <button
@@ -1157,6 +1240,154 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               </h3>
               <div className="font-mono text-base text-[var(--hot)] font-bold tracking-widest">
                 SERIES SCORE: YOU {myScore} — {oppScore} OPPONENT <span className="text-xs text-slate-400 font-normal">(First to 5 Wins)</span>
+              </div>
+
+              {/* Decide/Override Round Winner */}
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <span className="font-mono text-[10px] text-slate-400 uppercase tracking-widest">Decide Round {currentRound + 1} Winner:</span>
+                <button
+                  onClick={() => handleSetRoundWinner('You')}
+                  className={`px-3 py-1 rounded text-xs font-mono uppercase tracking-wider transition-all cursor-pointer font-bold ${
+                    roundWinner === 'You'
+                      ? 'bg-[var(--hot)] text-black shadow-[0_0_10px_var(--color-hot-soft)]'
+                      : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                  }`}
+                >
+                  You (+1)
+                </button>
+                <button
+                  onClick={() => handleSetRoundWinner('Opponent')}
+                  className={`px-3 py-1 rounded text-xs font-mono uppercase tracking-wider transition-all cursor-pointer font-bold ${
+                    roundWinner === 'Opponent'
+                      ? 'bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)]'
+                      : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                  }`}
+                >
+                  Opponent (+1)
+                </button>
+                <button
+                  onClick={() => handleSetRoundWinner('Tie')}
+                  className={`px-3 py-1 rounded text-xs font-mono uppercase tracking-wider transition-all cursor-pointer ${
+                    roundWinner === 'Tie'
+                      ? 'bg-slate-600 text-white font-bold'
+                      : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                  }`}
+                >
+                  Tie
+                </button>
+              </div>
+            </div>
+
+            {/* Choose Next Round Winner (Higher WPM) */}
+            <div className="bg-slate-950/80 border border-amber-500/30 rounded-xl p-5 flex flex-col gap-4 shadow-lg">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-400 text-lg">⚡</span>
+                  <h4 className="font-display text-lg text-amber-300 uppercase tracking-wider">
+                    Choose Round {currentRound + 2} Winner (Higher WPM)
+                  </h4>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] text-slate-400 uppercase tracking-widest">
+                    Winner Speed:
+                  </span>
+                  {[100, 120, 140, 160].map(speedVal => (
+                    <button
+                      key={speedVal}
+                      onClick={() => setWinnerWpm(speedVal)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                        winnerWpm === speedVal
+                          ? 'bg-amber-400 text-black shadow-[0_0_10px_rgba(251,191,36,0.5)]'
+                          : 'bg-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {speedVal} WPM
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* You Wins */}
+                <button
+                  onClick={() => setTargetWinner('you')}
+                  className={`p-3.5 rounded-lg border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                    targetWinner === 'you'
+                      ? 'border-emerald-500 bg-emerald-500/15 shadow-[0_0_20px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/60'
+                      : 'border-slate-800 bg-slate-900/40 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-display text-sm tracking-wider uppercase text-emerald-400 font-bold flex items-center gap-1.5">
+                      <span>🏆</span> You Wins
+                    </span>
+                    <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                      targetWinner === 'you' ? 'bg-emerald-500 text-black' : 'bg-slate-800 text-slate-500'
+                    }`}>
+                      {targetWinner === 'you' ? 'SELECTED' : 'OFF'}
+                    </span>
+                  </div>
+                  <p className="font-mono text-[11px] text-slate-300">
+                    You types at <strong className="text-emerald-400 font-bold">~{winnerWpm} WPM</strong>
+                  </p>
+                  <p className="font-mono text-[10px] text-slate-500">
+                    Opponent throttled at ~{loserWpm} WPM
+                  </p>
+                </button>
+
+                {/* Opponent Wins */}
+                <button
+                  onClick={() => setTargetWinner('opp')}
+                  className={`p-3.5 rounded-lg border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                    targetWinner === 'opp'
+                      ? 'border-red-500 bg-red-500/15 shadow-[0_0_20px_rgba(239,68,68,0.25)] ring-1 ring-red-500/60'
+                      : 'border-slate-800 bg-slate-900/40 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-display text-sm tracking-wider uppercase text-red-400 font-bold flex items-center gap-1.5">
+                      <span>🏆</span> Opponent Wins
+                    </span>
+                    <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                      targetWinner === 'opp' ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-500'
+                    }`}>
+                      {targetWinner === 'opp' ? 'SELECTED' : 'OFF'}
+                    </span>
+                  </div>
+                  <p className="font-mono text-[11px] text-slate-300">
+                    Opponent types at <strong className="text-red-400 font-bold">~{winnerWpm} WPM</strong>
+                  </p>
+                  <p className="font-mono text-[10px] text-slate-500">
+                    You throttled at ~{loserWpm} WPM
+                  </p>
+                </button>
+
+                {/* Equal / Auto */}
+                <button
+                  onClick={() => setTargetWinner('auto')}
+                  className={`p-3.5 rounded-lg border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                    targetWinner === 'auto'
+                      ? 'border-blue-500 bg-blue-500/15 shadow-[0_0_20px_rgba(59,130,246,0.25)] ring-1 ring-blue-500/60'
+                      : 'border-slate-800 bg-slate-900/40 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-display text-sm tracking-wider uppercase text-blue-400 font-bold flex items-center gap-1.5">
+                      <span>⚖️</span> Equal / Auto
+                    </span>
+                    <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                      targetWinner === 'auto' ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-500'
+                    }`}>
+                      {targetWinner === 'auto' ? 'SELECTED' : 'OFF'}
+                    </span>
+                  </div>
+                  <p className="font-mono text-[11px] text-slate-300">
+                    Both players type at <strong className="text-blue-400 font-bold">~85 WPM</strong>
+                  </p>
+                  <p className="font-mono text-[10px] text-slate-500">
+                    Natural contest based on errors
+                  </p>
+                </button>
               </div>
             </div>
 
