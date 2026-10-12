@@ -1285,21 +1285,22 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
         <>
           {/* Bottom Bar: Stats */}
           <div className="fixed bottom-0 left-0 w-full px-12 py-6 flex justify-between items-end pointer-events-none z-30 bg-gradient-to-t from-background via-background/80 to-transparent">
-            {/* My Stats */}
+            {/* My Stats & Opponent Stats */}
             {(() => {
-              const isMyBlind = oppAbilities.includes('joker2') || oppAbilities.includes('joker2_buffed');
-              const isOppBlind = myAbilities.includes('joker2') || myBuffedAbilities.includes('joker2');
+              // When opponent activated blindness, the player is blinded (victim): both player and opponent stats show ???
+              // But for the player who activated this ability, stats are NOT masked with ???
+              const isBlindMasked = oppAbilities.includes('joker2') || oppAbilities.includes('joker2_buffed');
 
               return (
                 <>
                   <div className="flex flex-col gap-2 pointer-events-auto">
                     <h3 className="font-display text-xl text-[var(--hot)] tracking-widest uppercase">You</h3>
                     <div className="font-mono text-3xl text-white tracking-widest">
-                      {isMyBlind ? '???' : myWpm} <span className="text-sm text-slate-500">WPM</span>
+                      {isBlindMasked ? '???' : myWpm} <span className="text-sm text-slate-500">WPM</span>
                     </div>
                     {myCia && (
                       <div className="font-mono text-sm text-slate-400 tracking-widest">
-                        {isMyBlind ? (
+                        {isBlindMasked ? (
                           <span className="text-slate-500">??? / ??? / ???</span>
                         ) : (
                           <>
@@ -1312,29 +1313,29 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                     )}
                     {selectedCharacters.includes('moneyguy') ? (
                       <div className="font-mono text-xs text-slate-300 flex gap-3">
-                        <span className="text-yellow-400 font-bold">{isMyBlind ? '???' : myCoins} Coins</span>
-                        <span className="text-red-400 font-bold">{isMyBlind ? '???' : myHearts} Hearts</span>
+                        <span className="text-yellow-400 font-bold">{isBlindMasked ? '???' : myCoins} Coins</span>
+                        <span className="text-red-400 font-bold">{isBlindMasked ? '???' : myHearts} Hearts</span>
                       </div>
                     ) : (
-                      <div className="font-mono text-xs text-slate-500">{isMyBlind ? '???' : `${myCharge}%`} Charge</div>
+                      <div className="font-mono text-xs text-slate-500">{isBlindMasked ? '???' : `${myCharge}%`} Charge</div>
                     )}
                     
                     <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80">
                       <div>
                         <div className="font-mono text-sm text-white tracking-widest">
-                          {isMyBlind ? '???' : myRawWpm} <span className="text-[10px] text-slate-400">RAW WPM</span>
+                          {isBlindMasked ? '???' : myRawWpm} <span className="text-[10px] text-slate-400">RAW WPM</span>
                         </div>
                         <div className="font-mono text-[9px] text-slate-500 tracking-tight">Speed before error penalties</div>
                       </div>
                       <div>
                         <div className="font-mono text-sm text-white tracking-widest">
-                          {isMyBlind ? '???' : `${myAccuracy}%`} <span className="text-[10px] text-slate-400">ACC</span>
+                          {isBlindMasked ? '???' : `${myAccuracy}%`} <span className="text-[10px] text-slate-400">ACC</span>
                         </div>
                         <div className="font-mono text-[9px] text-slate-500 tracking-tight">Typing correctness</div>
                       </div>
                       <div>
                         <div className="font-mono text-sm text-white tracking-widest">
-                          {isMyBlind ? '???' : `${myConsistency}%`} <span className="text-[10px] text-slate-400">CONSISTENCY</span>
+                          {isBlindMasked ? '???' : `${myConsistency}%`} <span className="text-[10px] text-slate-400">CONSISTENCY</span>
                         </div>
                         <div className="font-mono text-[9px] text-slate-500 tracking-tight">How stable speed was</div>
                       </div>
@@ -1345,11 +1346,11 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                   <div className="flex flex-col gap-2 text-right pointer-events-auto items-end">
                     <h3 className="font-display text-xl text-red-500 tracking-widest uppercase">Opponent</h3>
                     <div className="font-mono text-3xl text-white tracking-widest">
-                      {isOppBlind ? '???' : oppWpm} <span className="text-sm text-slate-500">WPM</span>
+                      {isBlindMasked ? '???' : oppWpm} <span className="text-sm text-slate-500">WPM</span>
                     </div>
                     {oppCia && (
                       <div className="font-mono text-sm text-slate-400 tracking-widest">
-                        {isOppBlind ? (
+                        {isBlindMasked ? (
                           <span className="text-slate-500">??? / ??? / ???</span>
                         ) : (
                           <>
@@ -1360,24 +1361,24 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                         )}
                       </div>
                     )}
-                    <div className="font-mono text-xs text-slate-500">{isOppBlind ? '???' : `${oppCharge}%`} Charge</div>
+                    <div className="font-mono text-xs text-slate-500">{isBlindMasked ? '???' : `${oppCharge}%`} Charge</div>
 
                     <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80 items-end">
                       <div>
                         <div className="font-mono text-sm text-white tracking-widest">
-                          {isOppBlind ? '???' : oppRawWpm} <span className="text-[10px] text-slate-400">RAW WPM</span>
+                          {isBlindMasked ? '???' : oppRawWpm} <span className="text-[10px] text-slate-400">RAW WPM</span>
                         </div>
                         <div className="font-mono text-[9px] text-slate-500 tracking-tight">Speed before error penalties</div>
                       </div>
                       <div>
                         <div className="font-mono text-sm text-white tracking-widest">
-                          {isOppBlind ? '???' : `${oppAccuracy}%`} <span className="text-[10px] text-slate-400">ACC</span>
+                          {isBlindMasked ? '???' : `${oppAccuracy}%`} <span className="text-[10px] text-slate-400">ACC</span>
                         </div>
                         <div className="font-mono text-[9px] text-slate-500 tracking-tight">Typing correctness</div>
                       </div>
                       <div>
                         <div className="font-mono text-sm text-white tracking-widest">
-                          {isOppBlind ? '???' : `${oppConsistency}%`} <span className="text-[10px] text-slate-400">CONSISTENCY</span>
+                          {isBlindMasked ? '???' : `${oppConsistency}%`} <span className="text-[10px] text-slate-400">CONSISTENCY</span>
                         </div>
                         <div className="font-mono text-[9px] text-slate-500 tracking-tight">How stable speed was</div>
                       </div>
