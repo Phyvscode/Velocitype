@@ -277,7 +277,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
   }, [isOpponent, fontFamily]);
 
   return (
-    <div id={isOpponent ? "opponent-area" : undefined} className={`flex-1 p-4 md:p-8 flex flex-col relative ${isOpponent ? 'bg-slate-900/40' : ''} ${tripActive ? 'trip-body tripping' : ''} ${blinkActive ? 'view-blink ' + blinkStyle : ''}`} data-level={tripActive ? String(tripLevel) : "0"}>
+    <div id={isOpponent ? "opponent-area" : undefined} className={`flex-1 p-4 md:p-8 flex flex-col justify-center items-center relative w-full ${isOpponent ? 'bg-slate-900/40' : ''} ${tripActive ? 'trip-body tripping' : ''} ${blinkActive ? 'view-blink ' + blinkStyle : ''}`} data-level={tripActive ? String(tripLevel) : "0"}>
       {tripActive && (
         <div className="trip-layer">
           <div className="trip-hue"></div>
@@ -289,21 +289,8 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
         </div>
       )}
       {isOpponent && oppStyle && <style>{oppStyle}</style>}
-      <div className="flex justify-between items-end mb-4 md:mb-8">
-        
-        <div className="flex flex-col items-end gap-1">
-          {/* HIDDEN STATS */ false && <span className="font-mono text-sm uppercase tracking-widest" style={{ color: isOpponent ? oppPrimaryHex : 'var(--hot)' }}>{wpm} WPM</span>}
-          {/* HIDDEN CIA */ false && (
-            <span className="font-mono text-[10px] text-slate-400 tracking-widest">
-              <span className="text-emerald-400">{cia.c}</span>/
-              <span className="text-red-500">{cia.i}</span>/
-              <span className="text-amber-400">{cia.a}</span>
-            </span>
-          )}
-        </div>
-      </div>
 
-      <div className={`flex-1 relative flex flex-col overflow-visible pt-4 pb-4 ${tripActive ? "trip-text-target" : ""}`} ref={containerRef} style={tripActive ? { filter: `url(#${warpId})` } : undefined}>
+      <div className={`flex-1 w-full max-w-4xl mx-auto relative flex flex-col justify-center items-center overflow-visible py-4 ${tripActive ? "trip-text-target" : ""}`} ref={containerRef} style={tripActive ? { filter: `url(#${warpId})` } : undefined}>
 
       <svg width="0" height="0" style={{position: 'absolute'}} aria-hidden="true" focusable="false">
         <filter id={warpId} x="-5%" y="-5%" width="110%" height="110%">
@@ -315,7 +302,7 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
       </svg>
 
         <div 
-          className="relative w-full select-none font-mono tracking-wide text-left trip-text-target trip-text-glow"
+          className="relative w-full select-none font-mono tracking-wide text-center trip-text-target trip-text-glow"
           style={{ fontSize: 'clamp(14px, 1.8vw, 24px)' }}
         >
           <div 
@@ -1033,10 +1020,10 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
         </div>
       </div>
 
-      {/* Split Screen Area */}
-      <div className="flex-1 flex flex-col relative w-full max-w-5xl mx-auto px-4 md:px-8">
-        {/* My Side (Left) */}
-        <div className="flex-1 pr-[calc(((100dvh-270px)/3)+32px)] flex flex-col min-h-0">
+      {/* Match Screen Area */}
+      <div className="flex-1 flex flex-col relative w-full max-w-5xl mx-auto px-4 md:px-8 justify-center items-center">
+        {/* Playing Area */}
+        <div className="flex-1 w-full flex flex-col min-h-0 justify-center items-center">
           <RankedPlayerArea
             label="Your Area"
             wpm={myWpm}

@@ -333,7 +333,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         </div>
 
         {/* PLAYER SIDE */}
-        <div className="flex-1 border-r border-slate-800/50 flex flex-col h-full relative">
+        <div className="flex-1 flex flex-col h-full relative">
           <div className="absolute bottom-0 left-0 w-full p-4 bg-slate-900/80 border-t border-slate-800 flex flex-wrap items-center justify-center gap-4 z-40 backdrop-blur-md">
              <div className="text-xs text-[var(--hot)] uppercase tracking-widest mr-2 font-bold">My Screen</div>
              <label className="flex items-center gap-1 cursor-pointer">
@@ -389,8 +389,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">Invest (Buff)</span>
             </label>
           </div>
-          
-                <div className="flex-1 pt-12 pb-24 pl-8 pr-[calc(((100dvh-270px)/3)+32px)] overflow-hidden flex flex-col">
+          <div className="flex-1 w-full max-w-5xl mx-auto px-4 md:px-8 overflow-hidden flex flex-col justify-center items-center">
 
       {/* Bottom Stats & Right Side Characters */}
       {gameState === 'playing' && (
