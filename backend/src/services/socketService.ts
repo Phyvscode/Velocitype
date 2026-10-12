@@ -383,7 +383,7 @@ export const initSocket = (httpServer: HttpServer) => {
       }
     });
 
-    socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number}; charge?: number; bestLetter?: string; worstLetter?: string }) => {
+    socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number}; charge?: number; bestLetter?: string; worstLetter?: string; rawWpm?: number; accuracy?: number; consistency?: number }) => {
       const match = rankedMatches[data.matchId];
       if (match && match.state === 'playing') {
         const player = match.players[socket.id];
@@ -399,7 +399,10 @@ export const initSocket = (httpServer: HttpServer) => {
             targetText: data.targetText,
             cia: data.cia,
             bestLetter: data.bestLetter,
-            worstLetter: data.worstLetter
+            worstLetter: data.worstLetter,
+            rawWpm: data.rawWpm,
+            accuracy: data.accuracy,
+            consistency: data.consistency
           });
         }
       }

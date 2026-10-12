@@ -10,6 +10,16 @@ import { generateSentences } from '@/lib/quotes';
 import LiveKeyboard, { getKeyLabel } from '@/components/LiveKeyboard';
 import '../trip.css';
 
+export function computeConsistency(samples: number[]): number {
+  if (samples.length < 2) return 100;
+  const mean = samples.reduce((a, b) => a + b, 0) / samples.length;
+  if (mean === 0) return 100;
+  const variance = samples.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / samples.length;
+  const stdDev = Math.sqrt(variance);
+  const cv = stdDev / mean;
+  return Math.max(0, Math.min(100, Math.round((1 - cv) * 100)));
+}
+
 interface RankedMatchData {
   matchId: string;
   language: string;
@@ -460,10 +470,20 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
   const [gravity1Count, setGravity1Count] = useState(0);
   const [showGravityPopup, setShowGravityPopup] = useState(false);
   const [myWpm, setMyWpm] = useState(0);
+  const [myRawWpm, setMyRawWpm] = useState(0);
+  const [myAccuracy, setMyAccuracy] = useState(100);
+  const [myConsistency, setMyConsistency] = useState(100);
+  const mySpeedSamplesRef = useRef<number[]>([]);
+  const myLastCharsRef = useRef<number>(0);
   const [startTime, setStartTime] = useState<number | null>(null);
 
   const [oppProgress, setOppProgress] = useState(0);
   const [oppWpm, setOppWpm] = useState(0);
+  const [oppRawWpm, setOppRawWpm] = useState(0);
+  const [oppAccuracy, setOppAccuracy] = useState(100);
+  const [oppConsistency, setOppConsistency] = useState(100);
+  const oppSpeedSamplesRef = useRef<number[]>([]);
+  const oppLastCharsRef = useRef<number>(0);
   const [amIReady, setAmIReady] = useState(false);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [matchWinner, setMatchWinner] = useState<string | null>(null);
@@ -525,16 +545,49 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       if (timeElapsed > 0) {
         let correctCount = 0;
         for (let i = 0; i < typedText.length; i++) {
-          if (typedText[i] === (myTargetText[i] || oppTargetText[i])) { // Roughly correct
+          if (typedText[i] === myTargetText[i]) {
             correctCount++;
           }
         }
         const wpm = Math.round((correctCount / 5) / timeElapsed);
+        const rawWpm = Math.round((typedText.length / 5) / timeElapsed);
+        const accuracy = typedText.length > 0 ? Math.round((correctCount / typedText.length) * 100) : 100;
+
+        if (typedText.length > 0) {
+          const charsThisSec = Math.max(0, typedText.length - myLastCharsRef.current);
+          myLastCharsRef.current = typedText.length;
+          const instantRaw = Math.round((charsThisSec / 5) * 60);
+          mySpeedSamplesRef.current.push(instantRaw);
+        }
+        const consistency = computeConsistency(mySpeedSamplesRef.current);
+
         setMyWpm(wpm);
+        setMyRawWpm(rawWpm);
+        setMyAccuracy(accuracy);
+        setMyConsistency(consistency);
+
+        // Fallback for opponent in case socket didn't deliver them
+        if (oppTypedText.length > 0) {
+          let oppCorrect = 0;
+          for (let i = 0; i < oppTypedText.length; i++) {
+            if (oppTypedText[i] === (oppTargetText[i] || '')) oppCorrect++;
+          }
+          const oRaw = Math.round((oppTypedText.length / 5) / timeElapsed);
+          const oAcc = Math.round((oppCorrect / oppTypedText.length) * 100);
+          const oppCharsThisSec = Math.max(0, oppTypedText.length - oppLastCharsRef.current);
+          oppLastCharsRef.current = oppTypedText.length;
+          const oppInstantRaw = Math.round((oppCharsThisSec / 5) * 60);
+          oppSpeedSamplesRef.current.push(oppInstantRaw);
+          const oCons = computeConsistency(oppSpeedSamplesRef.current);
+
+          setOppRawWpm(prev => prev || oRaw);
+          setOppAccuracy(prev => prev !== 100 ? prev : oAcc);
+          setOppConsistency(prev => prev !== 100 ? prev : oCons);
+        }
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [gameState, startTime, typedText, myTargetText, oppTargetText]);
+  }, [gameState, startTime, typedText, myTargetText, oppTargetText, oppTypedText]);
 
   useEffect(() => {
     if (gameState !== 'playing') return;
@@ -586,14 +639,23 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       setStartTime(Date.now());
       setMyProgress(0);
       setMyWpm(0);
+      setMyRawWpm(0);
+      setMyAccuracy(100);
+      setMyConsistency(100);
+      mySpeedSamplesRef.current = [];
+      myLastCharsRef.current = 0;
       setMyCia({c: 0, i: 0, a: 0});
       myLetterStatesRef.current = [];
       setOppCia(null);
       setOppProgress(0);
+      setOppWpm(0);
+      setOppRawWpm(0);
+      setOppAccuracy(100);
+      setOppConsistency(100);
+      oppSpeedSamplesRef.current = [];
+      oppLastCharsRef.current = 0;
       setGravity1Count(0);
       setShowGravityPopup(false);
-      setOppProgress(0);
-      setOppWpm(0);
       
       let newTargetText = sentencesRef.current[data.round] || sentencesRef.current[0] || "Hello world.";
       if (matchDataRef.current?.opponent.characters?.includes("screwed")) {
@@ -605,9 +667,12 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       setTimeout(() => inputRef.current?.focus(), 100);
     };
 
-    const onOpponentProgress = (data: { progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number}; charge?: number; bestLetter?: string; worstLetter?: string; }) => {
+    const onOpponentProgress = (data: { progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number}; charge?: number; bestLetter?: string; worstLetter?: string; rawWpm?: number; accuracy?: number; consistency?: number; }) => {
       setOppProgress(data.progress);
       setOppWpm(data.wpm);
+      if (data.rawWpm !== undefined) setOppRawWpm(data.rawWpm);
+      if (data.accuracy !== undefined) setOppAccuracy(data.accuracy);
+      if (data.consistency !== undefined) setOppConsistency(data.consistency);
       if (data.cia) setOppCia(data.cia);
       if (data.charge !== undefined) setOppCharge(data.charge);
       if (data.bestLetter !== undefined) setOppBestLetter(data.bestLetter);
@@ -804,14 +869,23 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
     const timeElapsed = (Date.now() - (startTime || Date.now())) / 60000;
     const words = correctCount / 5;
     const wpm = timeElapsed > 0 ? Math.round(words / timeElapsed) : 0;
+    const rawWpm = timeElapsed > 0 ? Math.round((val.length / 5) / timeElapsed) : 0;
+    const accuracy = val.length > 0 ? Math.round((correctCount / val.length) * 100) : 100;
+    const consistency = computeConsistency(mySpeedSamplesRef.current);
     
     setMyProgress(progress);
     setMyWpm(wpm);
+    setMyRawWpm(rawWpm);
+    setMyAccuracy(accuracy);
+    setMyConsistency(consistency);
     
     socket.emit('updateRankedProgress', { 
       matchId: matchData.matchId, 
       progress, 
       wpm, 
+      rawWpm,
+      accuracy,
+      consistency,
       typedText: val, 
       activeKeys: Array.from(activeKeys),
       targetText: target,
@@ -829,7 +903,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
     setActiveKeys(prev => {
       const next = new Set(prev);
       next.add(key);
-      socket?.emit('updateRankedProgress', { matchId: matchData?.matchId, progress: myProgress, wpm: myWpm, typedText, activeKeys: Array.from(next), targetText: myTargetText });
+      socket?.emit('updateRankedProgress', { matchId: matchData?.matchId, progress: myProgress, wpm: myWpm, rawWpm: myRawWpm, accuracy: myAccuracy, consistency: myConsistency, typedText, activeKeys: Array.from(next), targetText: myTargetText });
       return next;
     });
   };
@@ -840,7 +914,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
     setActiveKeys(prev => {
       const next = new Set(prev);
       next.delete(key);
-      socket?.emit('updateRankedProgress', { matchId: matchData?.matchId, progress: myProgress, wpm: myWpm, typedText, activeKeys: Array.from(next), targetText: myTargetText });
+      socket?.emit('updateRankedProgress', { matchId: matchData?.matchId, progress: myProgress, wpm: myWpm, rawWpm: myRawWpm, accuracy: myAccuracy, consistency: myConsistency, typedText, activeKeys: Array.from(next), targetText: myTargetText });
       return next;
     });
   };
@@ -1219,10 +1293,31 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                 </div>
               )}
               <div className="font-mono text-xs text-slate-500">{myCharge}% Charge</div>
+              
+              <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80">
+                <div>
+                  <div className="font-mono text-sm text-white tracking-widest">
+                    {(!oppAbilities.includes('joker2') && !oppAbilities.includes('joker2_buffed')) ? myRawWpm : '???'} <span className="text-[10px] text-slate-400">RAW WPM</span>
+                  </div>
+                  <div className="font-mono text-[9px] text-slate-500 tracking-tight">Speed before error penalties</div>
+                </div>
+                <div>
+                  <div className="font-mono text-sm text-white tracking-widest">
+                    {myAccuracy}% <span className="text-[10px] text-slate-400">ACC</span>
+                  </div>
+                  <div className="font-mono text-[9px] text-slate-500 tracking-tight">Typing correctness</div>
+                </div>
+                <div>
+                  <div className="font-mono text-sm text-white tracking-widest">
+                    {myConsistency}% <span className="text-[10px] text-slate-400">CONSISTENCY</span>
+                  </div>
+                  <div className="font-mono text-[9px] text-slate-500 tracking-tight">How stable speed was</div>
+                </div>
+              </div>
             </div>
 
             {/* Opponent Stats */}
-            <div className="flex flex-col gap-2 text-right pointer-events-auto">
+            <div className="flex flex-col gap-2 text-right pointer-events-auto items-end">
               <h3 className="font-display text-xl text-red-500 tracking-widest uppercase">Opponent</h3>
               {(!myAbilities.includes('joker2') && !myBuffedAbilities.includes('joker2')) && (
                 <div className="font-mono text-3xl text-white tracking-widest">{oppWpm} <span className="text-sm text-slate-500">WPM</span></div>
@@ -1235,12 +1330,33 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                 </div>
               )}
               <div className="font-mono text-xs text-slate-500">{oppCharge}% Charge</div>
+
+              <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80 items-end">
+                <div>
+                  <div className="font-mono text-sm text-white tracking-widest">
+                    {(!myAbilities.includes('joker2') && !myBuffedAbilities.includes('joker2')) ? oppRawWpm : '???'} <span className="text-[10px] text-slate-400">RAW WPM</span>
+                  </div>
+                  <div className="font-mono text-[9px] text-slate-500 tracking-tight">Speed before error penalties</div>
+                </div>
+                <div>
+                  <div className="font-mono text-sm text-white tracking-widest">
+                    {oppAccuracy}% <span className="text-[10px] text-slate-400">ACC</span>
+                  </div>
+                  <div className="font-mono text-[9px] text-slate-500 tracking-tight">Typing correctness</div>
+                </div>
+                <div>
+                  <div className="font-mono text-sm text-white tracking-widest">
+                    {oppConsistency}% <span className="text-[10px] text-slate-400">CONSISTENCY</span>
+                  </div>
+                  <div className="font-mono text-[9px] text-slate-500 tracking-tight">How stable speed was</div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Right Side Characters */}
           <div 
-            className="fixed right-4 top-[84px] bottom-[168px] flex flex-col justify-between items-end z-40 pointer-events-none"
+            className="fixed right-4 top-[84px] bottom-[260px] flex flex-col justify-between items-end z-40 pointer-events-none"
           >
             {/* My Character(s) */}
             {selectedCharacters.map((charId, idx) => {
@@ -1258,7 +1374,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
               return (
                 <div 
                   key={'my-'+idx} 
-                  className="w-[calc((100dvh-270px)/3)] h-[calc((100dvh-270px)/3)] shrink-0 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_25px_var(--color-hot-soft)]"
+                  className="w-[calc((100dvh-380px)/3)] h-[calc((100dvh-380px)/3)] shrink-0 rounded-full border-4 border-[var(--hot)]/50 bg-[var(--hot)]/10 overflow-hidden flex items-center justify-center shadow-[0_0_25px_var(--color-hot-soft)]"
                 >
                   <AnimatedCharacter 
                     id={charId} 
@@ -1443,6 +1559,10 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                 <span className="text-red-500">{myCia.i}</span>/
                 <span className="text-amber-400">{myCia.a}</span>
               </div>
+              <div className="text-[11px] mt-2 text-slate-400 font-mono flex flex-col gap-0.5">
+                <div>{myRawWpm} RAW WPM</div>
+                <div>{myAccuracy}% ACC &bull; {myConsistency}% CON</div>
+              </div>
             </div>
             <div className="text-center">
               <div className="text-red-500 mb-2">{matchData.opponent.username}</div>
@@ -1454,6 +1574,10 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                 <span className="text-emerald-400">{oppCia?.c ?? 0}</span>/
                 <span className="text-red-500">{oppCia?.i ?? 0}</span>/
                 <span className="text-amber-400">{oppCia?.a ?? 0}</span>
+              </div>
+              <div className="text-[11px] mt-2 text-slate-400 font-mono flex flex-col gap-0.5">
+                <div>{oppRawWpm} RAW WPM</div>
+                <div>{oppAccuracy}% ACC &bull; {oppConsistency}% CON</div>
               </div>
             </div>
           </div>
