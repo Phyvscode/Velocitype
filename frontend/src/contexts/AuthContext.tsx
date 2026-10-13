@@ -32,6 +32,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('velocitype_portal_border', res.user.portalBorder);
         window.dispatchEvent(new Event('storage'));
       }
+      if (res.user.colorTheme && typeof res.user.colorTheme === 'string') {
+        import('@/lib/themes').then(({ THEMES }) => {
+          const match = THEMES.find((t) => t.name.toLowerCase() === (res.user.colorTheme as string).toLowerCase());
+          if (match) {
+            import('@/lib/colors').then(({ applyFullTheme }) => {
+              applyFullTheme(match, true);
+            });
+          }
+        });
+      }
     } catch {
       setUser(null);
       setStats(null);

@@ -13,18 +13,21 @@ export const saveResult = async (req: AuthRequest, res: Response): Promise<Respo
 
     const { wpm, accuracy, correctCount, totalWords, duration, rows } = req.body;
 
-    if (wpm === undefined || accuracy === undefined) {
-      return res.status(400).json({ message: 'wpm and accuracy are required' });
+    const numWpm = Number(wpm);
+    const numAccuracy = Number(accuracy);
+
+    if (wpm === undefined || accuracy === undefined || isNaN(numWpm) || isNaN(numAccuracy) || numWpm < 0 || numAccuracy < 0) {
+      return res.status(400).json({ message: 'Valid non-negative wpm and accuracy numbers are required' });
     }
 
     const result = await TestResult.create({
       user: req.user._id,
-      wpm,
-      accuracy,
-      correctCount: correctCount || 0,
-      totalWords: totalWords || 0,
-      duration: duration || 0,
-      rows: rows || [],
+      wpm: Math.round(numWpm),
+      accuracy: Math.min(100, Math.round(numAccuracy * 100) / 100),
+      correctCount: Math.max(0, Number(correctCount) || 0),
+      totalWords: Math.max(0, Number(totalWords) || 0),
+      duration: Math.max(0, Number(duration) || 0),
+      rows: Array.isArray(rows) ? rows.map(String) : [],
     });
 
     return res.status(201).json({

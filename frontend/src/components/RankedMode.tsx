@@ -475,6 +475,8 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
   const [oppCia, setOppCia] = useState<{c: number, i: number, a: number} | null>(null);
   const [gravity1Count, setGravity1Count] = useState(0);
   const [showGravityPopup, setShowGravityPopup] = useState(false);
+  const [gravityNotice, setGravityNotice] = useState<string | null>(null);
+  const gravityNoticeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [myWpm, setMyWpm] = useState(0);
   const [myRawWpm, setMyRawWpm] = useState(0);
   const [myAccuracy, setMyAccuracy] = useState(100);
@@ -720,7 +722,26 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       setOppUpgrades(data.upgrades);
     };
 
+    const showGravityNotice = (msg: string) => {
+      setGravityNotice(msg);
+      if (gravityNoticeTimerRef.current) clearTimeout(gravityNoticeTimerRef.current);
+      gravityNoticeTimerRef.current = setTimeout(() => setGravityNotice(null), 3500);
+    };
+
+    // Time Warp: server adds time for BOTH players when the caster is slower (max 3 per match)
+    const onGravityTimeSync = (data: { amountSec: number; casterId?: string; usesLeft?: number }) => {
+      setTimeLeft(prev => prev + data.amountSec);
+      showGravityNotice(`TIME WARP! +${data.amountSec}s for both players${data.usesLeft !== undefined ? ` (${data.usesLeft} left)` : ''}`);
+    };
+
+    // Event Horizon: server ends the round instantly (round end itself arrives via rankedRoundEnd)
+    const onGravityEventHorizon = () => {
+      showGravityNotice('EVENT HORIZON! Round ended early');
+    };
+
     socket.on('rankedQueueJoined', onQueueJoined);
+    socket.on('rankedGravityTimeSync', onGravityTimeSync);
+    socket.on('rankedGravityEventHorizon', onGravityEventHorizon);
     socket.on('rankedMatchFound', onMatchFound);
     socket.on('rankedMatchReady', onMatchReady);
     socket.on('rankedRoundStart', onRoundStart);
@@ -737,6 +758,8 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       }
       socket.emit('leaveRankedQueue', { language: 'english' }); // just in case they leave while queueing
       socket.off('rankedQueueJoined', onQueueJoined);
+      socket.off('rankedGravityTimeSync', onGravityTimeSync);
+      socket.off('rankedGravityEventHorizon', onGravityEventHorizon);
       socket.off('rankedMatchFound', onMatchFound);
       socket.off('rankedMatchReady', onMatchReady);
       socket.off('rankedRoundStart', onRoundStart);
@@ -1269,6 +1292,12 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
         </div>
       )}
   
+      {gravityNotice && (
+        <div className="fixed top-28 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full border border-purple-400/70 bg-purple-950/90 text-purple-200 font-mono text-sm uppercase tracking-widest shadow-[0_0_30px_rgba(168,85,247,0.5)] pointer-events-none">
+          🪐 {gravityNotice}
+        </div>
+      )}
+
       {showGravityPopup && gameState === 'playing' && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm pointer-events-auto">
            <div className="bg-red-950 border border-red-500 p-8 rounded-xl shadow-[0_0_50px_rgba(239,68,68,0.5)] text-center animate-bounce">

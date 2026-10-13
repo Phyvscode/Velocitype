@@ -51,6 +51,7 @@ interface RankedPlayer {
   bgTheme?: any;
   characters?: string[];
   fullTheme?: string;
+  abilities?: string[]; // Ability ids this player has purchased (cast on the opponent)
 }
 
 interface RankedMatch {
@@ -63,7 +64,14 @@ interface RankedMatch {
   roundTimer?: NodeJS.Timeout;
   abilitySelectionTimer?: NodeJS.Timeout;
   extraTime?: number;
+  roundEndAt?: number; // Epoch ms when the current round ends (extended by Time Warp)
+  gravityInterval?: NodeJS.Timeout; // Watches Gravity abilities (Time Warp / Event Horizon)
+  timeWarpUses?: Record<string, number>; // Time Warp uses per player id (max 3 per match)
 }
+
+const MAX_TIME_WARPS_PER_MATCH = 3;
+const TIME_WARP_BONUS_MS = 10000;
+const EVENT_HORIZON_MIN_ELAPSED_SEC = 30;
 
 const rankedQueue: Record<string, RankedPlayer[]> = {}; // Keyed by language
 const rankedMatches: Record<string, RankedMatch> = {}; // Keyed by match ID
@@ -325,16 +333,21 @@ export const initSocket = (httpServer: HttpServer) => {
             
             const roundIndex = match.currentRound;
             match.extraTime = 0;
+            const roundStartAt = Date.now();
+            match.roundEndAt = roundStartAt + 60000;
+            if (match.gravityInterval) clearInterval(match.gravityInterval);
+            if (!match.timeWarpUses) match.timeWarpUses = {};
 
             const handleRoundEnd = async () => {
               if (rankedMatches[match.id] && match.state === 'playing' && match.currentRound === roundIndex) {
-                if (match.extraTime && match.extraTime > 0) {
-                  const extra = match.extraTime;
-                  match.extraTime = 0;
-                  match.roundTimer = setTimeout(handleRoundEnd, extra);
+                // Time Warp may have pushed the end of the round further out
+                const remainingMs = (match.roundEndAt || 0) - Date.now();
+                if (remainingMs > 50) {
+                  match.roundTimer = setTimeout(handleRoundEnd, remainingMs);
                   return;
                 }
 
+                if (match.gravityInterval) clearInterval(match.gravityInterval);
                 match.state = 'round_finished';
                 
                 const playersList = Object.values(match.players);
@@ -378,6 +391,55 @@ export const initSocket = (httpServer: HttpServer) => {
               }
             };
             match.roundTimer = setTimeout(handleRoundEnd, 60000);
+
+            // Gravity abilities, evaluated server-side from live WPM
+            let timeWarpChecked = false;
+            match.gravityInterval = setInterval(() => {
+              if (!rankedMatches[match.id] || match.state !== 'playing' || match.currentRound !== roundIndex) {
+                if (match.gravityInterval) clearInterval(match.gravityInterval);
+                return;
+              }
+              const players = Object.values(match.players);
+              if (players.length < 2) return;
+
+              const elapsedSec = (Date.now() - roundStartAt) / 1000;
+              const remainingSec = ((match.roundEndAt || 0) - Date.now()) / 1000;
+
+              // Event Horizon: after 30s, if the caster out-types the opponent, end the round instantly
+              for (const caster of players) {
+                const opp = players.find(p => p.id !== caster.id)!;
+                if ((caster.abilities || []).includes('gravity3') && elapsedSec >= EVENT_HORIZON_MIN_ELAPSED_SEC && caster.wpm > opp.wpm) {
+                  io.to(match.id).emit('rankedGravityEventHorizon', { casterId: caster.id });
+                  if (match.gravityInterval) clearInterval(match.gravityInterval);
+                  if (match.roundTimer) clearTimeout(match.roundTimer);
+                  match.roundEndAt = Date.now();
+                  handleRoundEnd();
+                  return;
+                }
+              }
+
+              // Time Warp: once the last 10s begin, a slower caster adds +10s for BOTH players (max 3 per match)
+              if (!timeWarpChecked && remainingSec <= 10) {
+                timeWarpChecked = true;
+                for (const caster of players) {
+                  const opp = players.find(p => p.id !== caster.id)!;
+                  const used = match.timeWarpUses![caster.id] || 0;
+                  if ((caster.abilities || []).includes('gravity1') && used < MAX_TIME_WARPS_PER_MATCH && caster.wpm < opp.wpm) {
+                    match.timeWarpUses![caster.id] = used + 1;
+                    match.roundEndAt = (match.roundEndAt || Date.now()) + TIME_WARP_BONUS_MS;
+                    if (match.roundTimer) clearTimeout(match.roundTimer);
+                    match.roundTimer = setTimeout(handleRoundEnd, Math.max(0, match.roundEndAt - Date.now()));
+                    io.to(match.id).emit('rankedGravityTimeSync', {
+                      amountSec: TIME_WARP_BONUS_MS / 1000,
+                      casterId: caster.id,
+                      usesLeft: MAX_TIME_WARPS_PER_MATCH - (used + 1)
+                    });
+                    timeWarpChecked = false; // allow re-check at the next 10s mark (still capped at 3 per match)
+                    break;
+                  }
+                }
+              }
+            }, 500);
           }
         }
       }
@@ -411,35 +473,15 @@ export const initSocket = (httpServer: HttpServer) => {
     socket.on('rankedUpgrades', (data: { matchId: string; upgrades: string[] }) => {
       const match = rankedMatches[data.matchId];
       if (match) {
+        const player = match.players[socket.id];
+        if (player) player.abilities = Array.isArray(data.upgrades) ? data.upgrades : [];
         socket.to(data.matchId).emit('rankedOpponentUpgrades', { upgrades: data.upgrades });
       }
     });
     
-    
-    socket.on('rankedGravityTime', (data: { matchId: string, amountMs: number }) => {
-      const match = rankedMatches[data.matchId];
-      if (match) {
-        match.extraTime = (match.extraTime || 0) + data.amountMs;
-        io.to(data.matchId).emit('rankedGravityTimeSync', { amountSec: data.amountMs / 1000 });
-      }
-    });
-
+    // Time Warp (gravity1) and Event Horizon (gravity3) are resolved server-side in the round loop above.
     socket.on('rankedGravitySabotage', (data: { matchId: string, isBuffed: boolean }) => {
       socket.to(data.matchId).emit('rankedGravitySabotage', { isBuffed: data.isBuffed });
-    });
-
-    socket.on('rankedGravityEndRound', (data: { matchId: string }) => {
-      const match = rankedMatches[data.matchId];
-      if (match && match.state === 'playing') {
-         if (match.roundTimer) clearTimeout(match.roundTimer);
-         match.extraTime = 0;
-         match.roundTimer = setTimeout(() => {
-           // Emulate timer expiration early
-         }, 0);
-         // Actually, let's just directly call a helper, but wait, handleRoundEnd is inside socket block.
-         // Let's just emit to both clients that time is 0.
-         io.to(data.matchId).emit('rankedGravityForceEnd');
-      }
     });
 
     socket.on('rankedTimeWarp', (data: { matchId: string }) => {

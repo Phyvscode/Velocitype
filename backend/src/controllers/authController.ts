@@ -18,15 +18,42 @@ const generateToken = (id: string): string => {
   );
 };
 
+// Only accept real strings from the request body. Objects such as {"$ne": null}
+// would otherwise be passed straight into Mongo queries (NoSQL injection).
+const asString = (value: unknown): string | undefined =>
+  typeof value === 'string' ? value : undefined;
+
+const normalizeEmail = (value: unknown): string | undefined => {
+  const s = asString(value);
+  return s ? s.trim().toLowerCase() : undefined;
+};
+
+const escapeRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
+const USERNAME_REGEX = /^[A-Za-z0-9_.-]{3,20}$/;
+
 // @desc    Register a new user
 // @route   POST /api/auth/signup
 // @access  Public
 export const registerUser = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { username, email, password, avatarUrl } = req.body;
+    const username = asString(req.body.username)?.trim();
+    const email = normalizeEmail(req.body.email);
+    const password = asString(req.body.password);
+    const avatarUrl = asString(req.body.avatarUrl);
 
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'Please provide all fields' });
+    }
+    if (!USERNAME_REGEX.test(username)) {
+      return res.status(400).json({ message: 'Username must be 3-20 characters (letters, numbers, _ . -)' });
+    }
+    if (!EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ message: 'Please enter a valid email address' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
 
     const userExists = await User.findOne({ email });
@@ -39,12 +66,13 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
 
     // Case-insensitive username check
     const usernameExists = await User.findOne({ 
-      username: { $regex: new RegExp(`^${username}$`, 'i') } 
+      username: { $regex: new RegExp(`^${escapeRegex(username)}$`, 'i') } 
     });
     
     if (usernameExists) {
       return res.status(400).json({ message: 'This username is already taken. Please choose another one.' });
     }
+
 
     const user = await User.create({
       username,
@@ -65,7 +93,9 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
           fontFamily: user.fontFamily,
           colorTheme: user.colorTheme,
           elo: user.elo,
+          avatarUrl: user.avatarUrl,
           portalBorder: user.portalBorder,
+          bgTheme: user.bgTheme,
         },
       });
     } else {
@@ -73,7 +103,14 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
     }
   } catch (error: any) {
     console.error('Register Error:', error);
-    return res.status(500).json({ message: error.message || 'Server error' });
+    if (error?.name === 'ValidationError') {
+      const first = Object.values(error.errors || {})[0] as any;
+      return res.status(400).json({ message: first?.message || 'Invalid user data' });
+    }
+    if (error?.code === 11000) {
+      return res.status(400).json({ message: 'An account with this email or username already exists' });
+    }
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -82,7 +119,8 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
 // @access  Public
 export const loginUser = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { email, password } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const password = asString(req.body.password);
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Please provide email and password' });
@@ -102,6 +140,7 @@ export const loginUser = async (req: Request, res: Response): Promise<Response> 
           elo: user.elo,
           avatarUrl: user.avatarUrl,
           portalBorder: user.portalBorder,
+          bgTheme: user.bgTheme,
         },
       });
     } else {
@@ -163,7 +202,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<Response>
 
       while (!isUnique) {
         const existing = await User.findOne({ 
-          username: { $regex: new RegExp(`^${finalUsername}$`, 'i') } 
+          username: { $regex: new RegExp(`^${escapeRegex(finalUsername)}$`, 'i') } 
         });
         if (!existing) {
           isUnique = true;
@@ -195,6 +234,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<Response>
         elo: user.elo,
         avatarUrl: user.avatarUrl,
         portalBorder: user.portalBorder,
+        bgTheme: user.bgTheme,
       },
     });
   } catch (error: any) {
@@ -228,6 +268,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<Response> 
         elo: user.elo,
         avatarUrl: user.avatarUrl,
         portalBorder: user.portalBorder,
+        bgTheme: user.bgTheme,
       },
       stats: {
         testCount,
@@ -268,7 +309,7 @@ const getTransporter = async () => {
 
 export const forgotPassword = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { email } = req.body;
+    const email = normalizeEmail(req.body.email);
     if (!email) {
       return res.status(400).json({ message: 'Please provide an email address' });
     }
@@ -315,7 +356,8 @@ export const forgotPassword = async (req: Request, res: Response): Promise<Respo
 
 export const verifyOTP = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { email, otp } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const otp = asString(req.body.otp);
     if (!email || !otp) {
       return res.status(400).json({ message: 'Email and OTP are required' });
     }
@@ -357,7 +399,8 @@ export const verifyOTP = async (req: Request, res: Response): Promise<Response> 
 
 export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { resetToken, newPassword } = req.body;
+    const resetToken = asString(req.body.resetToken);
+    const newPassword = asString(req.body.newPassword);
     if (!resetToken || !newPassword) {
       return res.status(400).json({ message: 'Reset token and new password are required' });
     }

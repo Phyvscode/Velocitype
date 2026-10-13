@@ -24,9 +24,9 @@ export const ALL_SANDBOX_ABILITIES = [
   { id: 'joker1', name: 'Delusion', cost: 30, char: 'joker', desc: 'All mistakes appear correct/green' },
   { id: 'joker2', name: 'Blindness', cost: 60, char: 'joker', desc: 'Masks WPM and raw stats as ???' },
   { id: 'joker3', name: 'Amnesia', cost: 100, char: 'joker', desc: 'Only reveals every 5th letter, timer as ???' },
-  { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity', desc: 'Black Hole Sabotage popup (Ctrl+X to escape)' },
-  { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity', desc: 'Crushes opponent speed & progress' },
-  { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity', desc: 'Sucks time and forces early round end' },
+  { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity', desc: '+10s for both if your WPM is lower (max 3/match)' },
+  { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity', desc: 'Black Hole Sabotage popup (Ctrl+X to escape)' },
+  { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity', desc: 'After 30s, ends the round if your WPM is higher' },
   { id: 'moneyguy1', name: 'Bribe I', cost: 30, char: 'moneyguy', desc: 'Golden letters spawn in text (+5 coins)' },
   { id: 'moneyguy2', name: 'Bribe II', cost: 60, char: 'moneyguy', desc: 'Typing mistakes grant +3 hearts' },
   { id: 'moneyguy3', name: 'Invest', cost: 100, char: 'moneyguy', desc: 'Buffs all character abilities' },
@@ -238,6 +238,23 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   // Active POV: 'you' or 'opp'
   const [activePov, setActivePov] = useState<'you' | 'opp'>('you');
 
+  // Gravity abilities (Time Warp / Event Horizon) bookkeeping
+  const timeLeftRef = useRef(60);
+  const roundElapsedRef = useRef(0);
+  const myWarpUsesRef = useRef(0);
+  const oppWarpUsesRef = useRef(0);
+  const myWpmRef = useRef(0);
+  const oppWpmRef = useRef(0);
+  useEffect(() => { myWpmRef.current = myWpm; }, [myWpm]);
+  useEffect(() => { oppWpmRef.current = oppWpm; }, [oppWpm]);
+  const [gravityNotice, setGravityNotice] = useState<string | null>(null);
+  const gravityNoticeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const showSandboxGravityNotice = (msg: string) => {
+    setGravityNotice(msg);
+    if (gravityNoticeTimerRef.current) clearTimeout(gravityNoticeTimerRef.current);
+    gravityNoticeTimerRef.current = setTimeout(() => setGravityNotice(null), 3500);
+  };
+
   // Gravity Sabotage Popup
   const [showGravityPopup, setShowGravityPopup] = useState(false);
   const showGravityPopupRef = useRef(false);
@@ -300,6 +317,8 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const startNewRound = useCallback(async (roundNum: number) => {
     setCurrentRound(roundNum);
     setTimeLeft(60);
+    timeLeftRef.current = 60;
+    roundElapsedRef.current = 0;
     setTypedText('');
     setOppTypedText('');
     typedTextRef.current = '';
@@ -342,6 +361,8 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
       } catch {}
       setMyScore(0);
       setOppScore(0);
+      myWarpUsesRef.current = 0;
+      oppWarpUsesRef.current = 0;
       setMyAbilities([]);
       setOppAbilities([]);
       setIsSandboxReady(true);
@@ -449,20 +470,48 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     if (gameState !== 'playing' || !startTime) return;
 
     const interval = setInterval(() => {
-      setTimeLeft(t => {
-        if (t <= 1) {
-          handleEndRound();
-          return 0;
-        }
+      roundElapsedRef.current += 1;
+      const t = timeLeftRef.current;
+      if (t <= 1) {
+        timeLeftRef.current = 0;
+        setTimeLeft(0);
+        handleEndRound();
+        return;
+      }
 
-        // Trigger Gravity Sabotage popup if Opponent has gravity1/gravity2
-        if ((oppAbilitiesRef.current.includes('gravity1') || oppAbilitiesRef.current.includes('gravity2')) && (t === 40 || t === 20)) {
-          setShowGravityPopup(true);
-          showGravityPopupRef.current = true;
-        }
+      // Trigger Gravity Sabotage popup if Opponent has gravity2 (Black Hole)
+      if (oppAbilitiesRef.current.includes('gravity2') && (t === 40 || t === 20)) {
+        setShowGravityPopup(true);
+        showGravityPopupRef.current = true;
+      }
 
-        return t - 1;
-      });
+      const casters: Array<{ abilities: string[]; wpm: number; otherWpm: number; usesRef: React.MutableRefObject<number>; name: string }> = [
+        { abilities: myAbilitiesRef.current, wpm: myWpmRef.current, otherWpm: oppWpmRef.current, usesRef: myWarpUsesRef, name: 'You' },
+        { abilities: oppAbilitiesRef.current, wpm: oppWpmRef.current, otherWpm: myWpmRef.current, usesRef: oppWarpUsesRef, name: 'Opponent' },
+      ];
+
+      // Event Horizon: after 30s, if the caster's WPM beats the other player's, end the round instantly
+      const horizon = casters.find(c => c.abilities.includes('gravity3') && roundElapsedRef.current >= 30 && c.wpm > c.otherWpm);
+      if (horizon) {
+        showSandboxGravityNotice(`EVENT HORIZON! ${horizon.name} ended the round early`);
+        handleEndRound();
+        return;
+      }
+
+      let next = t - 1;
+
+      // Time Warp: when 10s remain, a slower caster adds +10s for BOTH players (max 3 per match)
+      if (next === 10) {
+        const warp = casters.find(c => c.abilities.includes('gravity1') && c.usesRef.current < 3 && c.wpm < c.otherWpm);
+        if (warp) {
+          warp.usesRef.current += 1;
+          next += 10;
+          showSandboxGravityNotice(`TIME WARP! +10s for both players (${warp.name}: ${3 - warp.usesRef.current} left)`);
+        }
+      }
+
+      timeLeftRef.current = next;
+      setTimeLeft(next);
 
       // Sample speed deltas for consistency
       const timeElapsed = getVirtualTimeElapsedMinutes();
@@ -1217,6 +1266,12 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         )}
       </div>
 
+      {gravityNotice && (
+        <div className="absolute top-28 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full border border-purple-400/70 bg-purple-950/90 text-purple-200 font-mono text-sm uppercase tracking-widest shadow-[0_0_30px_rgba(168,85,247,0.5)] pointer-events-none">
+          🪐 {gravityNotice}
+        </div>
+      )}
+
       {/* Gravity Sabotage Popup */}
       {showGravityPopup && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto">
@@ -1545,6 +1600,8 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               onClick={() => {
                 setMyScore(0);
                 setOppScore(0);
+                myWarpUsesRef.current = 0;
+                oppWarpUsesRef.current = 0;
                 setMyAbilities([]);
                 setOppAbilities([]);
                 startNewRound(0);

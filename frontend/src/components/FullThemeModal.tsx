@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { THEMES, Theme } from '@/lib/themes';
 import { applyFullTheme, getStoredTheme } from '@/lib/colors';
+import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Props {
   isOpen: boolean;
@@ -8,6 +10,7 @@ interface Props {
 }
 
 export default function FullThemeModal({ isOpen, onClose }: Props) {
+  const { user } = useAuth();
   const [activeTheme, setActiveTheme] = useState<string | null>(null);
 
   useEffect(() => {
@@ -19,8 +22,12 @@ export default function FullThemeModal({ isOpen, onClose }: Props) {
   if (!isOpen) return null;
 
   const handleSelect = (t: Theme | null) => {
-    setActiveTheme(t ? t.name : null);
+    const themeName = t ? t.name : null;
+    setActiveTheme(themeName);
     applyFullTheme(t, true);
+    if (user) {
+      api.updateSettings({ colorTheme: themeName }).catch((err) => console.error('Failed to save theme setting:', err));
+    }
   };
 
   return (

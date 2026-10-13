@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import SavedWord from '../models/SavedWord.js';
 import { AuthRequest } from '../middleware/auth.js';
 
@@ -35,14 +36,20 @@ export const saveWord = async (req: AuthRequest, res: Response): Promise<Respons
     }
 
     const { word, meaning } = req.body;
-    if (!word || !meaning) {
-      return res.status(400).json({ message: 'Word and meaning are required' });
+    if (!word || !meaning || typeof word !== 'string' || typeof meaning !== 'string') {
+      return res.status(400).json({ message: 'Word and meaning are required as strings' });
+    }
+
+    const cleanWord = word.trim().toLowerCase();
+    const cleanMeaning = meaning.trim();
+    if (!cleanWord || !cleanMeaning) {
+      return res.status(400).json({ message: 'Word and meaning cannot be blank' });
     }
 
     // Check if already saved by user
-    const existing = await SavedWord.findOne({ user: req.user._id, word: word.toLowerCase() });
+    const existing = await SavedWord.findOne({ user: req.user._id, word: cleanWord });
     if (existing) {
-      existing.meaning = meaning;
+      existing.meaning = cleanMeaning;
       await existing.save();
       return res.json({
         id: existing._id,
@@ -80,6 +87,10 @@ export const deleteSavedWord = async (req: AuthRequest, res: Response): Promise<
     }
 
     const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: 'Invalid word ID' });
+    }
+
     const word = await SavedWord.findOne({ _id: id, user: req.user._id });
     if (!word) {
       return res.status(404).json({ message: 'Saved word not found' });

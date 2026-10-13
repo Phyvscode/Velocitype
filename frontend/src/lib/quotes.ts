@@ -25,7 +25,7 @@ export async function generateSentences(
   let sentences: string[] = [];
   
   if (apiKey && apiKey.trim().length > 0) {
-    sentences = await generateWithGemini(apiKey.trim(), rows, minWords, maxWords, count, theme);
+    sentences = await generateWithGemini(apiKey.trim(), rows, minWords, maxWords, count, theme, customLetters, extraInitial, extraMiddle, extraFinal);
   } else if (rows.length > 0) {
     sentences = await generateRandomDictionarySentences(rows, minWords, maxWords, count, customLetters, extraInitial, extraMiddle, extraFinal);
   } else {
@@ -36,7 +36,18 @@ export async function generateSentences(
 }
 
 // 1. GEMINI LLM
-async function generateWithGemini(apiKey: string, rows: RowKey[], minWords: number, maxWords: number, count: number, theme?: string): Promise<string[]> {
+async function generateWithGemini(
+  apiKey: string,
+  rows: RowKey[],
+  minWords: number,
+  maxWords: number,
+  count: number,
+  theme?: string,
+  customLetters?: string,
+  extraInitial?: string,
+  extraMiddle?: string,
+  extraFinal?: string
+): Promise<string[]> {
   const rowRestriction = rows.length > 0 
     ? `ONLY use words that can be spelled using the letters from these rows: ${rows.join(', ')}.`
     : '';
