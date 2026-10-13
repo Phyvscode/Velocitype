@@ -534,7 +534,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
   useEffect(() => { myWorstLetterRef.current = myWorstLetter; }, [myWorstLetter]);
 
   useEffect(() => {
-    if (selectedCharacters.includes('moneyguy')) {
+    if (selectedCharacters.includes('moneyguy') && myAbilities.includes('moneyguy1')) {
       const newGolden = new Set<number>();
       for (let i = 0; i < myTargetText.length; i++) {
         if (myTargetText[i] !== ' ' && Math.random() < 0.3) {
@@ -543,8 +543,11 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       }
       goldenLettersRef.current = newGolden;
       claimedGoldenRef.current = new Set();
+    } else {
+      goldenLettersRef.current = new Set();
+      claimedGoldenRef.current = new Set();
     }
-  }, [myTargetText, selectedCharacters]);
+  }, [myTargetText, selectedCharacters, myAbilities]);
 
   useEffect(() => {
     if (gameState !== 'playing' || !startTime) return;
@@ -856,7 +859,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
         }
         else if (currState === 2) myLetterStatesRef.current[i] = 3;
       } else {
-        if (currState === 0 || currState === 1) {
+        if ((currState === 0 || currState === 1) && myAbilities.includes('moneyguy2')) {
           setMyHearts(h => h + 3);
           myHeartsRef.current += 3;
         }
@@ -874,7 +877,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
     const newCia = { c: tempC, i: tempI, a: tempA };
     setMyCia(newCia);
     
-    if (tempC > prevC && !selectedCharacters.includes('moneyguy')) {
+    if (tempC > prevC) {
       const newCharge = Math.min(100, myChargeRef.current + (tempC - prevC));
       setMyCharge(newCharge);
       myChargeRef.current = newCharge;
@@ -1539,7 +1542,9 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       {shopAbilities.map(ability => {
         const hasIt = myAbilities.includes(ability.id) || myBuffedAbilities.includes(ability.id);
         const mgCost = getMG(ability.cost);
-        const canAfford = isMG ? (myCoins >= mgCost.c && myHearts >= mgCost.h) : (myCharge >= ability.cost);
+        const canAfford = ability.char === 'moneyguy'
+          ? (myCharge >= ability.cost || (myCoins >= mgCost.c && myHearts >= mgCost.h))
+          : (isMG ? (myCoins >= mgCost.c && myHearts >= mgCost.h) : (myCharge >= ability.cost));
         
         return (
           <button
@@ -1549,10 +1554,24 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                 if (ability.char === 'moneyguy') {
                   if (ability.id === 'moneyguy3') {
                     setShowBuffSelect(true);
-                  } else {
-                    setShowAbilitySelect(ability.id);
+                    return; 
                   }
-                  return; 
+                  
+                  if (myCharge >= ability.cost) {
+                    setMyCharge(c => c - ability.cost);
+                    myChargeRef.current -= ability.cost;
+                  } else {
+                    setMyCoins(c => c - mgCost.c);
+                    setMyHearts(h => h - mgCost.h);
+                    myCoinsRef.current -= mgCost.c;
+                    myHeartsRef.current -= mgCost.h;
+                  }
+                  const newAbilities = [...myAbilities, ability.id];
+                  setMyAbilities(newAbilities);
+                  if (typeof socket !== 'undefined' && socket) {
+                     socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newAbilities });
+                  }
+                  return;
                 }
                 
                 if (isMG) {
@@ -1580,7 +1599,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
             <span className={hasIt ? "text-emerald-400" : ""}>
               {ability.name}
             </span>
-            {isMG ? (
+            {isMG && ability.char !== 'moneyguy' ? (
               <div className="flex gap-2 text-[9px]">
                 <span className="text-yellow-400">{mgCost.c}c</span>
                 <span className="text-red-400">{mgCost.h}h</span>

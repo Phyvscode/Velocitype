@@ -286,23 +286,26 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     myTargetTextRef.current = myText;
     oppTargetTextRef.current = oppText;
 
-    // Golden letters for Money Guy (cast in raised gold)
-    if (selectedCharacters.includes('moneyguy')) {
+    // Golden letters for Money Guy (only if Bribe I / moneyguy1 is active)
+    if (selectedCharacters.includes('moneyguy') && myAbilitiesRef.current.includes('moneyguy1')) {
       const gold = new Set<number>();
       for (let i = 0; i < myText.length; i++) {
         if (myText[i] !== ' ' && Math.random() < 0.30) gold.add(i);
       }
       goldenLettersRef.current = gold;
       claimedGoldenRef.current = new Set();
+    } else {
+      goldenLettersRef.current = new Set();
+      claimedGoldenRef.current = new Set();
+    }
 
+    if (selectedCharacters.includes('moneyguy') && oppAbilitiesRef.current.includes('moneyguy1')) {
       const oppGold = new Set<number>();
       for (let i = 0; i < oppText.length; i++) {
         if (oppText[i] !== ' ' && Math.random() < 0.30) oppGold.add(i);
       }
       oppGoldenLettersRef.current = oppGold;
     } else {
-      goldenLettersRef.current = new Set();
-      claimedGoldenRef.current = new Set();
       oppGoldenLettersRef.current = new Set();
     }
 
@@ -816,15 +819,45 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   }, [gameState, myTargetText, showGravityPopup]);
 
   const toggleMyAbility = (abilityId: string) => {
-    setMyAbilities(prev =>
-      prev.includes(abilityId) ? prev.filter(a => a !== abilityId) : [...prev, abilityId]
-    );
+    setMyAbilities(prev => {
+      const next = prev.includes(abilityId) ? prev.filter(a => a !== abilityId) : [...prev, abilityId];
+      myAbilitiesRef.current = next;
+      if (abilityId === 'moneyguy1') {
+        if (next.includes('moneyguy1') && selectedCharacters.includes('moneyguy')) {
+          const gold = new Set<number>();
+          const text = myTargetTextRef.current || '';
+          for (let i = 0; i < text.length; i++) {
+            if (text[i] !== ' ' && Math.random() < 0.30) gold.add(i);
+          }
+          goldenLettersRef.current = gold;
+          claimedGoldenRef.current = new Set();
+        } else {
+          goldenLettersRef.current = new Set();
+          claimedGoldenRef.current = new Set();
+        }
+      }
+      return next;
+    });
   };
 
   const toggleOppAbility = (abilityId: string) => {
-    setOppAbilities(prev =>
-      prev.includes(abilityId) ? prev.filter(a => a !== abilityId) : [...prev, abilityId]
-    );
+    setOppAbilities(prev => {
+      const next = prev.includes(abilityId) ? prev.filter(a => a !== abilityId) : [...prev, abilityId];
+      oppAbilitiesRef.current = next;
+      if (abilityId === 'moneyguy1') {
+        if (next.includes('moneyguy1') && selectedCharacters.includes('moneyguy')) {
+          const gold = new Set<number>();
+          const text = oppTargetTextRef.current || '';
+          for (let i = 0; i < text.length; i++) {
+            if (text[i] !== ' ' && Math.random() < 0.30) gold.add(i);
+          }
+          oppGoldenLettersRef.current = gold;
+        } else {
+          oppGoldenLettersRef.current = new Set();
+        }
+      }
+      return next;
+    });
   };
 
   const formatTime = (s: number) => {
