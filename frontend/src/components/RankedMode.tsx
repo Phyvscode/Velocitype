@@ -378,7 +378,7 @@ export function RankedPlayerArea({
                   left: `${caretLeft}px`,
                   top: `${caretTop}px`,
                   opacity: gameState === 'playing' && !joker1Active ? 1 : 0,
-                  backgroundColor: isOpponent ? oppPrimaryHex : 'var(--hot)'
+                  backgroundColor: isOpponent ? oppPrimaryHex : (moneyguyActive ? '#fbbf24' : 'var(--hot)')
                 }}
               />
 
@@ -388,7 +388,7 @@ export function RankedPlayerArea({
                 return words.map((word, wIdx) => {
                   const charsAndSpace = wIdx < words.length - 1 ? word.split('').concat([' ']) : word.split('');
                   return (
-                    <span key={wIdx} className="inline-block whitespace-pre">
+                    <span key={wIdx} className="inline-block whitespace-pre exclude-theme" style={{ textShadow: 'none' }}>
                       {charsAndSpace.map((char, cIdx) => {
                         const i = charIndex++;
                         let color = 'text-slate-500';
@@ -422,7 +422,7 @@ export function RankedPlayerArea({
                           color = 'text-slate-500';
                         }
 
-                        let styleObj: any = {};
+                        let styleObj: React.CSSProperties = isGolden ? { textShadow: 'none' } : {};
 
                         if (!isGolden && dyslexiaActive && isUnTyped) {
                           color += ' dyslexia-char';
