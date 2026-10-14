@@ -4,6 +4,7 @@ import { generateSentences } from "@/lib/quotes";
 import { applyScrewedEffects } from "@/lib/words";
 import { AnimatedCharacter } from './AnimatedCharacter';
 import { useAuth } from '../contexts/AuthContext';
+import { FlyingResourceOverlay, FlyingResourceRef, CoinIcon, HeartIcon } from './FlyingResourceOverlay';
 
 interface RankedSandboxProps {
   onBack: () => void;
@@ -229,14 +230,108 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const [oppConsistency, setOppConsistency] = useState(100);
   const [oppCia, setOppCia] = useState<{ c: number; i: number; a: number }>({ c: 0, i: 0, a: 0 });
   const [oppCharge, setOppCharge] = useState(0);
+  const [oppCoins, setOppCoins] = useState(0);
+  const [oppHearts, setOppHearts] = useState(0);
   const oppLetterStatesRef = useRef<number[]>([]);
   const oppSpeedSamplesRef = useRef<number[]>([]);
   const oppLastCharsRef = useRef<number>(0);
   const oppWorstLetterRef = useRef<string | null>('a');
   const oppGoldenLettersRef = useRef<Set<number>>(new Set());
+  const oppClaimedGoldenRef = useRef<Set<number>>(new Set());
+
+  // Flying resource overlay refs & HUD targets
+  const flyingResourceRef = useRef<FlyingResourceRef>(null);
+  const coinTargetRef = useRef<HTMLDivElement>(null);
+  const heartTargetRef = useRef<HTMLDivElement>(null);
+  const [coinPulse, setCoinPulse] = useState(false);
+  const [heartPulse, setHeartPulse] = useState(false);
+  const letterElementsRef = useRef<(HTMLSpanElement | null)[]>([]);
+  const [goldVersion, setGoldVersion] = useState(0);
 
   // Active POV: 'you' or 'opp'
   const [activePov, setActivePov] = useState<'you' | 'opp'>('you');
+
+  const triggerSandboxCoinSpawn = useCallback((charIndex: number, forOpponent: boolean = false) => {
+    const isVisibleInPov = (forOpponent && activePov === 'opp') || (!forOpponent && activePov === 'you');
+    
+    if (isVisibleInPov && flyingResourceRef.current) {
+      let startX = window.innerWidth / 2;
+      let startY = window.innerHeight / 2;
+      const letterEl = letterElementsRef.current[charIndex];
+      if (letterEl) {
+        const rect = letterEl.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 14 + Math.random() * 22;
+        startX = cx + Math.cos(angle) * dist;
+        startY = cy + Math.sin(angle) * dist;
+      }
+      let targetX = 50;
+      let targetY = window.innerHeight - 50;
+      if (coinTargetRef.current) {
+        const tRect = coinTargetRef.current.getBoundingClientRect();
+        targetX = tRect.left + tRect.width / 2;
+        targetY = tRect.top + tRect.height / 2;
+      }
+      flyingResourceRef.current.spawnCoin(startX, startY, targetX, targetY, () => {
+        if (forOpponent) {
+          setOppCoins(c => c + 5);
+        } else {
+          setMyCoins(c => c + 5);
+        }
+        setCoinPulse(true);
+        setTimeout(() => setCoinPulse(false), 350);
+      });
+    } else {
+      if (forOpponent) {
+        setOppCoins(c => c + 5);
+      } else {
+        setMyCoins(c => c + 5);
+      }
+    }
+  }, [activePov]);
+
+  const triggerSandboxHeartSpawn = useCallback((charIndex: number, forOpponent: boolean = false) => {
+    const isVisibleInPov = (forOpponent && activePov === 'opp') || (!forOpponent && activePov === 'you');
+    
+    if (isVisibleInPov && flyingResourceRef.current) {
+      let startX = window.innerWidth / 2;
+      let startY = window.innerHeight / 2;
+      const letterEl = letterElementsRef.current[charIndex];
+      if (letterEl) {
+        const rect = letterEl.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 14 + Math.random() * 22;
+        startX = cx + Math.cos(angle) * dist;
+        startY = cy + Math.sin(angle) * dist;
+      }
+      let targetX = 90;
+      let targetY = window.innerHeight - 50;
+      if (heartTargetRef.current) {
+        const tRect = heartTargetRef.current.getBoundingClientRect();
+        targetX = tRect.left + tRect.width / 2;
+        targetY = tRect.top + tRect.height / 2;
+      }
+      flyingResourceRef.current.spawnHeart(startX, startY, targetX, targetY, () => {
+        if (forOpponent) {
+          setOppHearts(h => h + 3);
+        } else {
+          setMyHearts(h => h + 3);
+        }
+        setHeartPulse(true);
+        setTimeout(() => setHeartPulse(false), 350);
+      });
+    } else {
+      if (forOpponent) {
+        setOppHearts(h => h + 3);
+      } else {
+        setMyHearts(h => h + 3);
+      }
+    }
+  }, [activePov]);
 
   // Gravity abilities (Time Warp / Event Horizon) bookkeeping
   const timeLeftRef = useRef(60);
@@ -305,9 +400,12 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         if (oppText[i] !== ' ' && Math.random() < 0.30) oppGold.add(i);
       }
       oppGoldenLettersRef.current = oppGold;
+      oppClaimedGoldenRef.current = new Set();
     } else {
       oppGoldenLettersRef.current = new Set();
+      oppClaimedGoldenRef.current = new Set();
     }
+    setGoldVersion(v => v + 1);
 
     // Build queues for both auto-typers with 60% / 20% / 20% logic
     myActionQueueRef.current = buildFullActionQueue(myText);
@@ -328,6 +426,8 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     oppTypedTextRef.current = '';
     myLetterStatesRef.current = [];
     oppLetterStatesRef.current = [];
+    claimedGoldenRef.current = new Set();
+    oppClaimedGoldenRef.current = new Set();
     mySpeedSamplesRef.current = [];
     oppSpeedSamplesRef.current = [];
     myLastCharsRef.current = 0;
@@ -585,14 +685,14 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               myLetterStatesRef.current[charIdx] = 1; // Correct
               if (goldenLettersRef.current.has(charIdx) && !claimedGoldenRef.current.has(charIdx)) {
                 claimedGoldenRef.current.add(charIdx);
-                setMyCoins(c => c + 5);
+                triggerSandboxCoinSpawn(charIdx, false);
               }
             } else if (currState === 2) {
               myLetterStatesRef.current[charIdx] = 3; // Amended!
             }
           } else {
             if ((currState === 0 || currState === 1) && myAbilitiesRef.current.includes('moneyguy2')) {
-              setMyHearts(h => h + 3);
+              triggerSandboxHeartSpawn(charIdx, false);
             }
             myLetterStatesRef.current[charIdx] = 2; // Incorrect
           }
@@ -672,9 +772,19 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           const isMatch = ch === target[charIdx];
           const currState = oppLetterStatesRef.current[charIdx] || 0;
           if (isMatch) {
-            if (currState === 0) oppLetterStatesRef.current[charIdx] = 1;
-            else if (currState === 2) oppLetterStatesRef.current[charIdx] = 3;
+            if (currState === 0) {
+              oppLetterStatesRef.current[charIdx] = 1;
+              if (oppGoldenLettersRef.current.has(charIdx) && !oppClaimedGoldenRef.current.has(charIdx)) {
+                oppClaimedGoldenRef.current.add(charIdx);
+                triggerSandboxCoinSpawn(charIdx, true);
+              }
+            } else if (currState === 2) {
+              oppLetterStatesRef.current[charIdx] = 3;
+            }
           } else {
+            if ((currState === 0 || currState === 1) && oppAbilitiesRef.current.includes('moneyguy2')) {
+              triggerSandboxHeartSpawn(charIdx, true);
+            }
             oppLetterStatesRef.current[charIdx] = 2;
           }
 
@@ -775,17 +885,29 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           if (next.length > myTargetText.length) next = next.slice(0, myTargetText.length);
           typedTextRef.current = next;
 
-          let tempC = 0, tempI = 0, tempA = 0;
-          for (let i = 0; i < next.length; i++) {
-            const isMatch = next[i] === myTargetText[i];
-            const currState = myLetterStatesRef.current[i] || 0;
+          const charIdx = prev.length;
+          if (charIdx < myTargetText.length) {
+            const isMatch = e.key === myTargetText[charIdx];
+            const currState = myLetterStatesRef.current[charIdx] || 0;
             if (isMatch) {
-              if (currState === 0) myLetterStatesRef.current[i] = 1;
-              else if (currState === 2) myLetterStatesRef.current[i] = 3;
+              if (currState === 0) {
+                myLetterStatesRef.current[charIdx] = 1;
+                if (goldenLettersRef.current.has(charIdx) && !claimedGoldenRef.current.has(charIdx)) {
+                  claimedGoldenRef.current.add(charIdx);
+                  triggerSandboxCoinSpawn(charIdx, false);
+                }
+              } else if (currState === 2) {
+                myLetterStatesRef.current[charIdx] = 3;
+              }
             } else {
-              myLetterStatesRef.current[i] = 2;
+              if ((currState === 0 || currState === 1) && myAbilitiesRef.current.includes('moneyguy2')) {
+                triggerSandboxHeartSpawn(charIdx, false);
+              }
+              myLetterStatesRef.current[charIdx] = 2;
             }
           }
+
+          let tempC = 0, tempI = 0, tempA = 0;
           for (let i = 0; i < next.length; i++) {
             const s = myLetterStatesRef.current[i] || 0;
             if (s === 1) tempC++;
@@ -816,7 +938,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [gameState, myTargetText, showGravityPopup]);
+  }, [gameState, myTargetText, showGravityPopup, triggerSandboxCoinSpawn, triggerSandboxHeartSpawn]);
 
   const toggleMyAbility = (abilityId: string) => {
     setMyAbilities(prev => {
@@ -836,6 +958,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           claimedGoldenRef.current = new Set();
         }
       }
+      setGoldVersion(v => v + 1);
       return next;
     });
   };
@@ -852,10 +975,13 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             if (text[i] !== ' ' && Math.random() < 0.30) gold.add(i);
           }
           oppGoldenLettersRef.current = gold;
+          oppClaimedGoldenRef.current = new Set();
         } else {
           oppGoldenLettersRef.current = new Set();
+          oppClaimedGoldenRef.current = new Set();
         }
       }
+      setGoldVersion(v => v + 1);
       return next;
     });
   };
@@ -960,6 +1086,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
 
   return (
     <div className="w-screen h-[100dvh] flex flex-col bg-background overflow-hidden relative">
+      <FlyingResourceOverlay ref={flyingResourceRef} />
       {/* Top Header */}
       <div className="flex justify-between items-center p-6 border-b border-slate-800 bg-slate-950/50 z-50">
         <div className="flex items-center gap-6">
@@ -1122,6 +1249,18 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                 ? oppAbilities.filter(a => a.endsWith('_buffed')).map(a => a.replace('_buffed', ''))
                 : myAbilities.filter(a => a.endsWith('_buffed')).map(a => a.replace('_buffed', ''))
             }
+            moneyguyActive={
+              activePov === 'you'
+                ? (selectedCharacters.includes('moneyguy') && myAbilities.some(a => a.startsWith('moneyguy')))
+                : (selectedCharacters.includes('moneyguy') && oppAbilities.some(a => a.startsWith('moneyguy')))
+            }
+            coins={activePov === 'you' ? myCoins : oppCoins}
+            hearts={activePov === 'you' ? myHearts : oppHearts}
+            coinTargetRef={coinTargetRef}
+            heartTargetRef={heartTargetRef}
+            coinPulse={coinPulse}
+            heartPulse={heartPulse}
+            externalLetterRefs={letterElementsRef}
           />
         </div>
 
@@ -1171,10 +1310,16 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                           )}
                         </div>
                       )}
-                      {selectedCharacters.includes('moneyguy') ? (
-                        <div className="font-mono text-xs text-slate-300 flex gap-3">
-                          <span className="text-yellow-400 font-bold">{isBlindMasked ? '???' : myCoins} Coins</span>
-                          <span className="text-red-400 font-bold">{isBlindMasked ? '???' : myHearts} Hearts</span>
+                      {selectedCharacters.includes('moneyguy') && myAbilities.some(a => a.startsWith('moneyguy')) ? (
+                        <div className="font-mono text-xs text-slate-300 flex items-center gap-3">
+                          <div className="flex items-center gap-1">
+                            <CoinIcon className="w-3.5 h-3.5" glow />
+                            <span className="text-yellow-400 font-bold">{isBlindMasked ? '???' : myCoins} Coins</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <HeartIcon className="w-3.5 h-3.5" glow />
+                            <span className="text-red-400 font-bold">{isBlindMasked ? '???' : myHearts} Hearts</span>
+                          </div>
                         </div>
                       ) : (
                         <div className="font-mono text-xs text-slate-500">{isBlindMasked ? '???' : `${myCharge}%`} Charge</div>
@@ -1235,7 +1380,20 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                           )}
                         </div>
                       )}
-                      <div className="font-mono text-xs text-slate-500">{isBlindMasked ? '???' : `${oppCharge}%`} Charge</div>
+                      {selectedCharacters.includes('moneyguy') && oppAbilities.some(a => a.startsWith('moneyguy')) ? (
+                        <div className="font-mono text-xs text-slate-300 flex items-center gap-3">
+                          <div className="flex items-center gap-1">
+                            <CoinIcon className="w-3.5 h-3.5" glow />
+                            <span className="text-yellow-400 font-bold">{isBlindMasked ? '???' : oppCoins} Coins</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <HeartIcon className="w-3.5 h-3.5" glow />
+                            <span className="text-red-400 font-bold">{isBlindMasked ? '???' : oppHearts} Hearts</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="font-mono text-xs text-slate-500">{isBlindMasked ? '???' : `${oppCharge}%`} Charge</div>
+                      )}
 
                       <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80 items-end">
                         <div>

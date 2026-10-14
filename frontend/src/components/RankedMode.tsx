@@ -9,6 +9,7 @@ import { loadDictionary, DICTIONARY, applyScrewedEffects } from "@/lib/words";
 import { generateSentences } from '@/lib/quotes';
 import LiveKeyboard, { getKeyLabel } from '@/components/LiveKeyboard';
 import '../trip.css';
+import { FlyingResourceOverlay, FlyingResourceRef, CoinIcon, HeartIcon } from './FlyingResourceOverlay';
 
 export function computeConsistency(samples: number[]): number {
   if (samples.length < 2) return 100;
@@ -32,7 +33,6 @@ interface RankedMatchData {
     fontFamily?: string;
     bgTheme?: any;
     characters?: string[];
-  fullTheme?: string | null;
     fullTheme?: any;
   };
 }
@@ -70,12 +70,52 @@ export interface RankedPlayerAreaProps {
   characters?: string[];
   goldenLetters?: Set<number>;
   buffedAbilities?: string[];
+  fullTheme?: any;
+  moneyguyActive?: boolean;
+  coins?: number;
+  hearts?: number;
+  coinTargetRef?: React.RefObject<HTMLDivElement>;
+  heartTargetRef?: React.RefObject<HTMLDivElement>;
+  coinPulse?: boolean;
+  heartPulse?: boolean;
+  externalLetterRefs?: React.MutableRefObject<(HTMLSpanElement | null)[]>;
 }
 
-
-
-export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, activeKeys, gameState, isOpponent, colorTheme, fontFamily, bgTheme, cia, charge, dyslexiaActive, tripActive, blinkActive, joker1Active, joker2Active, joker3Active, characters = [], goldenLetters = new Set(), fullTheme, buffedAbilities = [] }: RankedPlayerAreaProps) {
-  const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
+export function RankedPlayerArea({
+  label,
+  wpm,
+  progress,
+  targetText,
+  typedText,
+  activeKeys,
+  gameState,
+  isOpponent,
+  colorTheme,
+  fontFamily,
+  bgTheme,
+  cia,
+  charge,
+  dyslexiaActive,
+  tripActive,
+  blinkActive,
+  joker1Active,
+  joker2Active,
+  joker3Active,
+  characters = [],
+  goldenLetters = new Set(),
+  fullTheme,
+  buffedAbilities = [],
+  moneyguyActive = false,
+  coins = 0,
+  hearts = 0,
+  coinTargetRef,
+  heartTargetRef,
+  coinPulse = false,
+  heartPulse = false,
+  externalLetterRefs,
+}: RankedPlayerAreaProps) {
+  const localLetterRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const letterRefs = externalLetterRefs || localLetterRefs;
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
   const [scrollLines, setScrollLines] = useState(0);
@@ -355,36 +395,36 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
                         let isUnTyped = false;
                         const isGolden = goldenLetters.has(i);
 
-                        if (i < typedText.length) {
+                        if (isGolden) {
+                          // The gold letters will only be gold and no other color!
+                          if (i < typedText.length && (typedText[i] === char || joker1Active)) {
+                            color = 'gold-raised-char gold-typed-correct exclude-theme';
+                          } else {
+                            color = 'gold-raised-char exclude-theme';
+                          }
+                        } else if (i < typedText.length) {
                           let isCorrect = typedText[i] === char;
                           if (joker1Active) isCorrect = true; // Joker 1 makes all mistakes look correct
                           
                           if (isCorrect) {
-                            if (isGolden) {
-                              color = 'gold-raised-char gold-typed-correct exclude-theme';
-                            } else {
-                              color = !isOpponent ? 'text-[var(--hot)]' : (colorTheme ? 'correct-char' : 'text-red-400');
-                            }
+                            color = !isOpponent ? 'text-[var(--hot)]' : (colorTheme ? 'correct-char' : 'text-red-400');
                           } else {
                             color = 'text-red-500 bg-red-500/20 exclude-theme';
                           }
-                        } else if (isGolden) {
-                          color = 'gold-raised-char exclude-theme';
                         } else if (i === typedText.length) {
                           color = 'text-slate-100 exclude-theme';
                         } else {
                           isUnTyped = true;
                         }
                         
-                        // Joker 3: Only every 5th letter is colored, the rest are blank/slate
-                        if (joker3Active && i < typedText.length && (i + 1) % (buffedAbilities.includes('joker3') ? 3 : 5) !== 0) {
+                        // Joker 3: Only every 5th letter is colored, the rest are blank/slate (never masks gold letters)
+                        if (!isGolden && joker3Active && i < typedText.length && (i + 1) % (buffedAbilities.includes('joker3') ? 3 : 5) !== 0) {
                           color = 'text-slate-500';
                         }
 
                         let styleObj: any = {};
-                        
 
-                        if (dyslexiaActive && isUnTyped) {
+                        if (!isGolden && dyslexiaActive && isUnTyped) {
                           color += ' dyslexia-char';
                         }
 
@@ -415,19 +455,45 @@ export function RankedPlayerArea({ label, wpm, progress, targetText, typedText, 
         <LiveKeyboard activeKeys={activeKeys} />
       </div>
 
-      {/* Battery Charge Meter */}
-      <div className="absolute bottom-6 left-6 flex items-center gap-2">
-        <div className="relative flex items-center">
-          <div className="w-10 h-4 rounded-sm border-2 border-slate-700 relative overflow-hidden flex bg-slate-900/50">
-            <div 
-              className="h-full bg-[var(--hot)] transition-all duration-200" 
-              style={{ width: joker2Active ? '0%' : `${charge}%` }}
-            />
+      {/* Battery Charge Meter OR Coin & Heart HUD */}
+      {moneyguyActive ? (
+        <div className="absolute bottom-6 left-6 flex items-center gap-5 select-none">
+          {/* Coin Symbol + Count */}
+          <div 
+            ref={coinTargetRef}
+            className={`flex items-center gap-1.5 transition-transform duration-200 ${coinPulse ? 'resource-hit-pulse-coin' : ''}`}
+          >
+            <CoinIcon className="w-5 h-5" glow />
+            <span className="font-mono text-sm font-bold text-amber-300 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+              {joker2Active ? '???' : coins}
+            </span>
           </div>
-          <div className="w-[3px] h-2 bg-slate-700 rounded-r-sm" />
+
+          {/* Heart Symbol + Count */}
+          <div 
+            ref={heartTargetRef}
+            className={`flex items-center gap-1.5 transition-transform duration-200 ${heartPulse ? 'resource-hit-pulse-heart' : ''}`}
+          >
+            <HeartIcon className="w-5 h-5" glow />
+            <span className="font-mono text-sm font-bold text-red-400 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+              {joker2Active ? '???' : hearts}
+            </span>
+          </div>
         </div>
-        <span className="font-mono text-xs text-slate-500">{joker2Active ? '???' : `${charge}%`}</span>
-      </div>
+      ) : (
+        <div className="absolute bottom-6 left-6 flex items-center gap-2">
+          <div className="relative flex items-center">
+            <div className="w-10 h-4 rounded-sm border-2 border-slate-700 relative overflow-hidden flex bg-slate-900/50">
+              <div 
+                className="h-full bg-[var(--hot)] transition-all duration-200" 
+                style={{ width: joker2Active ? '0%' : `${charge}%` }}
+              />
+            </div>
+            <div className="w-[3px] h-2 bg-slate-700 rounded-r-sm" />
+          </div>
+          <span className="font-mono text-xs text-slate-500">{joker2Active ? '???' : `${charge}%`}</span>
+        </div>
+      )}
       
       {/* OLD CHARS MOVED */}
     </div>
@@ -457,7 +523,71 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
   const myCoinsRef = useRef(0);
   const myHeartsRef = useRef(0);
   const goldenLettersRef = useRef<Set<number>>(new Set());
+  const [goldenLetters, setGoldenLetters] = useState<Set<number>>(new Set());
   const claimedGoldenRef = useRef<Set<number>>(new Set());
+  const flyingResourceRef = useRef<FlyingResourceRef>(null);
+  const coinTargetRef = useRef<HTMLDivElement>(null);
+  const heartTargetRef = useRef<HTMLDivElement>(null);
+  const [coinPulse, setCoinPulse] = useState(false);
+  const [heartPulse, setHeartPulse] = useState(false);
+  const myLetterElementsRef = useRef<(HTMLSpanElement | null)[]>([]);
+
+  const triggerCoinSpawn = useCallback((charIndex: number) => {
+    let startX = window.innerWidth / 2;
+    let startY = window.innerHeight / 2;
+    const letterEl = myLetterElementsRef.current[charIndex];
+    if (letterEl) {
+      const rect = letterEl.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 14 + Math.random() * 22;
+      startX = cx + Math.cos(angle) * dist;
+      startY = cy + Math.sin(angle) * dist;
+    }
+    let targetX = 50;
+    let targetY = window.innerHeight - 50;
+    if (coinTargetRef.current) {
+      const tRect = coinTargetRef.current.getBoundingClientRect();
+      targetX = tRect.left + tRect.width / 2;
+      targetY = tRect.top + tRect.height / 2;
+    }
+    flyingResourceRef.current?.spawnCoin(startX, startY, targetX, targetY, () => {
+      setMyCoins(c => c + 5);
+      myCoinsRef.current += 5;
+      setCoinPulse(true);
+      setTimeout(() => setCoinPulse(false), 350);
+    });
+  }, []);
+
+  const triggerHeartSpawn = useCallback((charIndex: number) => {
+    let startX = window.innerWidth / 2;
+    let startY = window.innerHeight / 2;
+    const letterEl = myLetterElementsRef.current[charIndex];
+    if (letterEl) {
+      const rect = letterEl.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 14 + Math.random() * 22;
+      startX = cx + Math.cos(angle) * dist;
+      startY = cy + Math.sin(angle) * dist;
+    }
+    let targetX = 90;
+    let targetY = window.innerHeight - 50;
+    if (heartTargetRef.current) {
+      const tRect = heartTargetRef.current.getBoundingClientRect();
+      targetX = tRect.left + tRect.width / 2;
+      targetY = tRect.top + tRect.height / 2;
+    }
+    flyingResourceRef.current?.spawnHeart(startX, startY, targetX, targetY, () => {
+      setMyHearts(h => h + 3);
+      myHeartsRef.current += 3;
+      setHeartPulse(true);
+      setTimeout(() => setHeartPulse(false), 350);
+    });
+  }, []);
+
   const [myBuffedAbilities, setMyBuffedAbilities] = useState<string[]>([]);
   const prevValLengthRef = useRef(0);
   const [showAbilitySelect, setShowAbilitySelect] = useState<'moneyguy1' | 'moneyguy2' | null>(null);
@@ -542,9 +672,11 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
         }
       }
       goldenLettersRef.current = newGolden;
+      setGoldenLetters(newGolden);
       claimedGoldenRef.current = new Set();
     } else {
       goldenLettersRef.current = new Set();
+      setGoldenLetters(new Set());
       claimedGoldenRef.current = new Set();
     }
   }, [myTargetText, selectedCharacters, myAbilities]);
@@ -853,15 +985,13 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
           myLetterStatesRef.current[i] = 1;
           if (goldenLettersRef.current.has(i) && !claimedGoldenRef.current.has(i)) {
             claimedGoldenRef.current.add(i);
-            setMyCoins(c => c + 5);
-            myCoinsRef.current += 5;
+            triggerCoinSpawn(i);
           }
         }
         else if (currState === 2) myLetterStatesRef.current[i] = 3;
       } else {
-        if ((currState === 0 || currState === 1) && myAbilities.includes('moneyguy2')) {
-          setMyHearts(h => h + 3);
-          myHeartsRef.current += 3;
+        if ((currState === 0 || currState === 1) && (myAbilities.includes('moneyguy2') || myAbilities.includes('moneyguy2_buffed'))) {
+          triggerHeartSpawn(i);
         }
         myLetterStatesRef.current[i] = 2;
       }
@@ -1102,6 +1232,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
         inputRef.current?.focus();
       }}
     >
+      <FlyingResourceOverlay ref={flyingResourceRef} />
       
       {/* Top Bar / Scoreboard */}
       <div className="flex justify-between items-center p-6 border-b border-slate-800 bg-slate-950/50">
@@ -1148,7 +1279,15 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
             joker3Active={oppAbilities.includes('joker3') || oppAbilities.includes('joker3_buffed')}
             buffedAbilities={oppAbilities.filter(a => a.endsWith('_buffed')).map(a => a.replace('_buffed', ''))}
             characters={selectedCharacters}
-            goldenLetters={goldenLettersRef.current}
+            goldenLetters={goldenLetters}
+            moneyguyActive={selectedCharacters.includes('moneyguy') && myAbilities.some(a => a.startsWith('moneyguy'))}
+            coins={myCoins}
+            hearts={myHearts}
+            coinTargetRef={coinTargetRef}
+            heartTargetRef={heartTargetRef}
+            coinPulse={coinPulse}
+            heartPulse={heartPulse}
+            externalLetterRefs={myLetterElementsRef}
           />
         </div>
         
@@ -1343,10 +1482,16 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                         )}
                       </div>
                     )}
-                    {selectedCharacters.includes('moneyguy') ? (
-                      <div className="font-mono text-xs text-slate-300 flex gap-3">
-                        <span className="text-yellow-400 font-bold">{isBlindMasked ? '???' : myCoins} Coins</span>
-                        <span className="text-red-400 font-bold">{isBlindMasked ? '???' : myHearts} Hearts</span>
+                    {selectedCharacters.includes('moneyguy') && myAbilities.some(a => a.startsWith('moneyguy')) ? (
+                      <div className="font-mono text-xs text-slate-300 flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                          <CoinIcon className="w-3.5 h-3.5" glow />
+                          <span className="text-yellow-400 font-bold">{isBlindMasked ? '???' : myCoins} Coins</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <HeartIcon className="w-3.5 h-3.5" glow />
+                          <span className="text-red-400 font-bold">{isBlindMasked ? '???' : myHearts} Hearts</span>
+                        </div>
                       </div>
                     ) : (
                       <div className="font-mono text-xs text-slate-500">{isBlindMasked ? '???' : `${myCharge}%`} Charge</div>
@@ -1480,14 +1625,20 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-20">
           <div className="bg-slate-900 border border-slate-700 p-8 rounded flex flex-col items-center gap-6 max-w-md w-full">
             <h3 className="font-display text-3xl text-[var(--hot)] uppercase tracking-widest">Upgrade Shop</h3>
-            {selectedCharacters.includes('moneyguy') ? (
-      <div className="font-mono text-sm text-slate-300 flex gap-4">
-        <span>Coins: <span className="text-yellow-400">{myCoins}</span></span>
-        <span>Hearts: <span className="text-red-400">{myHearts}</span></span>
-      </div>
-    ) : (
-      <div className="font-mono text-sm text-slate-300">Available Charge: <span className="text-[var(--hot)]">{myCharge}</span></div>
-    )}
+            {selectedCharacters.includes('moneyguy') && myAbilities.some(a => a.startsWith('moneyguy')) ? (
+              <div className="font-mono text-sm text-slate-300 flex items-center gap-5">
+                <div className="flex items-center gap-1.5">
+                  <CoinIcon className="w-4 h-4" glow />
+                  <span>Coins: <span className="text-yellow-400 font-bold">{myCoins}</span></span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <HeartIcon className="w-4 h-4" glow />
+                  <span>Hearts: <span className="text-red-400 font-bold">{myHearts}</span></span>
+                </div>
+              </div>
+            ) : (
+              <div className="font-mono text-sm text-slate-300">Available Charge: <span className="text-[var(--hot)]">{myCharge}%</span></div>
+            )}
             <div className="flex w-full justify-between gap-8 mb-4">
               <div className="flex-1 border border-slate-700 p-4 rounded bg-slate-800/50">
                 <div className="text-[var(--hot)] text-xs font-mono uppercase mb-2">You</div>
@@ -1534,7 +1685,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
     return { c: 300, h: 30 };
   };
 
-  const isMG = selectedCharacters.includes('moneyguy');
+  const isMG = selectedCharacters.includes('moneyguy') && myAbilities.some(a => a.startsWith('moneyguy'));
   const shopAbilities = ALL_ABILITIES.filter(a => selectedCharacters.includes(a.char));
 
   return (

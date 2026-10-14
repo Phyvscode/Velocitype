@@ -139,15 +139,16 @@
   transition: scale .35s ease;
 }
 
-/* 3D Raised Ingot Gold Text */
+/* 3D Raised Ingot Gold Text - STRICTLY GOLD ONLY */
 .gold-raised-char {
   display: inline-block;
   font-family: inherit;
   font-weight: 800;
   position: relative;
-  background: linear-gradient(175deg, #fffbe0 0%, #ffe066 25%, #f59e0b 60%, #b45309 88%, #78350f 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #fbbf24 !important;
+  background: linear-gradient(175deg, #fffbe0 0%, #ffe066 25%, #f59e0b 60%, #b45309 88%, #78350f 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
   filter: 
     drop-shadow(-0.5px -0.8px 0px rgba(255, 255, 255, 0.95))
     drop-shadow(0.8px 0.8px 0px #d97706)
@@ -160,9 +161,10 @@
 }
 
 .gold-raised-char.gold-typed-correct {
-  background: linear-gradient(175deg, #ffffff 0%, #fff2a3 30%, #fbbf24 65%, #d97706 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #fef08a !important;
+  background: linear-gradient(175deg, #ffffff 0%, #fff2a3 30%, #fbbf24 65%, #d97706 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
   filter: 
     drop-shadow(-0.5px -0.8px 0px rgba(255, 255, 255, 1))
     drop-shadow(0.8px 0.8px 0px #f59e0b)
@@ -171,5 +173,69 @@
     drop-shadow(0 0 12px rgba(250, 204, 21, 0.75))
     drop-shadow(3px 4px 5px rgba(0, 0, 0, 0.85));
   transform: translateY(-1px);
+}
+
+/* Flying resource items (Coins and Hearts) */
+@keyframes flyResourceToTarget {
+  0% {
+    transform: translate(0, 0) scale(0.65) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(var(--mid-x, 0px), var(--mid-y, -25px)) scale(1.35) rotate(45deg);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(calc(var(--dx, 0px) * 0.7), calc(var(--dy, 0px) * 0.7 - 10px)) scale(1.1) rotate(220deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.75) rotate(360deg);
+    opacity: 0.95;
+  }
+}
+
+.flying-resource-item {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  will-change: transform, opacity;
+  animation: flyResourceToTarget 0.62s cubic-bezier(0.22, 0.8, 0.25, 1) forwards;
+}
+
+@keyframes resourceHitPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.35);
+    filter: brightness(1.35) drop-shadow(0 0 12px rgba(251, 191, 36, 0.9));
+  }
+  100% {
+    transform: scale(1);
+    filter: none;
+  }
+}
+
+.resource-hit-pulse-coin {
+  animation: resourceHitPulse 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes heartHitPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.35);
+    filter: brightness(1.35) drop-shadow(0 0 12px rgba(239, 68, 68, 0.9));
+  }
+  100% {
+    transform: scale(1);
+    filter: none;
+  }
+}
+
+.resource-hit-pulse-heart {
+  animation: heartHitPulse 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
