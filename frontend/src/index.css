@@ -221,6 +221,7 @@ h1, h2, h3, h4, h5, h6, p, span:not(.exclude-theme), a, label, li, code, strong,
   text-shadow: 0 0 var(--text-glow-blur, 0px) var(--hot) !important;
 }
 
+span.gold-raised-char,
 .gold-raised-char,
 .gold-raised-char * {
   text-shadow: none !important;

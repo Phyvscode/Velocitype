@@ -3,13 +3,12 @@
     --flicker-duration: 5s;
   }
 
-  
   @property --hue {
     syntax: "<number>";
     inherits: true;
     initial-value: 0;
   }
-  .tripping { animation: hue-cycle 8s linear infinite; }
+  .tripping { animation: hue-cycle 9s linear infinite; }
   @keyframes hue-cycle {
     from { --hue: 0; }
     to   { --hue: 360; }
@@ -20,9 +19,9 @@
     inherits: true;
     initial-value: 0;
   }
-  .trip-body { --lvl: 0; transition: --lvl 1.5s ease-in-out; }
-  .trip-body[data-level="1"] { --lvl: 0.75; }
-  .trip-body[data-level="2"] { --lvl: 0.90; }
+  .trip-body { --lvl: 0; transition: --lvl 1.8s ease-in-out; }
+  .trip-body[data-level="1"] { --lvl: 0.65; }
+  .trip-body[data-level="2"] { --lvl: 0.85; }
   .trip-body[data-level="3"] { --lvl: 1.00; }
 
   .view-blink {
@@ -59,7 +58,6 @@
     100% { clip-path: ellipse(150% 100% at 50% 50%); opacity: 1.00; filter: blur(0.0px) brightness(1.00); }
   }
 
-  /* --- MULTI-DIRECTIONAL LIVING COLOR CANVAS --- */
   .trip-layer {
     position: absolute;
     inset: 0;
@@ -67,309 +65,118 @@
     overflow: hidden;
     pointer-events: none;
     opacity: var(--lvl);
-    transition: opacity 1.2s ease-in-out;
+    background: linear-gradient(135deg,
+      hsl(var(--hue) 80% 48% / .32),
+      hsl(calc(var(--hue) + 150) 80% 48% / .32));
   }
 
-  /* Direction 1: Diagonal Flow (Bottom-Left -> Top-Right) */
-  .trip-stream-diag1 {
-    position: absolute;
-    inset: -30%;
-    width: 160%;
-    height: 160%;
-    background: linear-gradient(45deg,
-      hsl(var(--hue) 100% 55% / 0.45) 0%,
-      hsl(calc(var(--hue) + 60) 100% 52% / 0.35) 25%,
-      hsl(calc(var(--hue) + 140) 100% 50% / 0.40) 50%,
-      hsl(calc(var(--hue) + 220) 100% 55% / 0.35) 75%,
-      hsl(calc(var(--hue) + 300) 100% 52% / 0.45) 100%);
-    background-size: 250% 250%;
-    animation: flow-diag-up 9s ease-in-out infinite alternate;
-    mix-blend-mode: screen;
-    will-change: transform, background-position;
-  }
-
-  /* Direction 2: Opposite Diagonal Flow (Top-Right -> Bottom-Left) */
-  .trip-stream-diag2 {
-    position: absolute;
-    inset: -30%;
-    width: 160%;
-    height: 160%;
-    background: linear-gradient(225deg,
-      hsl(calc(var(--hue) + 180) 100% 55% / 0.38) 0%,
-      hsl(calc(var(--hue) + 260) 100% 55% / 0.42) 30%,
-      hsl(calc(var(--hue) + 330) 100% 52% / 0.35) 60%,
-      hsl(calc(var(--hue) + 80) 100% 55% / 0.40) 100%);
-    background-size: 250% 250%;
-    animation: flow-diag-down 11s ease-in-out infinite alternate;
-    mix-blend-mode: color-dodge;
-    opacity: 0.75;
-    will-change: transform, background-position;
-  }
-
-  /* Direction 3: Swirling Prismatic Vortex (Counter-Clockwise Rotation) */
-  .trip-vortex {
-    position: absolute;
-    inset: -60%;
-    width: 220%;
-    height: 220%;
-    border-radius: 50%;
-    background: conic-gradient(from 0deg,
-      hsl(var(--hue) 100% 55% / 0.32),
-      hsl(calc(var(--hue) + 70) 100% 55% / 0.25),
-      hsl(calc(var(--hue) + 140) 100% 55% / 0.30),
-      hsl(calc(var(--hue) + 210) 100% 55% / 0.28),
-      hsl(calc(var(--hue) + 280) 100% 55% / 0.32),
-      hsl(calc(var(--hue) + 360) 100% 55% / 0.32));
-    animation: vortex-reverse-spin 13s linear infinite;
-    filter: blur(55px);
-    mix-blend-mode: screen;
-    will-change: transform;
-  }
-
-  /* Direction 4: Horizontal Right-to-Left Sweeping Stream */
-  .trip-stream-horizontal-left {
-    position: absolute;
-    top: 15%;
-    left: -50%;
-    width: 200%;
-    height: 38%;
-    background: linear-gradient(90deg,
-      transparent 0%,
-      hsl(calc(var(--hue) + 90) 100% 60% / 0.50) 30%,
-      hsl(calc(var(--hue) + 180) 100% 60% / 0.55) 50%,
-      hsl(calc(var(--hue) + 270) 100% 60% / 0.45) 70%,
-      transparent 100%);
-    background-size: 200% 100%;
-    animation: flow-stream-left 6.5s linear infinite;
-    filter: blur(35px);
-    mix-blend-mode: screen;
-    will-change: transform;
-  }
-
-  /* Direction 5: Horizontal Left-to-Right Sweeping Stream (Opposing!) */
-  .trip-stream-horizontal-right {
-    position: absolute;
-    bottom: 12%;
-    left: -50%;
-    width: 200%;
-    height: 38%;
-    background: linear-gradient(90deg,
-      transparent 0%,
-      hsl(calc(var(--hue) + 290) 100% 60% / 0.50) 30%,
-      hsl(calc(var(--hue) + 30) 100% 60% / 0.55) 50%,
-      hsl(calc(var(--hue) + 110) 100% 60% / 0.45) 70%,
-      transparent 100%);
-    background-size: 200% 100%;
-    animation: flow-stream-right 7.5s linear infinite;
-    filter: blur(35px);
-    mix-blend-mode: screen;
-    will-change: transform;
-  }
-
-  /* Direction 6: Vertical Bottom-to-Top Stream */
-  .trip-stream-vertical-up {
-    position: absolute;
-    top: -50%;
-    left: 20%;
-    width: 32%;
-    height: 200%;
-    background: linear-gradient(0deg,
-      transparent 0%,
-      hsl(calc(var(--hue) + 220) 100% 60% / 0.45) 40%,
-      hsl(calc(var(--hue) + 310) 100% 60% / 0.45) 60%,
-      transparent 100%);
-    animation: flow-stream-up 8.5s linear infinite;
-    filter: blur(40px);
-    mix-blend-mode: screen;
-    will-change: transform;
-  }
-
-  /* Direction 7: Vertical Top-to-Bottom Stream (Opposing!) */
-  .trip-stream-vertical-down {
-    position: absolute;
-    top: -50%;
-    right: 20%;
-    width: 32%;
-    height: 200%;
-    background: linear-gradient(180deg,
-      transparent 0%,
-      hsl(calc(var(--hue) + 40) 100% 60% / 0.45) 40%,
-      hsl(calc(var(--hue) + 130) 100% 60% / 0.45) 60%,
-      transparent 100%);
-    animation: flow-stream-down 9s linear infinite;
-    filter: blur(40px);
-    mix-blend-mode: screen;
-    will-change: transform;
-  }
-
-  /* --- VIBRANT MULTI-DIRECTIONAL FOG ORBS --- */
   .fog {
     position: absolute;
-    width: 60vmax;
-    height: 60vmax;
+    width: 55vmax;
+    height: 55vmax;
     border-radius: 50%;
     background: radial-gradient(circle,
-      hsl(calc(var(--hue) + var(--off)) 100% 60% / 0.70) 0%,
-      hsl(calc(var(--hue) + var(--off) + 45) 95% 55% / 0.40) 35%,
-      transparent 68%);
-    mix-blend-mode: screen;
-    filter: blur(25px);
+      hsl(calc(var(--hue) + var(--off)) 92% 56% / .68) 0%,
+      hsl(calc(var(--hue) + var(--off) + 40) 88% 52% / .30) 42%,
+      transparent 70%);
     will-change: transform;
+    pointer-events: none;
   }
 
-  /* Orb 1: Surges Bottom-Left -> Top-Right */
+  /* Pair 1: Diagonal Top-Left -> Bottom-Right vs Bottom-Right -> Top-Left */
   .fog-1 {
     --off: 0;
-    top: -15%;
-    left: -15%;
-    animation: fog-orbit-up-right 7.5s ease-in-out infinite alternate;
+    top: -12%;
+    left: -8%;
+    animation: fog-move-down-right 8.5s ease-in-out -0.5s infinite alternate;
   }
 
-  /* Orb 2: Surges Top-Right -> Bottom-Left (Opposing!) */
   .fog-2 {
-    --off: 65;
-    top: 10%;
-    right: -20%;
-    animation: fog-orbit-down-left 9s ease-in-out infinite alternate;
+    --off: 180;
+    bottom: -12%;
+    right: -8%;
+    animation: fog-move-up-left 9.5s ease-in-out -3.5s infinite alternate;
   }
 
-  /* Orb 3: Sweeps Clockwise Elliptical Orbit */
+  /* Pair 2: Diagonal Bottom-Left -> Top-Right vs Top-Right -> Bottom-Left */
   .fog-3 {
-    --off: 130;
-    bottom: -20%;
-    left: 10%;
-    animation: fog-orbit-clockwise 6.8s ease-in-out infinite;
+    --off: 60;
+    bottom: -12%;
+    left: -5%;
+    animation: fog-move-up-right 9s ease-in-out -1.8s infinite alternate;
   }
 
-  /* Orb 4: Sweeps Counter-Clockwise Orbit (Opposing!) */
   .fog-4 {
-    --off: 195;
-    top: 20%;
-    left: 20%;
-    animation: fog-orbit-counter-clockwise 8.2s ease-in-out infinite;
+    --off: 240;
+    top: -12%;
+    right: -5%;
+    animation: fog-move-down-left 10s ease-in-out -4.8s infinite alternate;
   }
 
-  /* Orb 5: Right -> Left Horizontal Undulating Wave */
+  /* Pair 3: Horizontal Left -> Right vs Right -> Left across the center */
   .fog-5 {
-    --off: 260;
-    top: -25%;
-    right: 10%;
-    animation: fog-horizontal-left 7s ease-in-out infinite alternate;
+    --off: 120;
+    top: 8%;
+    left: -12%;
+    animation: fog-move-right 8s ease-in-out -2.2s infinite alternate;
   }
 
-  /* Orb 6: Left -> Right Horizontal Undulating Wave (Opposing!) */
   .fog-6 {
-    --off: 315;
-    bottom: -15%;
-    left: 25%;
-    animation: fog-horizontal-right 8s ease-in-out infinite alternate;
+    --off: 300;
+    bottom: 8%;
+    right: -12%;
+    animation: fog-move-left 9.2s ease-in-out -5.2s infinite alternate;
   }
 
-  /* Orb 7: Center Pulsing Breath */
-  .fog-7 {
-    --off: 160;
-    top: 15%;
-    left: 25%;
-    width: 50vmax;
-    height: 50vmax;
-    animation: fog-center-pulse 5.5s ease-in-out infinite;
+  @keyframes fog-move-down-right {
+    0%   { transform: translate(0, 0) scale(1); }
+    50%  { transform: translate(28vw, 18vh) scale(1.22); }
+    100% { transform: translate(52vw, 42vh) scale(0.95); }
   }
 
-  /* --- DIRECTIONAL ANIMATION KEYFRAMES --- */
-  @keyframes flow-diag-up {
-    0%   { transform: translate3d(-15%, 15%, 0) scale(1); background-position: 0% 100%; }
-    50%  { transform: translate3d(5%, -5%, 0) scale(1.15); background-position: 50% 50%; }
-    100% { transform: translate3d(20%, -20%, 0) scale(1.05); background-position: 100% 0%; }
+  @keyframes fog-move-up-left {
+    0%   { transform: translate(0, 0) scale(1.08); }
+    50%  { transform: translate(-26vw, -20vh) scale(1.25); }
+    100% { transform: translate(-52vw, -42vh) scale(0.95); }
   }
 
-  @keyframes flow-diag-down {
-    0%   { transform: translate3d(15%, -15%, 0) scale(1.05); background-position: 100% 0%; }
-    50%  { transform: translate3d(-5%, 5%, 0) scale(1.2); background-position: 50% 50%; }
-    100% { transform: translate3d(-20%, 20%, 0) scale(1); background-position: 0% 100%; }
+  @keyframes fog-move-up-right {
+    0%   { transform: translate(0, 0) scale(0.95); }
+    50%  { transform: translate(24vw, -22vh) scale(1.22); }
+    100% { transform: translate(48vw, -42vh) scale(1.08); }
   }
 
-  @keyframes vortex-reverse-spin {
-    from { transform: rotate(360deg); }
-    to   { transform: rotate(0deg); }
+  @keyframes fog-move-down-left {
+    0%   { transform: translate(0, 0) scale(1.12); }
+    50%  { transform: translate(-24vw, 22vh) scale(0.95); }
+    100% { transform: translate(-48vw, 42vh) scale(1.22); }
   }
 
-  @keyframes flow-stream-left {
-    0%   { transform: translate3d(35%, 0, 0); }
-    100% { transform: translate3d(-35%, 0, 0); }
+  @keyframes fog-move-right {
+    0%   { transform: translate(0, 0) scale(1); }
+    50%  { transform: translate(30vw, 12vh) scale(1.18); }
+    100% { transform: translate(58vw, -10vh) scale(0.95); }
   }
 
-  @keyframes flow-stream-right {
-    0%   { transform: translate3d(-35%, 0, 0); }
-    100% { transform: translate3d(35%, 0, 0); }
+  @keyframes fog-move-left {
+    0%   { transform: translate(0, 0) scale(1.05); }
+    50%  { transform: translate(-30vw, -12vh) scale(1.22); }
+    100% { transform: translate(-58vw, 10vh) scale(1); }
   }
 
-  @keyframes flow-stream-up {
-    0%   { transform: translate3d(0, 30%, 0); }
-    100% { transform: translate3d(0, -30%, 0); }
-  }
-
-  @keyframes flow-stream-down {
-    0%   { transform: translate3d(0, -30%, 0); }
-    100% { transform: translate3d(0, 30%, 0); }
-  }
-
-  @keyframes fog-orbit-up-right {
-    0%   { transform: translate3d(0, 0, 0) scale(0.95); }
-    50%  { transform: translate3d(38vw, -22vh, 0) scale(1.25); }
-    100% { transform: translate3d(62vw, -45vh, 0) scale(1.05); }
-  }
-
-  @keyframes fog-orbit-down-left {
-    0%   { transform: translate3d(0, 0, 0) scale(1.15); }
-    50%  { transform: translate3d(-40vw, 25vh, 0) scale(1.3); }
-    100% { transform: translate3d(-65vw, 48vh, 0) scale(0.95); }
-  }
-
-  @keyframes fog-orbit-clockwise {
-    0%   { transform: translate3d(0, 0, 0) scale(1); }
-    25%  { transform: translate3d(35vw, -30vh, 0) scale(1.2); }
-    50%  { transform: translate3d(15vw, -55vh, 0) scale(1.1); }
-    75%  { transform: translate3d(-25vw, -25vh, 0) scale(1.3); }
-    100% { transform: translate3d(0, 0, 0) scale(1); }
-  }
-
-  @keyframes fog-orbit-counter-clockwise {
-    0%   { transform: translate3d(0, 0, 0) scale(1.2); }
-    25%  { transform: translate3d(-30vw, -25vh, 0) scale(1.05); }
-    50%  { transform: translate3d(-10vw, 35vh, 0) scale(1.3); }
-    75%  { transform: translate3d(25vw, 15vh, 0) scale(1.15); }
-    100% { transform: translate3d(0, 0, 0) scale(1.2); }
-  }
-
-  @keyframes fog-horizontal-left {
-    0%   { transform: translate3d(20vw, 0, 0) scale(1); }
-    50%  { transform: translate3d(-25vw, 15vh, 0) scale(1.25); }
-    100% { transform: translate3d(-55vw, -10vh, 0) scale(1.05); }
-  }
-
-  @keyframes fog-horizontal-right {
-    0%   { transform: translate3d(-20vw, 0, 0) scale(1.1); }
-    50%  { transform: translate3d(25vw, -12vh, 0) scale(1.3); }
-    100% { transform: translate3d(55vw, 18vh, 0) scale(1); }
-  }
-
-  @keyframes fog-center-pulse {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(0.9); opacity: 0.6; }
-    50%      { transform: translate3d(5vw, -5vh, 0) scale(1.35); opacity: 0.95; }
-  }
-
-  .tripping .trip-text-target { transform-origin: 0 60%; animation: breathe 6s ease-in-out infinite; }
-  .tripping .trip-text-glow { animation: glow 8s linear infinite; }
+  .tripping .trip-text-target { transform-origin: 0 60%; animation: breathe 7s ease-in-out infinite; }
+  .tripping .trip-text-glow { animation: glow 10s linear infinite; }
+  .tripping .trip-text-glow span:not(.gold-raised-char) { text-shadow: inherit !important; }
   
   @keyframes breathe {
     0%, 100% { transform: scale(1) rotate(0deg); }
-    50%      { transform: scale(calc(1 + var(--lvl) * .022)) rotate(calc(var(--lvl) * -.3deg)); }
+    50%      { transform: scale(calc(1 + var(--lvl) * .015)) rotate(calc(var(--lvl) * -.2deg)); }
   }
 
   @keyframes glow {
-    0%, 100% { text-shadow: 0 0 .30em rgba(255, 80, 170, calc(var(--lvl) * .85)); }
-    33%      { text-shadow: 0 0 .30em rgba(60, 220, 255, calc(var(--lvl) * .85)); }
-    66%      { text-shadow: 0 0 .30em rgba(170, 255, 70, calc(var(--lvl) * .85)); }
+    0%, 100% { text-shadow: 0 0 .25em rgba(255, 80, 170, calc(var(--lvl) * .65)); }
+    33%      { text-shadow: 0 0 .25em rgba(60, 220, 255, calc(var(--lvl) * .65)); }
+    66%      { text-shadow: 0 0 .25em rgba(170, 255, 70, calc(var(--lvl) * .60)); }
   }
 
 .dyslexia-char {

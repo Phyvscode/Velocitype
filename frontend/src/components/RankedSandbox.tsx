@@ -1236,12 +1236,12 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             isOpponent={activePov === 'opp'}
             charge={activePov === 'you' ? myCharge : oppCharge}
             cia={activePov === 'you' ? myCia : oppCia}
-            dyslexiaActive={activePov === 'you' ? oppAbilities.includes('dyslexia') : myAbilities.includes('dyslexia')}
-            tripActive={activePov === 'you' ? oppAbilities.includes('shrooms') : myAbilities.includes('shrooms')}
-            blinkActive={activePov === 'you' ? oppAbilities.includes('blinking') : myAbilities.includes('blinking')}
-            joker1Active={activePov === 'you' ? oppAbilities.includes('joker1') : myAbilities.includes('joker1')}
-            joker2Active={activePov === 'you' ? oppAbilities.includes('joker2') : myAbilities.includes('joker2')}
-            joker3Active={activePov === 'you' ? oppAbilities.includes('joker3') : myAbilities.includes('joker3')}
+            dyslexiaActive={activePov === 'you' ? (oppAbilities.includes('dyslexia') || oppAbilities.includes('dyslexia_buffed')) : (myAbilities.includes('dyslexia') || myAbilities.includes('dyslexia_buffed'))}
+            tripActive={activePov === 'you' ? (oppAbilities.includes('shrooms') || oppAbilities.includes('shrooms_buffed')) : (myAbilities.includes('shrooms') || myAbilities.includes('shrooms_buffed'))}
+            blinkActive={activePov === 'you' ? (oppAbilities.includes('blinking') || oppAbilities.includes('blinking_buffed')) : (myAbilities.includes('blinking') || myAbilities.includes('blinking_buffed'))}
+            joker1Active={activePov === 'you' ? (oppAbilities.includes('joker1') || oppAbilities.includes('joker1_buffed')) : (myAbilities.includes('joker1') || myAbilities.includes('joker1_buffed'))}
+            joker2Active={activePov === 'you' ? (oppAbilities.includes('joker2') || oppAbilities.includes('joker2_buffed')) : (myAbilities.includes('joker2') || myAbilities.includes('joker2_buffed'))}
+            joker3Active={activePov === 'you' ? (oppAbilities.includes('joker3') || oppAbilities.includes('joker3_buffed')) : (myAbilities.includes('joker3') || myAbilities.includes('joker3_buffed'))}
             characters={selectedCharacters}
             goldenLetters={activePov === 'you' ? goldenLettersRef.current : oppGoldenLettersRef.current}
             buffedAbilities={

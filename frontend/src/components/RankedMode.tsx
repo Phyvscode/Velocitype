@@ -330,20 +330,12 @@ export function RankedPlayerArea({
     <div id={isOpponent ? "opponent-area" : undefined} className={`flex-1 p-4 md:p-8 flex flex-col justify-center items-center relative w-full ${isOpponent ? 'bg-slate-900/40' : ''} ${tripActive ? 'trip-body tripping' : ''} ${blinkActive ? 'view-blink ' + blinkStyle : ''}`} data-level={tripActive ? String(tripLevel) : "0"}>
       {tripActive && (
         <div className="trip-layer">
-          <div className="trip-stream-diag1" />
-          <div className="trip-stream-diag2" />
-          <div className="trip-vortex" />
-          <div className="trip-stream-horizontal-left" />
-          <div className="trip-stream-horizontal-right" />
-          <div className="trip-stream-vertical-up" />
-          <div className="trip-stream-vertical-down" />
           <div className="fog fog-1" />
           <div className="fog fog-2" />
           <div className="fog fog-3" />
           <div className="fog fog-4" />
           <div className="fog fog-5" />
           <div className="fog fog-6" />
-          <div className="fog fog-7" />
         </div>
       )}
       {isOpponent && oppStyle && <style>{oppStyle}</style>}
@@ -396,7 +388,7 @@ export function RankedPlayerArea({
                 return words.map((word, wIdx) => {
                   const charsAndSpace = wIdx < words.length - 1 ? word.split('').concat([' ']) : word.split('');
                   return (
-                    <span key={wIdx} className="inline-block whitespace-pre exclude-theme" style={{ textShadow: 'none' }}>
+                    <span key={wIdx} className="inline-block whitespace-pre exclude-theme">
                       {charsAndSpace.map((char, cIdx) => {
                         const i = charIndex++;
                         let color = 'text-slate-500';
