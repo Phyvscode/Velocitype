@@ -121,8 +121,6 @@ export function RankedPlayerArea({
   const [scrollLines, setScrollLines] = useState(0);
   const [tripLevel, setTripLevel] = useState(0);
   const [blinkStyle, setBlinkStyle] = useState("");
-  const warpNowRef = useRef(0);
-  const warpId = isOpponent ? "warp-opp" : "warp-me";
   const containerRef = useRef<HTMLDivElement>(null);
 
   const updateCaretPosition = useCallback(() => {
@@ -232,29 +230,6 @@ export function RankedPlayerArea({
 
   
   
-  useEffect(() => {
-    // 0 = 0, 1 = 0.35, 2 = 0.7, 3 = 1.0
-    const multipliers = [0, 0.35, 0.7, 1];
-    const targetScale = tripActive ? 16 * (multipliers[tripLevel] || 0) : 0;
-    
-    const warpTarget = targetScale;
-    let warpRaf: any;
-    const warpEl = containerRef.current?.querySelector('feDisplacementMap');
-    
-    const tweenWarp = () => {
-      if (!warpEl) return;
-      warpNowRef.current += (warpTarget - warpNowRef.current) * 0.04;
-      if (Math.abs(warpTarget - warpNowRef.current) < 0.05) warpNowRef.current = warpTarget;
-      warpEl.setAttribute("scale", warpNowRef.current.toFixed(2));
-      
-      if (warpNowRef.current !== warpTarget) {
-        warpRaf = requestAnimationFrame(tweenWarp);
-      }
-    };
-    
-    warpRaf = requestAnimationFrame(tweenWarp);
-    return () => cancelAnimationFrame(warpRaf);
-  }, [tripActive, tripLevel]);
 
 
   useLayoutEffect(() => {
@@ -340,17 +315,7 @@ export function RankedPlayerArea({
       )}
       {isOpponent && oppStyle && <style>{oppStyle}</style>}
 
-      <div className={`flex-1 w-full max-w-4xl mx-auto relative flex flex-col justify-center items-center overflow-visible py-4 ${tripActive ? "trip-text-target" : ""}`} ref={containerRef} style={tripActive ? { filter: `url(#${warpId})` } : undefined}>
-
-      <svg width="0" height="0" style={{position: 'absolute'}} aria-hidden="true" focusable="false">
-        <filter id={warpId} x="-5%" y="-5%" width="110%" height="110%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.006 0.010" numOctaves="2" seed="3" result="noise">
-            <animate attributeName="baseFrequency" dur="12s" repeatCount="indefinite" values="0.006 0.010; 0.012 0.006; 0.006 0.010"/>
-          </feTurbulence>
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G"/>
-        </filter>
-      </svg>
-
+      <div className="flex-1 w-full max-w-4xl mx-auto relative flex flex-col justify-center items-center overflow-visible py-4" ref={containerRef}>
         <div 
           className="relative w-full select-none font-mono tracking-wide text-center trip-text-target trip-text-glow"
           style={{ fontSize: 'clamp(14px, 1.8vw, 24px)', fontFamily: fontFamily ? `"${fontFamily}", monospace` : undefined }}
