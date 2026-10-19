@@ -120,6 +120,8 @@ export function RankedPlayerArea({
   const [caretTop, setCaretTop] = useState(0);
   const [scrollLines, setScrollLines] = useState(0);
   const [tripLevel, setTripLevel] = useState(0);
+  const [splitActive, setSplitActive] = useState(false);
+  const [splitOffset, setSplitOffset] = useState<{ x: number; y: number }>({ x: 8, y: 3 });
   const [blinkStyle, setBlinkStyle] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -169,6 +171,40 @@ export function RankedPlayerArea({
     
     const interval = setInterval(rollLevel, 3000);
     return () => clearInterval(interval);
+  }, [tripActive]);
+
+  useEffect(() => {
+    if (!tripActive) {
+      setSplitActive(false);
+      return;
+    }
+    let active = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const splitDuration = 3000; // 3s animation at a random position around the text
+
+    const rollSplit = () => {
+      if (active) return;
+      if (Math.random() < 0.3) {
+        active = true;
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 8 + Math.random() * 4; // 8px to 12px radius around the text
+        setSplitOffset({
+          x: Math.cos(angle) * dist,
+          y: Math.sin(angle) * dist,
+        });
+        setSplitActive(true);
+        timeoutId = setTimeout(() => {
+          setSplitActive(false);
+          active = false;
+        }, splitDuration);
+      }
+    };
+
+    const interval = setInterval(rollSplit, 1000);
+    return () => {
+      clearInterval(interval);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [tripActive]);
 
   
@@ -317,8 +353,13 @@ export function RankedPlayerArea({
 
       <div className="flex-1 w-full max-w-4xl mx-auto relative flex flex-col justify-center items-center overflow-visible py-4" ref={containerRef}>
         <div 
-          className="relative w-full select-none font-mono tracking-wide text-center trip-text-target trip-text-glow"
-          style={{ fontSize: 'clamp(14px, 1.8vw, 24px)', fontFamily: fontFamily ? `"${fontFamily}", monospace` : undefined }}
+          className={`relative w-full select-none font-mono tracking-wide text-center trip-text-target trip-text-glow ${splitActive ? 'splitting' : ''}`}
+          style={{
+            fontSize: 'clamp(14px, 1.8vw, 24px)',
+            fontFamily: fontFamily ? `"${fontFamily}", monospace` : undefined,
+            '--split-target-x': `${splitOffset.x.toFixed(2)}px`,
+            '--split-target-y': `${splitOffset.y.toFixed(2)}px`,
+          } as React.CSSProperties}
         >
           <div 
             className="overflow-hidden relative"
