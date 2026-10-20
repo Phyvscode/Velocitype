@@ -124,6 +124,8 @@ export function RankedPlayerArea({
   const [tripLevel, setTripLevel] = useState(0);
   const [splitActive, setSplitActive] = useState(false);
   const [splitOffset, setSplitOffset] = useState<{ x: number; y: number }>({ x: 8, y: 3 });
+  const [dyslexiaFlips, setDyslexiaFlips] = useState<Record<number, '--fx' | '--fy'>>({});
+  const dyslexiaBusyRef = useRef<Set<number>>(new Set());
   const [blinkStyle, setBlinkStyle] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -242,30 +244,50 @@ export function RankedPlayerArea({
 
   
   useEffect(() => {
-    if (!dyslexiaActive) return;
-    const intervalMs = buffedAbilities.includes('dyslexia') ? 1500 : 3000;
+    if (!dyslexiaActive) {
+      dyslexiaBusyRef.current.clear();
+      setDyslexiaFlips({});
+      return;
+    }
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
     const interval = setInterval(() => {
       if (!containerRef.current) return;
-      const letters = Array.from(containerRef.current.querySelectorAll('.dyslexia-char')) as HTMLElement[];
+      const letters = Array.from(
+        containerRef.current.querySelectorAll('.dyslexia-char[data-char-idx]')
+      ) as HTMLElement[];
       if (!letters.length) return;
       
-      const n = 8 + Math.floor(Math.random() * 8); // 3 to 8 letters
+      const n = 8 + Math.floor(Math.random() * 8);
+      const updates: Record<number, '--fx' | '--fy'> = {};
       for (let i = 0; i < n; i++) {
         const ch = letters[Math.floor(Math.random() * letters.length)];
-        if (ch.dataset.busy) continue;
-        ch.dataset.busy = "1";
+        const idx = Number(ch.dataset.charIdx);
+        if (Number.isNaN(idx) || dyslexiaBusyRef.current.has(idx)) continue;
+        dyslexiaBusyRef.current.add(idx);
         
-        const prop = Math.random() < 0.5 ? "--fy" : "--fx";
-        ch.style.setProperty(prop, "-1");
+        const prop: '--fx' | '--fy' = Math.random() < 0.5 ? "--fy" : "--fx";
+        updates[idx] = prop;
         
-        setTimeout(() => {
-          ch.style.removeProperty(prop);
-          delete ch.dataset.busy;
+        const tid = setTimeout(() => {
+          dyslexiaBusyRef.current.delete(idx);
+          setDyslexiaFlips(prev => {
+            if (!(idx in prev)) return prev;
+            const next = { ...prev };
+            delete next[idx];
+            return next;
+          });
         }, 1200 + Math.random() * 1400); // 1.2s to 2.6s
+        timeouts.push(tid);
+      }
+      if (Object.keys(updates).length > 0) {
+        setDyslexiaFlips(prev => ({ ...prev, ...updates }));
       }
     }, 700);
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      timeouts.forEach(clearTimeout);
+    };
   }, [dyslexiaActive]);
 
 
@@ -494,14 +516,19 @@ export function RankedPlayerArea({
 
                           let styleObj: React.CSSProperties = isGolden ? { textShadow: 'none' } : {};
 
-                          if (!isGolden && dyslexiaActive && isUnTyped && !isSplitCopy) {
+                          if (!isGolden && dyslexiaActive && isUnTyped) {
                             color += ' dyslexia-char';
+                            const flipProp = dyslexiaFlips[i];
+                            if (flipProp) {
+                              (styleObj as Record<string, string | number>)[flipProp] = "-1";
+                            }
                           }
 
                           return (
                             <span 
                               key={i} 
                               ref={isSplitCopy ? undefined : (el => letterRefs.current[i] = el)}
+                              data-char-idx={isSplitCopy ? undefined : i}
                               className={`${color}`}
                               style={styleObj}
                             >
