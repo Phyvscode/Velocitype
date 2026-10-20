@@ -187,7 +187,7 @@ export function RankedPlayerArea({
       if (Math.random() < 0.3) {
         active = true;
         const angle = Math.random() * Math.PI * 2;
-        const dist = 8 + Math.random() * 4; // 8px to 12px radius around the text
+        const dist = 10 + Math.random() * 8; // 10px to 18px radius in all directions (including on top/above and around)
         setSplitOffset({
           x: Math.cos(angle) * dist,
           y: Math.sin(angle) * dist,
@@ -362,12 +362,12 @@ export function RankedPlayerArea({
           } as React.CSSProperties}
         >
           <div 
-            className="overflow-hidden relative"
+            className="overflow-hidden relative py-3 -my-3"
             style={{ 
-              height: '4.8em',
+              height: 'calc(4.8em + 24px)',
               lineHeight: 1.6,
-              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
-              maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
+              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 7%, black 93%, transparent 100%)',
+              maskImage: 'linear-gradient(to bottom, transparent 0%, black 7%, black 93%, transparent 100%)'
             }}
           >
             <div 
@@ -389,65 +389,78 @@ export function RankedPlayerArea({
               />
 
               {(() => {
-                const words = targetText.split(' ');
-                let charIndex = 0;
-                return words.map((word, wIdx) => {
-                  const charsAndSpace = wIdx < words.length - 1 ? word.split('').concat([' ']) : word.split('');
-                  return (
-                    <span key={wIdx} className="inline-block whitespace-pre exclude-theme">
-                      {charsAndSpace.map((char, cIdx) => {
-                        const i = charIndex++;
-                        let color = 'text-slate-500';
-                        let isUnTyped = false;
-                        const isGolden = goldenLetters.has(i);
+                const renderWords = (isSplitCopy: boolean) => {
+                  const words = targetText.split(' ');
+                  let charIndex = 0;
+                  return words.map((word, wIdx) => {
+                    const charsAndSpace = wIdx < words.length - 1 ? word.split('').concat([' ']) : word.split('');
+                    return (
+                      <span key={wIdx} className="inline-block whitespace-pre exclude-theme">
+                        {charsAndSpace.map((char) => {
+                          const i = charIndex++;
+                          let color = 'text-slate-500';
+                          let isUnTyped = false;
+                          const isGolden = goldenLetters.has(i);
 
-                        if (isGolden) {
-                          // The gold letters will only be gold and no other color!
-                          if (i < typedText.length && (typedText[i] === char || joker1Active)) {
-                            color = 'gold-raised-char gold-typed-correct exclude-theme';
+                          if (isGolden) {
+                            // The gold letters will only be gold and no other color!
+                            if (i < typedText.length && (typedText[i] === char || joker1Active)) {
+                              color = 'gold-raised-char gold-typed-correct exclude-theme';
+                            } else {
+                              color = 'gold-raised-char exclude-theme';
+                            }
+                          } else if (i < typedText.length) {
+                            let isCorrect = typedText[i] === char;
+                            if (joker1Active) isCorrect = true; // Joker 1 makes all mistakes look correct
+                            
+                            if (isCorrect) {
+                              color = !isOpponent ? 'text-[var(--hot)]' : (colorTheme ? 'correct-char' : 'text-red-400');
+                            } else {
+                              color = 'text-red-500 bg-red-500/20 exclude-theme';
+                            }
+                          } else if (i === typedText.length) {
+                            color = 'text-slate-100 exclude-theme';
                           } else {
-                            color = 'gold-raised-char exclude-theme';
+                            isUnTyped = true;
                           }
-                        } else if (i < typedText.length) {
-                          let isCorrect = typedText[i] === char;
-                          if (joker1Active) isCorrect = true; // Joker 1 makes all mistakes look correct
                           
-                          if (isCorrect) {
-                            color = !isOpponent ? 'text-[var(--hot)]' : (colorTheme ? 'correct-char' : 'text-red-400');
-                          } else {
-                            color = 'text-red-500 bg-red-500/20 exclude-theme';
+                          // Joker 3: Only every 5th letter is colored, the rest are blank/slate (never masks gold letters)
+                          if (!isGolden && joker3Active && i < typedText.length && (i + 1) % (buffedAbilities.includes('joker3') ? 3 : 5) !== 0) {
+                            color = 'text-slate-500';
                           }
-                        } else if (i === typedText.length) {
-                          color = 'text-slate-100 exclude-theme';
-                        } else {
-                          isUnTyped = true;
-                        }
-                        
-                        // Joker 3: Only every 5th letter is colored, the rest are blank/slate (never masks gold letters)
-                        if (!isGolden && joker3Active && i < typedText.length && (i + 1) % (buffedAbilities.includes('joker3') ? 3 : 5) !== 0) {
-                          color = 'text-slate-500';
-                        }
 
-                        let styleObj: React.CSSProperties = isGolden ? { textShadow: 'none' } : {};
+                          let styleObj: React.CSSProperties = isGolden ? { textShadow: 'none' } : {};
 
-                        if (!isGolden && dyslexiaActive && isUnTyped) {
-                          color += ' dyslexia-char';
-                        }
+                          if (!isGolden && dyslexiaActive && isUnTyped) {
+                            color += ' dyslexia-char';
+                          }
 
-                        return (
-                          <span 
-                            key={i} 
-                            ref={el => letterRefs.current[i] = el}
-                            className={`${color}`}
-                            style={styleObj}
-                          >
-                            {char}
-                          </span>
-                        );
-                      })}
-                    </span>
-                  );
-                });
+                          return (
+                            <span 
+                              key={i} 
+                              ref={isSplitCopy ? undefined : (el => letterRefs.current[i] = el)}
+                              className={`${color}`}
+                              style={styleObj}
+                            >
+                              {char}
+                            </span>
+                          );
+                        })}
+                      </span>
+                    );
+                  });
+                };
+
+                return (
+                  <>
+                    {renderWords(false)}
+                    {tripActive && splitActive && (
+                      <div className="drunk-split-overlay" aria-hidden="true">
+                        {renderWords(true)}
+                      </div>
+                    )}
+                  </>
+                );
               })()}
             </div>
           </div>

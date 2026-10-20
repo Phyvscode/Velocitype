@@ -164,77 +164,43 @@
     100% { transform: translate(-58vw, 10vh) scale(1); }
   }
 
-  @property --split-progress {
-    syntax: "<number>";
-    inherits: true;
-    initial-value: 0;
-  }
-
-  @property --split-alpha {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 0%;
-  }
-
-  /* Drunken double-vision: text remains stationary in place; 30% roll animates it splitting in 2 at a random position around the text for 3s */
+  /* Drunken double-vision: main text remains stationary; 30% roll animates a 60% opacity split copy on top and around the text for 3s */
   .tripping .trip-text-target {
     transform: none !important;
     animation: none !important;
   }
 
   .tripping .trip-text-glow {
-    --split-progress: 0;
-    --split-alpha: 0%;
-    animation: none;
+    animation: none !important;
   }
 
-  .tripping .trip-text-glow.splitting {
-    animation: drunk-split 3s ease-in-out 1 forwards !important;
+  .drunk-split-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    user-select: none;
+    z-index: 20;
+    will-change: transform, opacity;
+    animation: drunk-split-overlay-anim 3s ease-in-out 1 forwards;
   }
 
-  @keyframes drunk-split {
+  @keyframes drunk-split-overlay-anim {
     0% {
-      --split-progress: 0;
-      --split-alpha: 0%;
+      transform: translate(0px, 0px);
+      opacity: 0;
     }
     20% {
-      --split-progress: 1;
-      --split-alpha: 86%;
+      transform: translate(var(--split-target-x, 10px), var(--split-target-y, -10px));
+      opacity: 0.6;
     }
     80% {
-      --split-progress: 1;
-      --split-alpha: 86%;
+      transform: translate(var(--split-target-x, 10px), var(--split-target-y, -10px));
+      opacity: 0.6;
     }
     100% {
-      --split-progress: 0;
-      --split-alpha: 0%;
+      transform: translate(0px, 0px);
+      opacity: 0;
     }
-  }
-
-  .tripping .trip-text-glow.splitting span:not(.gold-raised-char):not(.animate-caret) {
-    text-shadow: calc(var(--split-target-x, 8px) * var(--split-progress)) calc(var(--split-target-y, 3px) * var(--split-progress)) 0.4px color-mix(in srgb, currentColor var(--split-alpha), transparent) !important;
-  }
-
-  .tripping .trip-text-glow.splitting .gold-raised-char {
-    filter:
-      drop-shadow(-0.5px -0.8px 0px rgba(255, 255, 255, 0.95))
-      drop-shadow(0.8px 0.8px 0px #d97706)
-      drop-shadow(1.6px 1.6px 0px #92400e)
-      drop-shadow(2.4px 2.4px 0px #451a03)
-      drop-shadow(calc(var(--split-target-x, 8px) * var(--split-progress)) calc(var(--split-target-y, 3px) * var(--split-progress)) 0.4px rgba(245, 158, 11, 0.85))
-      drop-shadow(0 0 10px rgba(245, 158, 11, 0.5))
-      drop-shadow(3px 4px 5px rgba(0, 0, 0, 0.85)) !important;
-  }
-
-  .tripping .trip-text-glow.splitting .gold-raised-char.gold-typed-correct {
-    filter:
-      drop-shadow(-0.5px -0.8px 0px rgba(255, 255, 255, 1))
-      drop-shadow(0.8px 0.8px 0px #f59e0b)
-      drop-shadow(1.6px 1.6px 0px #b45309)
-      drop-shadow(2.4px 2.4px 0px #78350f)
-      drop-shadow(calc(var(--split-target-x, 8px) * var(--split-progress)) calc(var(--split-target-y, 3px) * var(--split-progress)) 0.4px rgba(250, 204, 21, 0.9))
-      drop-shadow(0 0 12px rgba(250, 204, 21, 0.75))
-      drop-shadow(3px 4px 5px rgba(0, 0, 0, 0.85)) !important;
   }
 
 .dyslexia-char {
