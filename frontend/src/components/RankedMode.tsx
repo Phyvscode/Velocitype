@@ -119,6 +119,8 @@ export function RankedPlayerArea({
   const [caretLeft, setCaretLeft] = useState(0);
   const [caretTop, setCaretTop] = useState(0);
   const [scrollLines, setScrollLines] = useState(0);
+  const [scrollOffsetPx, setScrollOffsetPx] = useState(0);
+  const [visibleRange, setVisibleRange] = useState<{ start: number; end: number }>({ start: 0, end: 999999 });
   const [tripLevel, setTripLevel] = useState(0);
   const [splitActive, setSplitActive] = useState(false);
   const [splitOffset, setSplitOffset] = useState<{ x: number; y: number }>({ x: 8, y: 3 });
@@ -127,17 +129,48 @@ export function RankedPlayerArea({
 
   const updateCaretPosition = useCallback(() => {
     if (letterRefs.current.length === 0 || !targetText) return;
-    const nextIndex = Math.min(typedText.length, targetText.length - 1);
+    const totalChars = targetText.length;
+    const nextIndex = Math.min(typedText.length, totalChars - 1);
+    const firstEl = letterRefs.current[0];
+    if (!firstEl) return;
+
+    const getLineTop = (el: HTMLSpanElement) =>
+      el.parentElement ? el.parentElement.offsetTop : el.offsetTop;
+
+    const baseTop = getLineTop(firstEl);
+    let line = 0;
+    let lastTop = baseTop;
     let currentLine = 0;
-    let lastTop = letterRefs.current[0]?.offsetTop || 0;
-    for (let i = 1; i <= nextIndex; i++) {
+    let currentLineTop = baseTop;
+
+    const lineStarts: number[] = [0];
+
+    for (let i = 0; i < totalChars; i++) {
       const el = letterRefs.current[i];
-      if (el && el.offsetTop > lastTop + 10) {
-        currentLine++;
-        lastTop = el.offsetTop;
+      if (!el) continue;
+      const elTop = getLineTop(el);
+      if (i > 0 && elTop > lastTop + 10) {
+        line++;
+        lastTop = elTop;
+        lineStarts.push(i);
+      }
+      if (i === nextIndex) {
+        currentLine = line;
+        currentLineTop = lastTop;
       }
     }
+
+    const vStart = lineStarts[currentLine] ?? 0;
+    const vEnd =
+      currentLine + 3 < lineStarts.length
+        ? lineStarts[currentLine + 3] - 1
+        : totalChars - 1;
+
     setScrollLines(currentLine);
+    setScrollOffsetPx(currentLineTop - baseTop);
+    setVisibleRange((prev) =>
+      prev.start === vStart && prev.end === vEnd ? prev : { start: vStart, end: vEnd }
+    );
 
     const nextEl = letterRefs.current[nextIndex];
     if (nextEl) {
@@ -148,7 +181,7 @@ export function RankedPlayerArea({
       }
       setCaretTop(nextEl.offsetTop + nextEl.offsetHeight / 2);
     }
-  }, [typedText, targetText]);
+  }, [typedText, targetText, fontFamily]);
 
   
   
@@ -274,7 +307,15 @@ export function RankedPlayerArea({
 
   useEffect(() => {
     window.addEventListener('resize', updateCaretPosition);
-    return () => window.removeEventListener('resize', updateCaretPosition);
+    let ro: ResizeObserver | null = null;
+    if (containerRef.current && typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => updateCaretPosition());
+      ro.observe(containerRef.current);
+    }
+    return () => {
+      window.removeEventListener('resize', updateCaretPosition);
+      if (ro) ro.disconnect();
+    };
   }, [updateCaretPosition]);
 
   // Extract opponent colors if available
@@ -366,14 +407,12 @@ export function RankedPlayerArea({
             style={{ 
               height: 'calc(4.8em + 24px)',
               lineHeight: 1.6,
-              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 7%, black 93%, transparent 100%)',
-              maskImage: 'linear-gradient(to bottom, transparent 0%, black 7%, black 93%, transparent 100%)'
             }}
           >
             <div 
               className="transition-transform duration-200 ease-out relative"
               style={{
-                transform: `translateY(calc(-${scrollLines} * 1.6em))`,
+                transform: scrollOffsetPx > 0 ? `translateY(-${scrollOffsetPx}px)` : `translateY(calc(-${scrollLines} * 1.6em))`,
                 whiteSpace: 'pre-wrap'
               }}
             >
@@ -398,9 +437,33 @@ export function RankedPlayerArea({
                       <span key={wIdx} className="inline-block whitespace-pre exclude-theme">
                         {charsAndSpace.map((char) => {
                           const i = charIndex++;
+                          const isGolden = goldenLetters.has(i);
+                          const isHiddenLine = i < visibleRange.start || i > visibleRange.end;
+
+                          // Lines that have scrolled up above the top line or are below the 3 visible lines
+                          // must be completely invisible and unaffected by any abilities.
+                          if (isHiddenLine) {
+                            return (
+                              <span
+                                key={i}
+                                ref={isSplitCopy ? undefined : (el => letterRefs.current[i] = el)}
+                                className="opacity-0 pointer-events-none select-none exclude-theme"
+                                style={{
+                                  opacity: 0,
+                                  visibility: 'hidden',
+                                  filter: 'none',
+                                  textShadow: 'none',
+                                  display: isGolden ? 'inline-block' : undefined,
+                                  fontWeight: isGolden ? 800 : undefined,
+                                }}
+                              >
+                                {char}
+                              </span>
+                            );
+                          }
+
                           let color = 'text-slate-500';
                           let isUnTyped = false;
-                          const isGolden = goldenLetters.has(i);
 
                           if (isGolden) {
                             // The gold letters will only be gold and no other color!
@@ -431,7 +494,7 @@ export function RankedPlayerArea({
 
                           let styleObj: React.CSSProperties = isGolden ? { textShadow: 'none' } : {};
 
-                          if (!isGolden && dyslexiaActive && isUnTyped) {
+                          if (!isGolden && dyslexiaActive && isUnTyped && !isSplitCopy) {
                             color += ' dyslexia-char';
                           }
 
