@@ -205,6 +205,7 @@
 
 .dyslexia-char {
   display: inline-block;
+  transform-origin: 50% calc(50% + 0.39em - 0.5ex);
   scale: var(--fx, 1) var(--fy, 1);
   transition: scale .35s ease;
 }
