@@ -610,6 +610,34 @@ export function RankedPlayerArea({
   );
 }
 
+export const RANKED_ABILITY_CATALOG = [
+  { id: 'shrooms', name: 'Shrooms', cost: 30, char: 'mushgirl' },
+  { id: 'dyslexia', name: 'Dyslexia', cost: 60, char: 'mushgirl' },
+  { id: 'blinking', name: 'Blinking', cost: 100, char: 'mushgirl' },
+  { id: 'scramble', name: 'Scramble', cost: 30, char: 'screwed' },
+  { id: 'sabotage', name: 'Sabotage', cost: 60, char: 'screwed' },
+  { id: 'spam', name: 'Spam', cost: 100, char: 'screwed' },
+  { id: 'joker1', name: 'Delusion', cost: 30, char: 'joker' },
+  { id: 'joker2', name: 'Blindness', cost: 60, char: 'joker' },
+  { id: 'joker3', name: 'Amnesia', cost: 100, char: 'joker' },
+  { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity' },
+  { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity' },
+  { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity' },
+  { id: 'moneyguy1', name: 'Bribe', cost: 30, char: 'moneyguy' },
+  { id: 'moneyguy2', name: 'Greed', cost: 60, char: 'moneyguy' },
+  { id: 'moneyguy3', name: 'Inflation', cost: 100, char: 'moneyguy' },
+  { id: 'helper1', name: 'Auto-Correct', cost: 30, char: 'helper' },
+  { id: 'helper2', name: 'Cleanse', cost: 60, char: 'helper' },
+  { id: 'helper3', name: 'Buyout', cost: 100, char: 'helper' },
+];
+
+// Base coin/heart price of an ability, by its charge-cost tier
+export const baseCoinHeart = (cost: number) => {
+  if (cost <= 40) return { c: 100, h: 20 };
+  if (cost <= 70) return { c: 150, h: 10 };
+  return { c: 300, h: 30 };
+};
+
 export default function RankedMode({ onBack, onOpenAuth }: Props) {
   const { user } = useAuth();
   const { socket, isConnected } = useSocket();
@@ -665,6 +693,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
     flyingResourceRef.current?.spawnCoin(startX, startY, targetX, targetY, () => {
       setMyCoins(c => c + 5);
       myCoinsRef.current += 5;
+      setGoldCollected(g => g + 1);
       setCoinPulse(true);
       setTimeout(() => setCoinPulse(false), 350);
     });
@@ -700,9 +729,14 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
 
   const [myBuffedAbilities, setMyBuffedAbilities] = useState<string[]>([]);
   const prevValLengthRef = useRef(0);
-  const [showAbilitySelect, setShowAbilitySelect] = useState(false);
+  const [showAbilitySelect, setShowAbilitySelect] = useState<'moneyguy3' | 'helper3' | null>(null);
   const [pickedExternalAbility, setPickedExternalAbility] = useState<string | null>(null);
+  const [helperPickedExternalAbility, setHelperPickedExternalAbility] = useState<string | null>(null);
+  const [showRemoveAbilitySelect, setShowRemoveAbilitySelect] = useState(false);
+  const [removedOppAbility, setRemovedOppAbility] = useState<string | null>(null);
   const [showBuffSelect, setShowBuffSelect] = useState(false);
+  const [myCorrectWords, setMyCorrectWords] = useState(0);
+  const myCorrectWordsRef = useRef(0);
 
   const [myBestLetter, setMyBestLetter] = useState<string | null>(null);
   const [myWorstLetter, setMyWorstLetter] = useState<string | null>(null);
@@ -763,6 +797,59 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
   const [oppAbilities, setOppAbilities] = useState<string[]>([]);
   const oppAbilitiesRef = useRef<string[]>([]);
   const [eventHorizonUsed, setEventHorizonUsed] = useState(false);
+  const [goldCollected, setGoldCollected] = useState(0);
+  const [oppCoins, setOppCoins] = useState(0);
+  const [oppHearts, setOppHearts] = useState(0);
+  const [oppInflation, setOppInflation] = useState({ coinPct: 0, heartPct: 0 });
+
+  // Bribe active on EITHER side: both players get golden letters, coins & hearts
+  const bribeActive = myAbilities.includes('moneyguy1') || oppAbilities.includes('moneyguy1');
+  // Greed: -1% coin cost per gold letter collected (max 30%), hearts unaffected
+  const greedPct = myAbilities.includes('moneyguy2') ? Math.min(30, goldCollected) : 0;
+  // Opponent's Inflation raises my coin / heart prices
+  const activeInflation = oppAbilities.includes('moneyguy3') ? oppInflation : { coinPct: 0, heartPct: 0 };
+  const getAbilityCost = (cost: number) => {
+    const b = baseCoinHeart(cost);
+    return {
+      c: Math.round(b.c * (1 - greedPct / 100) * (1 + activeInflation.coinPct / 100)),
+      h: Math.round(b.h * (1 + activeInflation.heartPct / 100)),
+    };
+  };
+  const canAffordAbility = (cost: number) => {
+    const m = getAbilityCost(cost);
+    return (bribeActive && myCoins >= m.c && myHearts >= m.h) || myCharge >= cost;
+  };
+  const payForAbility = (cost: number) => {
+    const m = getAbilityCost(cost);
+    if (bribeActive && myCoinsRef.current >= m.c && myHeartsRef.current >= m.h) {
+      setMyCoins(c => c - m.c);
+      setMyHearts(h => h - m.h);
+      myCoinsRef.current -= m.c;
+      myHeartsRef.current -= m.h;
+    } else {
+      setMyCharge(c => c - cost);
+      myChargeRef.current -= cost;
+    }
+  };
+
+  // Money Guy Inflation: tell the opponent how much their prices rise
+  useEffect(() => {
+    if (!socket || !matchData?.matchId) return;
+    let coinPct = 0, heartPct = 0;
+    if (myAbilities.includes('moneyguy3')) {
+      const mine = RANKED_ABILITY_CATALOG.filter(a => selectedCharacters.includes(a.char));
+      const unact = mine.filter(a => !myAbilities.includes(a.id) && !(a.id === 'gravity3' && eventHorizonUsed));
+      if (unact.length === 0) {
+        heartPct = 12;
+      } else {
+        const gp = myAbilities.includes('moneyguy2') ? Math.min(30, goldCollected) : 0;
+        const num = unact.reduce((t, a) => t + Math.round(baseCoinHeart(a.cost).c * (1 - gp / 100)), 0);
+        const den = unact.reduce((t, a) => t + baseCoinHeart(a.cost).c, 0);
+        coinPct = Math.round((num / den) * 100);
+      }
+    }
+    socket.emit('rankedInflation', { matchId: matchData.matchId, coinPct, heartPct });
+  }, [myAbilities, goldCollected, eventHorizonUsed, selectedCharacters, matchData?.matchId, socket]);
 
   const [frame, setFrame] = useState(1);
 
@@ -779,7 +866,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
   useEffect(() => { myWorstLetterRef.current = myWorstLetter; }, [myWorstLetter]);
 
   useEffect(() => {
-    if (selectedCharacters.includes('moneyguy') && myAbilities.includes('moneyguy1')) {
+    if (bribeActive) {
       const newGolden = new Set<number>();
       for (let i = 0; i < myTargetText.length; i++) {
         if (myTargetText[i] !== ' ' && Math.random() < 0.3) {
@@ -794,7 +881,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       setGoldenLetters(new Set());
       claimedGoldenRef.current = new Set();
     }
-  }, [myTargetText, selectedCharacters, myAbilities]);
+  }, [myTargetText, bribeActive]);
 
   useEffect(() => {
     if (gameState !== 'playing' || !startTime) return;
@@ -834,7 +921,9 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
             consistency,
             typedText,
             targetText: myTargetText,
-            charge: myChargeRef.current
+            charge: myChargeRef.current,
+            coins: myCoinsRef.current,
+            hearts: myHeartsRef.current
           });
         }
 
@@ -877,6 +966,15 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       setQueueing(false);
       setMatchData(data);
       setEventHorizonUsed(false);
+      setGoldCollected(0);
+      setOppCoins(0);
+      setOppHearts(0);
+      setOppInflation({ coinPct: 0, heartPct: 0 });
+      myCorrectWordsRef.current = 0;
+      setMyCorrectWords(0);
+      setPickedExternalAbility(null);
+      setHelperPickedExternalAbility(null);
+      setRemovedOppAbility(null);
       
       // If host, generate payload
       if (data.role === 'host') {
@@ -940,7 +1038,9 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       setTimeout(() => inputRef.current?.focus(), 100);
     };
 
-    const onOpponentProgress = (data: { progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number}; charge?: number; bestLetter?: string; worstLetter?: string; rawWpm?: number; accuracy?: number; consistency?: number; }) => {
+    const onOpponentProgress = (data: { progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number}; charge?: number; bestLetter?: string; worstLetter?: string; rawWpm?: number; accuracy?: number; consistency?: number; coins?: number; hearts?: number; }) => {
+      if (data.coins !== undefined) setOppCoins(data.coins);
+      if (data.hearts !== undefined) setOppHearts(data.hearts);
       setOppProgress(data.progress);
       setOppWpm(data.wpm);
       if (data.rawWpm !== undefined) setOppRawWpm(data.rawWpm);
@@ -1027,10 +1127,25 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       setShowGravityPopup(true);
     };
 
+    const onAbilityRemoved = (data: { abilityId: string }) => {
+      if (!data?.abilityId) return;
+      setMyAbilities(prev => prev.filter(a => a !== data.abilityId && a !== `${data.abilityId}_buffed`));
+      setMyBuffedAbilities(prev => prev.filter(a => a !== data.abilityId));
+      setPickedExternalAbility(prev => (prev === data.abilityId ? null : prev));
+      setHelperPickedExternalAbility(prev => (prev === data.abilityId ? null : prev));
+      showGravityNotice(`CLEANSED! Opponent removed your ${data.abilityId.toUpperCase()} ability!`);
+    };
+
+    const onInflation = (data: { coinPct: number; heartPct: number }) => {
+      setOppInflation({ coinPct: Number(data?.coinPct) || 0, heartPct: Number(data?.heartPct) || 0 });
+    };
+
     socket.on('rankedQueueJoined', onQueueJoined);
     socket.on('rankedGravityTimeSync', onGravityTimeSync);
     socket.on('rankedGravityEventHorizon', onGravityEventHorizon);
     socket.on('rankedGravitySabotage', onGravitySabotage);
+    socket.on('rankedAbilityRemoved', onAbilityRemoved);
+    socket.on('rankedInflation', onInflation);
     socket.on('rankedMatchFound', onMatchFound);
     socket.on('rankedMatchReady', onMatchReady);
     socket.on('rankedRoundStart', onRoundStart);
@@ -1050,6 +1165,8 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       socket.off('rankedGravityTimeSync', onGravityTimeSync);
       socket.off('rankedGravityEventHorizon', onGravityEventHorizon);
       socket.off('rankedGravitySabotage', onGravitySabotage);
+      socket.off('rankedAbilityRemoved', onAbilityRemoved);
+      socket.off('rankedInflation', onInflation);
       socket.off('rankedMatchFound', onMatchFound);
       socket.off('rankedMatchReady', onMatchReady);
       socket.off('rankedRoundStart', onRoundStart);
@@ -1131,7 +1248,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       val = val.slice(0, target.length);
     }
     
-    // Check spacebar completion
+    // Check spacebar completion (and count words written right for Helper ability 1)
     if (val.length > typedText.length && val[val.length - 1] === ' ') {
       const wordStart = val.lastIndexOf(' ', val.length - 2) + 1;
       const wordTyped = val.slice(wordStart, val.length - 1);
@@ -1142,7 +1259,33 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
         if (wordTyped[i] === wordTarget[i]) wordCorrectCount++;
       }
       const accuracy = wordTarget.length > 0 ? wordCorrectCount / wordTarget.length : 0;
-      
+      if (wordTarget.length > 0 && wordTyped === wordTarget) {
+        myCorrectWordsRef.current += 1;
+        setMyCorrectWords(myCorrectWordsRef.current);
+      }
+    }
+
+    // Helper Ability 1: 5% base chance to correct any one of the letters you wrote wrong (+0.5% per right word, max 50%)
+    const hasHelper1 = myAbilities.includes('helper1') || myAbilities.includes('helper1_buffed');
+    if (hasHelper1 && val.length > typedText.length) {
+      const lastIdx = val.length - 1;
+      if (val[lastIdx] !== target[lastIdx]) {
+        const isBuffedHelper = myAbilities.includes('helper1_buffed') || myBuffedAbilities.includes('helper1');
+        const baseChance = isBuffedHelper ? 0.10 : 0.05;
+        const stepChance = isBuffedHelper ? 0.01 : 0.005;
+        const helperChance = Math.min(0.50, baseChance + myCorrectWordsRef.current * stepChance);
+        if (Math.random() < helperChance) {
+          const wrongIndices: number[] = [];
+          for (let k = 0; k < val.length; k++) {
+            if (val[k] !== target[k]) wrongIndices.push(k);
+          }
+          if (wrongIndices.length > 0) {
+            const fixIdx = wrongIndices[Math.floor(Math.random() * wrongIndices.length)];
+            val = val.slice(0, fixIdx) + target[fixIdx] + val.slice(fixIdx + 1);
+            myLetterStatesRef.current[fixIdx] = 0;
+          }
+        }
+      }
     }
 
     setTypedText(val);
@@ -1163,7 +1306,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
         }
         else if (currState === 2) myLetterStatesRef.current[i] = 3;
       } else {
-        if ((currState === 0 || currState === 1) && (myAbilities.includes('moneyguy1') || myAbilities.includes('moneyguy1_buffed'))) {
+        if ((currState === 0 || currState === 1) && bribeActive) {
           triggerHeartSpawn(i);
         }
         myLetterStatesRef.current[i] = 2;
@@ -1228,7 +1371,9 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       bestLetter: bestChar,
       worstLetter: worstChar,
 
-      charge: myChargeRef.current
+      charge: myChargeRef.current,
+      coins: myCoinsRef.current,
+      hearts: myHeartsRef.current
     });
   };
 
@@ -1347,7 +1492,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
             Select Characters (Max 3)
           </label>
           <div className="flex flex-wrap gap-6 items-center justify-start">
-            {['mushgirl', 'screwed', 'joker', 'gravity', 'moneyguy'].map(charId => {
+            {['mushgirl', 'screwed', 'joker', 'gravity', 'moneyguy', 'helper'].map(charId => {
               const isSelected = selectedCharacters.includes(charId);
               return (
                 <div 
@@ -1453,7 +1598,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
             buffedAbilities={oppAbilities.filter(a => a.endsWith('_buffed')).map(a => a.replace('_buffed', ''))}
             characters={selectedCharacters}
             goldenLetters={goldenLetters}
-            moneyguyActive={selectedCharacters.includes('moneyguy') && myAbilities.some(a => a.startsWith('moneyguy'))}
+            moneyguyActive={bribeActive}
             coins={myCoins}
             hearts={myHearts}
             coinTargetRef={coinTargetRef}
@@ -1499,8 +1644,9 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       </div>
 
 
-      {/* Modals for Money Guy */}
+      {/* Modals for Money Guy & Helper */}
       {showAbilitySelect && (() => {
+        const sourceAbilityId = showAbilitySelect;
         const unselectedPool = [
           { id: 'shrooms', name: 'Shrooms', cost: 30, char: 'mushgirl', desc: 'Split double-vision & trippy fog' },
           { id: 'dyslexia', name: 'Dyslexia', cost: 60, char: 'mushgirl', desc: 'Inverts upcoming letters in place' },
@@ -1513,28 +1659,25 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
           { id: 'joker3', name: 'Amnesia', cost: 100, char: 'joker', desc: 'Only reveals every 5th letter, timer as ???' },
           { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity', desc: '+10s when timer hits 0 if your WPM is lower' },
           { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity', desc: 'Black Hole Sabotage popup (Ctrl+X)' },
-          { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity', desc: 'After 30s, ends round if your WPM is higher (1 round only)' }
+          { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity', desc: 'After 30s, ends round if your WPM is higher (1 round only)' },
+          { id: 'moneyguy1', name: 'Bribe', cost: 30, char: 'moneyguy', desc: 'Both players get coins/hearts: golden letters (+5 coins) & mistakes grant +3 hearts' },
+          { id: 'helper1', name: 'Auto-Correct', cost: 30, char: 'helper', desc: '5% chance to fix a wrong letter (+0.5% per right word, max 50%)' },
         ].filter(a => !selectedCharacters.includes(a.char) && !myAbilities.includes(a.id) && !(a.id === 'gravity3' && eventHorizonUsed));
 
         const selectExternalAbility = (abilityId: string) => {
-          const mgCost = { c: 300, h: 30 };
-          if (myCharge >= 100) {
-            setMyCharge(c => c - 100);
-            myChargeRef.current -= 100;
-          } else {
-            setMyCoins(c => c - mgCost.c);
-            setMyHearts(h => h - mgCost.h);
-            myCoinsRef.current -= mgCost.c;
-            myHeartsRef.current -= mgCost.h;
-          }
+          payForAbility(100);
 
-          const newAbilities = [...myAbilities, 'moneyguy3', abilityId];
+          const newAbilities = [...myAbilities, sourceAbilityId, abilityId];
           setMyAbilities(newAbilities);
-          setPickedExternalAbility(abilityId);
+          if (sourceAbilityId === 'moneyguy3') {
+            setPickedExternalAbility(abilityId);
+          } else {
+            setHelperPickedExternalAbility(abilityId);
+          }
           if (typeof socket !== 'undefined' && socket) {
             socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newAbilities });
           }
-          setShowAbilitySelect(false);
+          setShowAbilitySelect(null);
         };
 
         return (
@@ -1587,7 +1730,104 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                 </div>
               )}
               <button
-                onClick={() => setShowAbilitySelect(false)}
+                onClick={() => setShowAbilitySelect(null)}
+                className="mt-6 text-xs font-mono text-slate-500 hover:text-white uppercase tracking-widest cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {showRemoveAbilitySelect && (() => {
+        const ABILITY_META: Record<string, { name: string; char: string }> = {
+          shrooms: { name: 'Shrooms', char: 'mushgirl' },
+          dyslexia: { name: 'Dyslexia', char: 'mushgirl' },
+          blinking: { name: 'Blinking', char: 'mushgirl' },
+          scramble: { name: 'Scramble', char: 'screwed' },
+          sabotage: { name: 'Sabotage', char: 'screwed' },
+          spam: { name: 'Spam', char: 'screwed' },
+          joker1: { name: 'Delusion', char: 'joker' },
+          joker2: { name: 'Blindness', char: 'joker' },
+          joker3: { name: 'Amnesia', char: 'joker' },
+          gravity1: { name: 'Time Warp', char: 'gravity' },
+          gravity2: { name: 'Black Hole', char: 'gravity' },
+          gravity3: { name: 'Event Horizon', char: 'gravity' },
+          moneyguy1: { name: 'Bribe', char: 'moneyguy' },
+          helper1: { name: 'Auto-Correct', char: 'helper' },
+        };
+        const oppActiveRemovable = oppAbilities.filter(
+          a => !a.endsWith('_buffed') && !['moneyguy2', 'moneyguy3', 'helper2', 'helper3'].includes(a)
+        );
+
+        const removeOpponentAbility = (targetAbilityId: string) => {
+          payForAbility(60);
+
+          setOppAbilities(prev => {
+            const next = prev.filter(a => a !== targetAbilityId && a !== `${targetAbilityId}_buffed`);
+            oppAbilitiesRef.current = next;
+            return next;
+          });
+          setRemovedOppAbility(targetAbilityId);
+
+          const newAbilities = [...myAbilities, 'helper2'];
+          setMyAbilities(newAbilities);
+          if (typeof socket !== 'undefined' && socket) {
+            socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newAbilities });
+            socket.emit('rankedRemoveOpponentAbility', { matchId: matchData?.matchId, abilityId: targetAbilityId });
+          }
+          setShowRemoveAbilitySelect(false);
+        };
+
+        return (
+          <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-900 border border-emerald-500 p-8 rounded-xl max-w-md w-full shadow-2xl">
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <h3 className="font-display text-2xl text-emerald-400 uppercase tracking-widest">
+                  Cleanse: Remove Ability
+                </h3>
+                {oppActiveRemovable.length > 0 && (
+                  <button
+                    onClick={() => {
+                      const rand = oppActiveRemovable[Math.floor(Math.random() * oppActiveRemovable.length)];
+                      removeOpponentAbility(rand);
+                    }}
+                    className="px-3 py-1 rounded border border-emerald-400/70 bg-emerald-500/20 hover:bg-emerald-400 hover:text-black text-emerald-300 font-mono text-xs uppercase tracking-wider font-bold transition-all cursor-pointer"
+                  >
+                    🎲 Random
+                  </button>
+                )}
+              </div>
+              <p className="text-slate-400 font-mono text-xs mb-6">
+                Select one of your opponent's currently active abilities to remove it!
+              </p>
+              <div className="flex flex-col gap-3">
+                {oppActiveRemovable.length === 0 ? (
+                  <div className="text-red-400 text-xs font-mono">
+                    Opponent has no active abilities to remove right now!
+                  </div>
+                ) : (
+                  oppActiveRemovable.map(abilityId => {
+                    const meta = ABILITY_META[abilityId] || { name: abilityId, char: 'ability' };
+                    const isBuffed = oppAbilities.includes(`${abilityId}_buffed`);
+                    return (
+                      <button
+                        key={abilityId}
+                        onClick={() => removeOpponentAbility(abilityId)}
+                        className="py-3 px-4 border border-slate-700 bg-slate-800 hover:bg-emerald-500 hover:text-black font-mono text-xs uppercase tracking-widest transition-colors cursor-pointer rounded flex justify-between items-center"
+                      >
+                        <span className="font-bold">
+                          {meta.name} {isBuffed ? '(BUFFED)' : ''}
+                        </span>
+                        <span className="text-[10px] opacity-75">{meta.char}</span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              <button
+                onClick={() => setShowRemoveAbilitySelect(false)}
                 className="mt-6 text-xs font-mono text-slate-500 hover:text-white uppercase tracking-widest cursor-pointer"
               >
                 Cancel
@@ -1603,14 +1843,15 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
             <h3 className="font-display text-2xl text-yellow-500 uppercase tracking-widest mb-2">Invest: Double Effect</h3>
             <p className="text-slate-400 font-mono text-xs mb-6">Select an active ability to double its effect permanently!</p>
             <div className="flex flex-col gap-4">
-              {myAbilities.filter(a => !a.startsWith('moneyguy') && !a.endsWith('_buffed')).length === 0 ? (
+              {myAbilities.filter(a => !a.startsWith('moneyguy') && a !== 'helper2' && a !== 'helper3' && !a.endsWith('_buffed')).length === 0 ? (
                 <div className="text-red-400 text-xs font-mono">You have no active abilities to buff!</div>
-              ) : myAbilities.filter(a => !a.startsWith('moneyguy') && !a.endsWith('_buffed')).map(abilityId => {
+              ) : myAbilities.filter(a => !a.startsWith('moneyguy') && a !== 'helper2' && a !== 'helper3' && !a.endsWith('_buffed')).map(abilityId => {
                  const name = [
                     { id: 'shrooms', name: 'Shrooms' }, { id: 'dyslexia', name: 'Dyslexia' }, { id: 'blinking', name: 'Blinking' },
                     { id: 'scramble', name: 'Scramble' }, { id: 'sabotage', name: 'Sabotage' }, { id: 'spam', name: 'Spam' },
                     { id: 'joker1', name: 'Delusion' }, { id: 'joker2', name: 'Blindness' }, { id: 'joker3', name: 'Amnesia' },
-                    { id: 'gravity1', name: 'Time Warp' }, { id: 'gravity2', name: 'Black Hole' }, { id: 'gravity3', name: 'Event Horizon' }
+                    { id: 'gravity1', name: 'Time Warp' }, { id: 'gravity2', name: 'Black Hole' }, { id: 'gravity3', name: 'Event Horizon' },
+                    { id: 'helper1', name: 'Auto-Correct' }
                  ].find(x => x.id === abilityId)?.name || abilityId;
                  
                  const isBuffed = myBuffedAbilities.includes(abilityId);
@@ -1701,7 +1942,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                         )}
                       </div>
                     )}
-                    {selectedCharacters.includes('moneyguy') && myAbilities.some(a => a.startsWith('moneyguy')) ? (
+                    {bribeActive ? (
                       <div className="font-mono text-xs text-slate-300 flex items-center gap-3">
                         <div className="flex items-center gap-1">
                           <CoinIcon className="w-3.5 h-3.5" glow />
@@ -1715,6 +1956,21 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                     ) : (
                       <div className="font-mono text-xs text-slate-500">{isBlindMasked ? '???' : `${myCharge}%`} Charge</div>
                     )}
+                    {myAbilities.includes('moneyguy2') && (
+                      <div className="font-mono text-xs text-yellow-400">Greed: -{greedPct}% coin costs ({goldCollected} gold)</div>
+                    )}
+                    {oppAbilities.includes('moneyguy3') && (activeInflation.coinPct > 0 || activeInflation.heartPct > 0) && (
+                      <div className="font-mono text-xs text-red-400">Inflation: +{activeInflation.coinPct}% coins{activeInflation.heartPct > 0 ? `, +${activeInflation.heartPct}% hearts` : ''}</div>
+                    )}
+                    {(myAbilities.includes('helper1') || myAbilities.includes('helper1_buffed')) && (() => {
+                      const isBuffedHelper = myAbilities.includes('helper1_buffed') || myBuffedAbilities.includes('helper1');
+                      const pct = Math.min(50, (isBuffedHelper ? 10 : 5) + myCorrectWords * (isBuffedHelper ? 1 : 0.5));
+                      return (
+                        <div className="font-mono text-xs text-emerald-400">
+                          Auto-Correct: {isBlindMasked ? '???' : `${pct.toFixed(1)}%`} ({myCorrectWords} words)
+                        </div>
+                      );
+                    })()}
                     
                     <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80">
                       <div>
@@ -1757,7 +2013,20 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                         )}
                       </div>
                     )}
-                    <div className="font-mono text-xs text-slate-500">{isBlindMasked ? '???' : `${oppCharge}%`} Charge</div>
+                    {bribeActive ? (
+                      <div className="font-mono text-xs text-slate-300 flex items-center gap-3 justify-end">
+                        <div className="flex items-center gap-1">
+                          <CoinIcon className="w-3.5 h-3.5" glow />
+                          <span className="text-yellow-400 font-bold">{isBlindMasked ? '???' : oppCoins} Coins</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <HeartIcon className="w-3.5 h-3.5" glow />
+                          <span className="text-red-400 font-bold">{isBlindMasked ? '???' : oppHearts} Hearts</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="font-mono text-xs text-slate-500">{isBlindMasked ? '???' : `${oppCharge}%`} Charge</div>
+                    )}
 
                     <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80 items-end">
                       <div>
@@ -1844,7 +2113,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-20">
           <div className="bg-slate-900 border border-slate-700 p-8 rounded flex flex-col items-center gap-6 max-w-md w-full">
             <h3 className="font-display text-3xl text-[var(--hot)] uppercase tracking-widest">Upgrade Shop</h3>
-            {selectedCharacters.includes('moneyguy') && myAbilities.some(a => a.startsWith('moneyguy')) ? (
+            {bribeActive ? (
               <div className="font-mono text-sm text-slate-300 flex items-center gap-5">
                 <div className="flex items-center gap-1.5">
                   <CoinIcon className="w-4 h-4" glow />
@@ -1854,6 +2123,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                   <HeartIcon className="w-4 h-4" glow />
                   <span>Hearts: <span className="text-red-400 font-bold">{myHearts}</span></span>
                 </div>
+                <div className="text-[var(--hot)]">Charge: {myCharge}%</div>
               </div>
             ) : (
               <div className="font-mono text-sm text-slate-300">Available Charge: <span className="text-[var(--hot)]">{myCharge}%</span></div>
@@ -1880,105 +2150,57 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
               
               
 {(() => {
-  const ALL_ABILITIES = [
-    { id: 'shrooms', name: 'Shrooms', cost: 30, char: 'mushgirl' },
-    { id: 'dyslexia', name: 'Dyslexia', cost: 60, char: 'mushgirl' },
-    { id: 'blinking', name: 'Blinking', cost: 100, char: 'mushgirl' },
-    { id: 'scramble', name: 'Scramble', cost: 30, char: 'screwed' },
-    { id: 'sabotage', name: 'Sabotage', cost: 60, char: 'screwed' },
-    { id: 'spam', name: 'Spam', cost: 100, char: 'screwed' },
-    { id: 'joker1', name: 'Delusion', cost: 30, char: 'joker' },
-    { id: 'joker2', name: 'Blindness', cost: 60, char: 'joker' },
-    { id: 'joker3', name: 'Amnesia', cost: 100, char: 'joker' },
-    { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity' },
-    { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity' },
-    { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity' },
-    { id: 'moneyguy1', name: 'Bribe', cost: 30, char: 'moneyguy' },
-    { id: 'moneyguy2', name: 'Invest', cost: 60, char: 'moneyguy' },
-    { id: 'moneyguy3', name: 'Buyout', cost: 100, char: 'moneyguy' }
-  ];
-
-  const getMG = (cost) => {
-    if (cost <= 40) return { c: 100, h: 20 };
-    if (cost <= 70) return { c: 150, h: 10 };
-    return { c: 300, h: 30 };
-  };
-
-  const isMG = selectedCharacters.includes('moneyguy') && myAbilities.some(a => a.startsWith('moneyguy'));
+  const ALL_ABILITIES = RANKED_ABILITY_CATALOG;
   const shopAbilities = ALL_ABILITIES.filter(a => selectedCharacters.includes(a.char));
+  const DESCS: Record<string, string> = {
+    moneyguy1: 'Both players get coins/hearts & golden letters',
+    moneyguy2: 'Your coin costs -1% per gold letter collected (max 30%)',
+    moneyguy3: "Raises opponent's coin costs (or hearts +12% if all your abilities are active)",
+  };
 
   return (
     <div className="grid grid-cols-3 gap-3 mb-6">
       {shopAbilities.map(ability => {
-        const hasIt = myAbilities.includes(ability.id) || myBuffedAbilities.includes(ability.id) || (ability.id === 'gravity3' && eventHorizonUsed);
-        const mgCost = getMG(ability.cost);
-        const canAfford = ability.char === 'moneyguy'
-          ? (myCharge >= ability.cost || (myCoins >= mgCost.c && myHearts >= mgCost.h))
-          : (isMG ? (myCoins >= mgCost.c && myHearts >= mgCost.h) : (myCharge >= ability.cost));
-        
+        const hasIt = myAbilities.includes(ability.id) || (ability.id === 'gravity3' && eventHorizonUsed);
+        const mgCost = getAbilityCost(ability.cost);
+        const canAfford = canAffordAbility(ability.cost);
+
         return (
           <button
             key={ability.id}
+            title={DESCS[ability.id]}
             onClick={() => {
-              if (canAfford && !hasIt) {
-                if (ability.char === 'moneyguy') {
-                  if (ability.id === 'moneyguy2') {
-                    setShowBuffSelect(true);
-                    return; 
-                  }
-                  if (ability.id === 'moneyguy3') {
-                    setShowAbilitySelect(true);
-                    return;
-                  }
-                  
-                  if (myCharge >= ability.cost) {
-                    setMyCharge(c => c - ability.cost);
-                    myChargeRef.current -= ability.cost;
-                  } else {
-                    setMyCoins(c => c - mgCost.c);
-                    setMyHearts(h => h - mgCost.h);
-                    myCoinsRef.current -= mgCost.c;
-                    myHeartsRef.current -= mgCost.h;
-                  }
-                  const newAbilities = [...myAbilities, ability.id];
-                  setMyAbilities(newAbilities);
-                  if (typeof socket !== 'undefined' && socket) {
-                     socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newAbilities });
-                  }
-                  return;
-                }
-                
-                if (isMG) {
-                  setMyCoins(c => c - mgCost.c);
-                  setMyHearts(h => h - mgCost.h);
-                  myCoinsRef.current -= mgCost.c;
-                  myHeartsRef.current -= mgCost.h;
-                } else {
-                  setMyCharge(c => c - ability.cost);
-                  myChargeRef.current -= ability.cost;
-                }
-                const newAbilities = [...myAbilities, ability.id];
-                setMyAbilities(newAbilities);
-                if (typeof socket !== 'undefined' && socket) {
-                   socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newAbilities });
-                }
+              if (!canAfford || hasIt) return;
+              if (ability.id === 'helper2') {
+                setShowRemoveAbilitySelect(true);
+                return;
+              }
+              if (ability.id === 'helper3') {
+                setShowAbilitySelect('helper3');
+                return;
+              }
+              payForAbility(ability.cost);
+              const newAbilities = [...myAbilities, ability.id];
+              setMyAbilities(newAbilities);
+              if (typeof socket !== 'undefined' && socket) {
+                socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newAbilities });
               }
             }}
             disabled={!canAfford || hasIt}
             className={`w-full py-3 px-2 border border-slate-700 bg-slate-800 font-mono text-xs uppercase tracking-widest ${(!canAfford || hasIt) ? 'opacity-50' : 'hover:bg-slate-700 cursor-pointer'} transition-colors flex flex-col items-center justify-center gap-1 relative`}
           >
-            {myBuffedAbilities.includes(ability.id) && (
-               <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-[9px] px-1 rounded font-bold">BUFFED</span>
-            )}
             <span className={hasIt ? "text-emerald-400" : ""}>
-              {ability.id === 'moneyguy3' && pickedExternalAbility
-                ? `Buyout (${ALL_ABILITIES.find(x => x.id === pickedExternalAbility)?.name || pickedExternalAbility})`
-                : ability.name}
+              {ability.id === 'helper3' && helperPickedExternalAbility
+                ? `Buyout (${ALL_ABILITIES.find(x => x.id === helperPickedExternalAbility)?.name || helperPickedExternalAbility})`
+                : ability.id === 'helper2' && removedOppAbility
+                  ? `Cleanse (-${ALL_ABILITIES.find(x => x.id === removedOppAbility)?.name || removedOppAbility})`
+                  : ability.name}
             </span>
-            {isMG && ability.char !== 'moneyguy' ? (
+            {bribeActive ? (
               <div className="flex gap-2 text-[9px]">
                 <span className="text-yellow-400">{mgCost.c}c</span>
                 <span className="text-red-400">{mgCost.h}h</span>
+                <span className="text-[var(--hot)]">or {ability.cost}</span>
               </div>
             ) : (
               <span className="text-[10px] text-[var(--hot)]">{ability.cost} Charge</span>

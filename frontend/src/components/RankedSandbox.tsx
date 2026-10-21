@@ -28,9 +28,10 @@ export const ALL_SANDBOX_ABILITIES = [
   { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity', desc: '+10s when timer hits 0 if your WPM is lower (max 3/match)' },
   { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity', desc: 'Black Hole Sabotage popup (Ctrl+X to escape)' },
   { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity', desc: 'After 30s, ends the round if your WPM is higher (1 round only)' },
-  { id: 'moneyguy1', name: 'Bribe', cost: 30, char: 'moneyguy', desc: 'Golden letters (+5 coins) & mistakes grant +3 hearts' },
-  { id: 'moneyguy2', name: 'Invest', cost: 60, char: 'moneyguy', desc: 'Doubles the effect of active character abilities' },
-  { id: 'moneyguy3', name: 'Buyout', cost: 100, char: 'moneyguy', desc: 'Choose an ability from unselected characters' },
+  { id: 'moneyguy1', name: 'Bribe', cost: 30, char: 'moneyguy', desc: 'Both players get coins/hearts: golden letters (+5 coins) & mistakes grant +3 hearts' },
+  { id: 'helper1', name: 'Auto-Correct', cost: 30, char: 'helper', desc: '5% chance to fix a wrong letter (+0.5% per right word, max 50%)' },
+  { id: 'helper2', name: 'Cleanse', cost: 60, char: 'helper', desc: 'Removes any one currently active ability of the opponent' },
+  { id: 'helper3', name: 'Buyout', cost: 100, char: 'helper', desc: 'Choose an ability from unselected characters' },
 ];
 
 /**
@@ -173,17 +174,21 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   useEffect(() => { myAbilitiesRef.current = myAbilities; }, [myAbilities]);
   useEffect(() => { oppAbilitiesRef.current = oppAbilities; }, [oppAbilities]);
 
-  // Ensure active abilities always match currently selected characters
+  // Ensure active abilities always match currently selected characters (preserving Buyout external picks)
   useEffect(() => {
     setMyAbilities(prev => prev.filter(id => {
+      if (id === myPickedExternalAbility && selectedCharacters.includes('moneyguy')) return true;
+      if (id === myHelperPickedAbility && selectedCharacters.includes('helper')) return true;
       const ab = ALL_SANDBOX_ABILITIES.find(a => a.id === id);
       return ab ? selectedCharacters.includes(ab.char) : true;
     }));
     setOppAbilities(prev => prev.filter(id => {
+      if (id === oppPickedExternalAbility && selectedCharacters.includes('moneyguy')) return true;
+      if (id === oppHelperPickedAbility && selectedCharacters.includes('helper')) return true;
       const ab = ALL_SANDBOX_ABILITIES.find(a => a.id === id);
       return ab ? selectedCharacters.includes(ab.char) : true;
     }));
-  }, [selectedCharacters]);
+  }, [selectedCharacters, myPickedExternalAbility, myHelperPickedAbility, oppPickedExternalAbility, oppHelperPickedAbility]);
 
   // Timer state
   const [timeLeft, setTimeLeft] = useState(60);
@@ -357,10 +362,19 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const showOppGravityPopupRef = useRef(false);
   useEffect(() => { showOppGravityPopupRef.current = showOppGravityPopup; }, [showOppGravityPopup]);
   const oppGravityEscapingRef = useRef(false);
-  const [sandboxAbilityModalTarget, setSandboxAbilityModalTarget] = useState<'you' | 'opp' | null>(null);
+  const [sandboxAbilityModalTarget, setSandboxAbilityModalTarget] = useState<{ player: 'you' | 'opp'; source: 'moneyguy3' | 'helper3' } | null>(null);
   const [sandboxBuffModalTarget, setSandboxBuffModalTarget] = useState<'you' | 'opp' | null>(null);
+  const [sandboxRemoveModalTarget, setSandboxRemoveModalTarget] = useState<'you' | 'opp' | null>(null);
   const [myPickedExternalAbility, setMyPickedExternalAbility] = useState<string | null>(null);
   const [oppPickedExternalAbility, setOppPickedExternalAbility] = useState<string | null>(null);
+  const [myHelperPickedAbility, setMyHelperPickedAbility] = useState<string | null>(null);
+  const [oppHelperPickedAbility, setOppHelperPickedAbility] = useState<string | null>(null);
+  const [myRemovedOppAbility, setMyRemovedOppAbility] = useState<string | null>(null);
+  const [oppRemovedMyAbility, setOppRemovedMyAbility] = useState<string | null>(null);
+  const [myCorrectWords, setMyCorrectWords] = useState(0);
+  const myCorrectWordsRef = useRef(0);
+  const [oppCorrectWords, setOppCorrectWords] = useState(0);
+  const oppCorrectWordsRef = useRef(0);
   useEffect(() => { showGravityPopupRef.current = showGravityPopup; }, [showGravityPopup]);
   const gravityEscapingRef = useRef(false);
 
@@ -389,30 +403,19 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     myTargetTextRef.current = myText;
     oppTargetTextRef.current = oppText;
 
-    // Golden letters for Money Guy (only if Bribe I / moneyguy1 is active)
-    if (selectedCharacters.includes('moneyguy') && myAbilitiesRef.current.includes('moneyguy1')) {
-      const gold = new Set<number>();
-      for (let i = 0; i < myText.length; i++) {
-        if (myText[i] !== ' ' && Math.random() < 0.30) gold.add(i);
+    // Bribe active on EITHER side: both players get golden letters, coins & hearts
+    const bribeOnRound = myAbilitiesRef.current.includes('moneyguy1') || oppAbilitiesRef.current.includes('moneyguy1');
+    const makeGold = (text: string) => {
+      const g = new Set<number>();
+      for (let i = 0; i < text.length; i++) {
+        if (text[i] !== ' ' && Math.random() < 0.30) g.add(i);
       }
-      goldenLettersRef.current = gold;
-      claimedGoldenRef.current = new Set();
-    } else {
-      goldenLettersRef.current = new Set();
-      claimedGoldenRef.current = new Set();
-    }
-
-    if (selectedCharacters.includes('moneyguy') && oppAbilitiesRef.current.includes('moneyguy1')) {
-      const oppGold = new Set<number>();
-      for (let i = 0; i < oppText.length; i++) {
-        if (oppText[i] !== ' ' && Math.random() < 0.30) oppGold.add(i);
-      }
-      oppGoldenLettersRef.current = oppGold;
-      oppClaimedGoldenRef.current = new Set();
-    } else {
-      oppGoldenLettersRef.current = new Set();
-      oppClaimedGoldenRef.current = new Set();
-    }
+      return g;
+    };
+    goldenLettersRef.current = bribeOnRound ? makeGold(myText) : new Set();
+    claimedGoldenRef.current = new Set();
+    oppGoldenLettersRef.current = bribeOnRound ? makeGold(oppText) : new Set();
+    oppClaimedGoldenRef.current = new Set();
     setGoldVersion(v => v + 1);
 
     // Build queues for both auto-typers with 60% / 20% / 20% logic
@@ -477,6 +480,16 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
       setOppScore(0);
       myWarpUsesRef.current = 0;
       oppWarpUsesRef.current = 0;
+      myCorrectWordsRef.current = 0;
+      setMyCorrectWords(0);
+      oppCorrectWordsRef.current = 0;
+      setOppCorrectWords(0);
+      setMyPickedExternalAbility(null);
+      setOppPickedExternalAbility(null);
+      setMyHelperPickedAbility(null);
+      setOppHelperPickedAbility(null);
+      setMyRemovedOppAbility(null);
+      setOppRemovedMyAbility(null);
       setMyAbilities([]);
       setOppAbilities([]);
       setIsSandboxReady(true);
@@ -713,17 +726,36 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
 
       let nextDelay = 80;
       if (action.type === 'char') {
-        const ch = action.char!;
+        let ch = action.char!;
         const prev = typedTextRef.current;
         const target = myTargetTextRef.current;
 
         if (prev.length < target.length) {
+          const charIdx = prev.length;
+          let isMatch = ch === target[charIdx];
+
+          // Helper 1st ability: Auto-Correct (5% base + 0.5% per right word, max 50%; 2x if buffed)
+          if (!isMatch && myAbilitiesRef.current.includes('helper1')) {
+            const isBuffed = myAbilitiesRef.current.includes('helper1_buffed');
+            const baseChance = isBuffed ? 0.10 : 0.05;
+            const perWordBonus = isBuffed ? 0.01 : 0.005;
+            const chance = Math.min(0.50, baseChance + myCorrectWordsRef.current * perWordBonus);
+            if (Math.random() < chance) {
+              ch = target[charIdx];
+              isMatch = true;
+              const nextIdx = myActionIndexRef.current;
+              if (queue[nextIdx]?.type === 'backspace') {
+                queue.splice(nextIdx, 2);
+              } else if (queue[nextIdx + 1]?.type === 'backspace' && queue[nextIdx + 2]?.type === 'backspace') {
+                queue.splice(nextIdx + 1, 4);
+              }
+            }
+          }
+
           const next = prev + ch;
           typedTextRef.current = next;
           setTypedText(next);
 
-          const charIdx = prev.length;
-          const isMatch = ch === target[charIdx];
           const currState = myLetterStatesRef.current[charIdx] || 0;
           if (isMatch) {
             if (currState === 0) {
@@ -735,8 +767,17 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             } else if (currState === 2) {
               myLetterStatesRef.current[charIdx] = 3; // Amended!
             }
+            if (target[charIdx] === ' ' || charIdx === target.length - 1) {
+              let wStart = charIdx === target.length - 1 ? charIdx : charIdx - 1;
+              while (wStart > 0 && target[wStart - 1] !== ' ') wStart--;
+              const wEnd = target[charIdx] === ' ' ? charIdx : charIdx + 1;
+              if (wEnd > wStart && next.slice(wStart, wEnd) === target.slice(wStart, wEnd)) {
+                myCorrectWordsRef.current += 1;
+                setMyCorrectWords(myCorrectWordsRef.current);
+              }
+            }
           } else {
-            if ((currState === 0 || currState === 1) && myAbilitiesRef.current.includes('moneyguy1')) {
+            if ((currState === 0 || currState === 1) && (myAbilitiesRef.current.includes('moneyguy1') || oppAbilitiesRef.current.includes('moneyguy1'))) {
               triggerSandboxHeartSpawn(charIdx, false);
             }
             myLetterStatesRef.current[charIdx] = 2; // Incorrect
@@ -818,17 +859,36 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
 
       let nextDelay = 80;
       if (action.type === 'char') {
-        const ch = action.char!;
+        let ch = action.char!;
         const prev = oppTypedTextRef.current;
         const target = oppTargetTextRef.current;
 
         if (prev.length < target.length) {
+          const charIdx = prev.length;
+          let isMatch = ch === target[charIdx];
+
+          // Helper 1st ability: Auto-Correct for Opponent
+          if (!isMatch && oppAbilitiesRef.current.includes('helper1')) {
+            const isBuffed = oppAbilitiesRef.current.includes('helper1_buffed');
+            const baseChance = isBuffed ? 0.10 : 0.05;
+            const perWordBonus = isBuffed ? 0.01 : 0.005;
+            const chance = Math.min(0.50, baseChance + oppCorrectWordsRef.current * perWordBonus);
+            if (Math.random() < chance) {
+              ch = target[charIdx];
+              isMatch = true;
+              const nextIdx = oppActionIndexRef.current;
+              if (queue[nextIdx]?.type === 'backspace') {
+                queue.splice(nextIdx, 2);
+              } else if (queue[nextIdx + 1]?.type === 'backspace' && queue[nextIdx + 2]?.type === 'backspace') {
+                queue.splice(nextIdx + 1, 4);
+              }
+            }
+          }
+
           const next = prev + ch;
           oppTypedTextRef.current = next;
           setOppTypedText(next);
 
-          const charIdx = prev.length;
-          const isMatch = ch === target[charIdx];
           const currState = oppLetterStatesRef.current[charIdx] || 0;
           if (isMatch) {
             if (currState === 0) {
@@ -840,8 +900,17 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             } else if (currState === 2) {
               oppLetterStatesRef.current[charIdx] = 3;
             }
+            if (target[charIdx] === ' ' || charIdx === target.length - 1) {
+              let wStart = charIdx === target.length - 1 ? charIdx : charIdx - 1;
+              while (wStart > 0 && target[wStart - 1] !== ' ') wStart--;
+              const wEnd = target[charIdx] === ' ' ? charIdx : charIdx + 1;
+              if (wEnd > wStart && next.slice(wStart, wEnd) === target.slice(wStart, wEnd)) {
+                oppCorrectWordsRef.current += 1;
+                setOppCorrectWords(oppCorrectWordsRef.current);
+              }
+            }
           } else {
-            if ((currState === 0 || currState === 1) && oppAbilitiesRef.current.includes('moneyguy1')) {
+            if ((currState === 0 || currState === 1) && (myAbilitiesRef.current.includes('moneyguy1') || oppAbilitiesRef.current.includes('moneyguy1'))) {
               triggerSandboxHeartSpawn(charIdx, true);
             }
             oppLetterStatesRef.current[charIdx] = 2;
@@ -940,13 +1009,24 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
       if (e.key.length === 1) {
         e.preventDefault();
         setTypedText(prev => {
-          let next = prev + e.key;
+          const charIdx = prev.length;
+          let typedChar = e.key;
+          if (charIdx < myTargetText.length && typedChar !== myTargetText[charIdx] && myAbilitiesRef.current.includes('helper1')) {
+            const isBuffed = myAbilitiesRef.current.includes('helper1_buffed');
+            const baseChance = isBuffed ? 0.10 : 0.05;
+            const perWordBonus = isBuffed ? 0.01 : 0.005;
+            const chance = Math.min(0.50, baseChance + myCorrectWordsRef.current * perWordBonus);
+            if (Math.random() < chance) {
+              typedChar = myTargetText[charIdx];
+            }
+          }
+
+          let next = prev + typedChar;
           if (next.length > myTargetText.length) next = next.slice(0, myTargetText.length);
           typedTextRef.current = next;
 
-          const charIdx = prev.length;
           if (charIdx < myTargetText.length) {
-            const isMatch = e.key === myTargetText[charIdx];
+            const isMatch = typedChar === myTargetText[charIdx];
             const currState = myLetterStatesRef.current[charIdx] || 0;
             if (isMatch) {
               if (currState === 0) {
@@ -958,8 +1038,17 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               } else if (currState === 2) {
                 myLetterStatesRef.current[charIdx] = 3;
               }
+              if (myTargetText[charIdx] === ' ' || charIdx === myTargetText.length - 1) {
+                let wStart = charIdx === myTargetText.length - 1 ? charIdx : charIdx - 1;
+                while (wStart > 0 && myTargetText[wStart - 1] !== ' ') wStart--;
+                const wEnd = myTargetText[charIdx] === ' ' ? charIdx : charIdx + 1;
+                if (wEnd > wStart && next.slice(wStart, wEnd) === myTargetText.slice(wStart, wEnd)) {
+                  myCorrectWordsRef.current += 1;
+                  setMyCorrectWords(myCorrectWordsRef.current);
+                }
+              }
             } else {
-              if ((currState === 0 || currState === 1) && myAbilitiesRef.current.includes('moneyguy1')) {
+              if ((currState === 0 || currState === 1) && (myAbilitiesRef.current.includes('moneyguy1') || oppAbilitiesRef.current.includes('moneyguy1'))) {
                 triggerSandboxHeartSpawn(charIdx, false);
               }
               myLetterStatesRef.current[charIdx] = 2;
@@ -1009,7 +1098,40 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         });
         setMyPickedExternalAbility(null);
       } else {
-        setSandboxAbilityModalTarget('you');
+        setSandboxAbilityModalTarget({ player: 'you', source: 'moneyguy3' });
+      }
+      return;
+    }
+    if (abilityId === 'helper3') {
+      if (myAbilities.includes('helper3')) {
+        setMyAbilities(prev => {
+          const next = prev.filter(a => a !== 'helper3' && a !== myHelperPickedAbility && a !== `${myHelperPickedAbility}_buffed`);
+          myAbilitiesRef.current = next;
+          return next;
+        });
+        setMyHelperPickedAbility(null);
+      } else {
+        setSandboxAbilityModalTarget({ player: 'you', source: 'helper3' });
+      }
+      return;
+    }
+    if (abilityId === 'helper2') {
+      if (myAbilities.includes('helper2')) {
+        setMyAbilities(prev => {
+          const next = prev.filter(a => a !== 'helper2' && a !== 'helper2_buffed');
+          myAbilitiesRef.current = next;
+          return next;
+        });
+        if (myRemovedOppAbility) {
+          setOppAbilities(prev => {
+            const next = prev.includes(myRemovedOppAbility) ? prev : [...prev, myRemovedOppAbility];
+            oppAbilitiesRef.current = next;
+            return next;
+          });
+          setMyRemovedOppAbility(null);
+        }
+      } else {
+        setSandboxRemoveModalTarget('you');
       }
       return;
     }
@@ -1029,18 +1151,18 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
       const next = prev.includes(abilityId) ? prev.filter(a => a !== abilityId && a !== `${abilityId}_buffed`) : [...prev, abilityId];
       myAbilitiesRef.current = next;
       if (abilityId === 'moneyguy1') {
-        if (next.includes('moneyguy1') && selectedCharacters.includes('moneyguy')) {
-          const gold = new Set<number>();
-          const text = myTargetTextRef.current || '';
+        const bribeNow = next.includes('moneyguy1') || (oppAbilitiesRef.current).includes('moneyguy1');
+        const mk = (text: string) => {
+          const g = new Set<number>();
           for (let i = 0; i < text.length; i++) {
-            if (text[i] !== ' ' && Math.random() < 0.30) gold.add(i);
+            if (text[i] !== ' ' && Math.random() < 0.30) g.add(i);
           }
-          goldenLettersRef.current = gold;
-          claimedGoldenRef.current = new Set();
-        } else {
-          goldenLettersRef.current = new Set();
-          claimedGoldenRef.current = new Set();
-        }
+          return g;
+        };
+        goldenLettersRef.current = bribeNow ? mk(myTargetTextRef.current || '') : new Set();
+        claimedGoldenRef.current = new Set();
+        oppGoldenLettersRef.current = bribeNow ? mk(oppTargetTextRef.current || '') : new Set();
+        oppClaimedGoldenRef.current = new Set();
       }
       setGoldVersion(v => v + 1);
       return next;
@@ -1057,7 +1179,40 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         });
         setOppPickedExternalAbility(null);
       } else {
-        setSandboxAbilityModalTarget('opp');
+        setSandboxAbilityModalTarget({ player: 'opp', source: 'moneyguy3' });
+      }
+      return;
+    }
+    if (abilityId === 'helper3') {
+      if (oppAbilities.includes('helper3')) {
+        setOppAbilities(prev => {
+          const next = prev.filter(a => a !== 'helper3' && a !== oppHelperPickedAbility && a !== `${oppHelperPickedAbility}_buffed`);
+          oppAbilitiesRef.current = next;
+          return next;
+        });
+        setOppHelperPickedAbility(null);
+      } else {
+        setSandboxAbilityModalTarget({ player: 'opp', source: 'helper3' });
+      }
+      return;
+    }
+    if (abilityId === 'helper2') {
+      if (oppAbilities.includes('helper2')) {
+        setOppAbilities(prev => {
+          const next = prev.filter(a => a !== 'helper2' && a !== 'helper2_buffed');
+          oppAbilitiesRef.current = next;
+          return next;
+        });
+        if (oppRemovedMyAbility) {
+          setMyAbilities(prev => {
+            const next = prev.includes(oppRemovedMyAbility) ? prev : [...prev, oppRemovedMyAbility];
+            myAbilitiesRef.current = next;
+            return next;
+          });
+          setOppRemovedMyAbility(null);
+        }
+      } else {
+        setSandboxRemoveModalTarget('opp');
       }
       return;
     }
@@ -1077,18 +1232,18 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
       const next = prev.includes(abilityId) ? prev.filter(a => a !== abilityId && a !== `${abilityId}_buffed`) : [...prev, abilityId];
       oppAbilitiesRef.current = next;
       if (abilityId === 'moneyguy1') {
-        if (next.includes('moneyguy1') && selectedCharacters.includes('moneyguy')) {
-          const gold = new Set<number>();
-          const text = oppTargetTextRef.current || '';
+        const bribeNow = next.includes('moneyguy1') || (myAbilitiesRef.current).includes('moneyguy1');
+        const mk = (text: string) => {
+          const g = new Set<number>();
           for (let i = 0; i < text.length; i++) {
-            if (text[i] !== ' ' && Math.random() < 0.30) gold.add(i);
+            if (text[i] !== ' ' && Math.random() < 0.30) g.add(i);
           }
-          oppGoldenLettersRef.current = gold;
-          oppClaimedGoldenRef.current = new Set();
-        } else {
-          oppGoldenLettersRef.current = new Set();
-          oppClaimedGoldenRef.current = new Set();
-        }
+          return g;
+        };
+        goldenLettersRef.current = bribeNow ? mk(myTargetTextRef.current || '') : new Set();
+        claimedGoldenRef.current = new Set();
+        oppGoldenLettersRef.current = bribeNow ? mk(oppTargetTextRef.current || '') : new Set();
+        oppClaimedGoldenRef.current = new Set();
       }
       setGoldVersion(v => v + 1);
       return next;
@@ -1132,6 +1287,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               { id: 'joker', name: 'Joker', role: 'Mental Illusion' },
               { id: 'gravity', name: 'Gravity', role: 'Physics Well' },
               { id: 'moneyguy', name: 'Money Guy', role: 'Economy & Buffs' },
+              { id: 'helper', name: 'Helper', role: 'Auto-Fix & Cleanse' },
             ].map(char => {
               const isSelected = selectedCharacters.includes(char.id);
               const selectionIndex = selectedCharacters.indexOf(char.id);
@@ -1360,8 +1516,8 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
             }
             moneyguyActive={
               activePov === 'you'
-                ? (selectedCharacters.includes('moneyguy') && myAbilities.some(a => a.startsWith('moneyguy')))
-                : (selectedCharacters.includes('moneyguy') && oppAbilities.some(a => a.startsWith('moneyguy')))
+                ? ((myAbilities.includes('moneyguy1') || oppAbilities.includes('moneyguy1')))
+                : ((myAbilities.includes('moneyguy1') || oppAbilities.includes('moneyguy1')))
             }
             coins={activePov === 'you' ? myCoins : oppCoins}
             hearts={activePov === 'you' ? myHearts : oppHearts}
@@ -1419,7 +1575,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                           )}
                         </div>
                       )}
-                      {selectedCharacters.includes('moneyguy') && myAbilities.some(a => a.startsWith('moneyguy')) ? (
+                      {(myAbilities.includes('moneyguy1') || oppAbilities.includes('moneyguy1')) ? (
                         <div className="font-mono text-xs text-slate-300 flex items-center gap-3">
                           <div className="flex items-center gap-1">
                             <CoinIcon className="w-3.5 h-3.5" glow />
@@ -1432,6 +1588,11 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                         </div>
                       ) : (
                         <div className="font-mono text-xs text-slate-500">{isBlindMasked ? '???' : `${myCharge}%`} Charge</div>
+                      )}
+                      {myAbilities.includes('helper1') && (
+                        <div className="font-mono text-xs text-cyan-400">
+                          Auto-Correct: {isBlindMasked ? '???' : `${Math.min(50, (myAbilities.includes('helper1_buffed') ? 10 : 5) + myCorrectWords * (myAbilities.includes('helper1_buffed') ? 1 : 0.5)).toFixed(1)}%`}
+                        </div>
                       )}
 
                       <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80">
@@ -1489,7 +1650,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                           )}
                         </div>
                       )}
-                      {selectedCharacters.includes('moneyguy') && oppAbilities.some(a => a.startsWith('moneyguy')) ? (
+                      {(myAbilities.includes('moneyguy1') || oppAbilities.includes('moneyguy1')) ? (
                         <div className="font-mono text-xs text-slate-300 flex items-center gap-3">
                           <div className="flex items-center gap-1">
                             <CoinIcon className="w-3.5 h-3.5" glow />
@@ -1502,6 +1663,11 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                         </div>
                       ) : (
                         <div className="font-mono text-xs text-slate-500">{isBlindMasked ? '???' : `${oppCharge}%`} Charge</div>
+                      )}
+                      {oppAbilities.includes('helper1') && (
+                        <div className="font-mono text-xs text-cyan-400">
+                          Auto-Correct: {isBlindMasked ? '???' : `${Math.min(50, (oppAbilities.includes('helper1_buffed') ? 10 : 5) + oppCorrectWords * (oppAbilities.includes('helper1_buffed') ? 1 : 0.5)).toFixed(1)}%`}
+                        </div>
                       )}
 
                       <div className="flex flex-col gap-1 pt-2 border-t border-slate-800/80 items-end">
@@ -1767,6 +1933,11 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                           const isBuffed = myAbilities.includes(`${ab.id}_buffed`);
                           const pickedObj = ab.id === 'moneyguy3' && myPickedExternalAbility
                             ? ALL_SANDBOX_ABILITIES.find(x => x.id === myPickedExternalAbility)
+                            : ab.id === 'helper3' && myHelperPickedAbility
+                              ? ALL_SANDBOX_ABILITIES.find(x => x.id === myHelperPickedAbility)
+                              : null;
+                          const removedObj = ab.id === 'helper2' && myRemovedOppAbility
+                            ? ALL_SANDBOX_ABILITIES.find(x => x.id === myRemovedOppAbility)
                             : null;
                           return (
                             <div
@@ -1790,15 +1961,31 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                                       Picked: {pickedObj.name} ({pickedObj.char})
                                     </span>
                                   )}
+                                  {removedObj && (
+                                    <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold">
+                                      Removed: {removedObj.name} ({removedObj.char})
+                                    </span>
+                                  )}
                                 </div>
                                 <p className="font-mono text-[10px] text-slate-400 mt-1">{ab.desc}</p>
                               </div>
                               <div className="flex items-center gap-2">
-                                {ab.id === 'moneyguy3' && active && (
+                                {(ab.id === 'moneyguy3' || ab.id === 'helper3') && active && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setSandboxAbilityModalTarget('you');
+                                      setSandboxAbilityModalTarget({ player: 'you', source: ab.id as 'moneyguy3' | 'helper3' });
+                                    }}
+                                    className="font-mono text-[10px] uppercase px-2 py-1 rounded border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"
+                                  >
+                                    Change
+                                  </button>
+                                )}
+                                {ab.id === 'helper2' && active && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSandboxRemoveModalTarget('you');
                                     }}
                                     className="font-mono text-[10px] uppercase px-2 py-1 rounded border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"
                                   >
@@ -1833,6 +2020,11 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                           const isBuffed = oppAbilities.includes(`${ab.id}_buffed`);
                           const pickedObj = ab.id === 'moneyguy3' && oppPickedExternalAbility
                             ? ALL_SANDBOX_ABILITIES.find(x => x.id === oppPickedExternalAbility)
+                            : ab.id === 'helper3' && oppHelperPickedAbility
+                              ? ALL_SANDBOX_ABILITIES.find(x => x.id === oppHelperPickedAbility)
+                              : null;
+                          const removedObj = ab.id === 'helper2' && oppRemovedMyAbility
+                            ? ALL_SANDBOX_ABILITIES.find(x => x.id === oppRemovedMyAbility)
                             : null;
                           return (
                             <div
@@ -1856,15 +2048,31 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                                       Picked: {pickedObj.name} ({pickedObj.char})
                                     </span>
                                   )}
+                                  {removedObj && (
+                                    <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold">
+                                      Removed: {removedObj.name} ({removedObj.char})
+                                    </span>
+                                  )}
                                 </div>
                                 <p className="font-mono text-[10px] text-slate-400 mt-1">{ab.desc}</p>
                               </div>
                               <div className="flex items-center gap-2">
-                                {ab.id === 'moneyguy3' && active && (
+                                {(ab.id === 'moneyguy3' || ab.id === 'helper3') && active && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setSandboxAbilityModalTarget('opp');
+                                      setSandboxAbilityModalTarget({ player: 'opp', source: ab.id as 'moneyguy3' | 'helper3' });
+                                    }}
+                                    className="font-mono text-[10px] uppercase px-2 py-1 rounded border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"
+                                  >
+                                    Change
+                                  </button>
+                                )}
+                                {ab.id === 'helper2' && active && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSandboxRemoveModalTarget('opp');
                                     }}
                                     className="font-mono text-[10px] uppercase px-2 py-1 rounded border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"
                                   >
@@ -1900,31 +2108,42 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         </div>
       )}
 
-      {/* Sandbox Modal: Money Guy 3rd Ability — Choose Ability from Unselected Characters */}
+      {/* Sandbox Modal: Money Guy / Helper 3rd Ability — Choose Ability from Unselected Characters */}
       {sandboxAbilityModalTarget && (() => {
-        const isYou = sandboxAbilityModalTarget === 'you';
-        const currentPicked = isYou ? myPickedExternalAbility : oppPickedExternalAbility;
+        const isYou = sandboxAbilityModalTarget.player === 'you';
+        const sourceId = sandboxAbilityModalTarget.source;
+        const currentPicked = isYou
+          ? (sourceId === 'helper3' ? myHelperPickedAbility : myPickedExternalAbility)
+          : (sourceId === 'helper3' ? oppHelperPickedAbility : oppPickedExternalAbility);
         const unselectedPool = ALL_SANDBOX_ABILITIES.filter(
-          a => a.char !== 'moneyguy' && !selectedCharacters.includes(a.char)
+          a => a.char !== 'moneyguy' && a.char !== 'helper' && !selectedCharacters.includes(a.char)
         );
 
         const applyPickedAbility = (abilityId: string) => {
           if (isYou) {
             setMyAbilities(prev => {
-              const cleaned = prev.filter(a => a !== 'moneyguy3' && a !== myPickedExternalAbility && a !== `${myPickedExternalAbility}_buffed`);
-              const next = [...cleaned, 'moneyguy3', abilityId];
+              const cleaned = prev.filter(a => a !== sourceId && a !== currentPicked && a !== `${currentPicked}_buffed`);
+              const next = [...cleaned, sourceId, abilityId];
               myAbilitiesRef.current = next;
               return next;
             });
-            setMyPickedExternalAbility(abilityId);
+            if (sourceId === 'helper3') {
+              setMyHelperPickedAbility(abilityId);
+            } else {
+              setMyPickedExternalAbility(abilityId);
+            }
           } else {
             setOppAbilities(prev => {
-              const cleaned = prev.filter(a => a !== 'moneyguy3' && a !== oppPickedExternalAbility && a !== `${oppPickedExternalAbility}_buffed`);
-              const next = [...cleaned, 'moneyguy3', abilityId];
+              const cleaned = prev.filter(a => a !== sourceId && a !== currentPicked && a !== `${currentPicked}_buffed`);
+              const next = [...cleaned, sourceId, abilityId];
               oppAbilitiesRef.current = next;
               return next;
             });
-            setOppPickedExternalAbility(abilityId);
+            if (sourceId === 'helper3') {
+              setOppHelperPickedAbility(abilityId);
+            } else {
+              setOppPickedExternalAbility(abilityId);
+            }
           }
           setSandboxAbilityModalTarget(null);
         };
@@ -1996,11 +2215,94 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         );
       })()}
 
+      {/* Sandbox Modal: Helper 2nd Ability (Cleanse) — Remove One Active Opponent Ability */}
+      {sandboxRemoveModalTarget && (() => {
+        const isYou = sandboxRemoveModalTarget === 'you';
+        const targetAbilities = (isYou ? oppAbilities : myAbilities).filter(
+          a => !a.endsWith('_buffed') && a !== 'moneyguy2' && a !== 'moneyguy3' && a !== 'helper2' && a !== 'helper3'
+        );
+
+        const applyRemoveAbility = (targetAbilityId: string) => {
+          if (isYou) {
+            setMyAbilities(prev => {
+              const next = prev.includes('helper2') ? prev : [...prev, 'helper2'];
+              myAbilitiesRef.current = next;
+              return next;
+            });
+            setOppAbilities(prev => {
+              const restored = myRemovedOppAbility && !prev.includes(myRemovedOppAbility)
+                ? [...prev, myRemovedOppAbility]
+                : prev;
+              const next = restored.filter(a => a !== targetAbilityId && a !== `${targetAbilityId}_buffed`);
+              oppAbilitiesRef.current = next;
+              return next;
+            });
+            setMyRemovedOppAbility(targetAbilityId);
+          } else {
+            setOppAbilities(prev => {
+              const next = prev.includes('helper2') ? prev : [...prev, 'helper2'];
+              oppAbilitiesRef.current = next;
+              return next;
+            });
+            setMyAbilities(prev => {
+              const restored = oppRemovedMyAbility && !prev.includes(oppRemovedMyAbility)
+                ? [...prev, oppRemovedMyAbility]
+                : prev;
+              const next = restored.filter(a => a !== targetAbilityId && a !== `${targetAbilityId}_buffed`);
+              myAbilitiesRef.current = next;
+              return next;
+            });
+            setOppRemovedMyAbility(targetAbilityId);
+          }
+          setSandboxRemoveModalTarget(null);
+        };
+
+        return (
+          <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+            <div className="bg-slate-900 border border-cyan-400 p-8 rounded-xl max-w-md w-full shadow-2xl">
+              <h3 className="font-display text-2xl text-cyan-400 uppercase tracking-widest mb-2">
+                {isYou ? 'You' : 'Opponent'} — Cleanse: Remove Active Ability
+              </h3>
+              <p className="text-slate-400 font-mono text-xs mb-6">
+                Select one of {isYou ? "Opponent's" : 'Your'} currently active abilities to remove!
+              </p>
+              <div className="flex flex-col gap-3">
+                {targetAbilities.length === 0 ? (
+                  <div className="text-red-400 text-xs font-mono">
+                    {isYou ? 'Opponent has' : 'You have'} no active removable abilities right now!
+                  </div>
+                ) : (
+                  targetAbilities.map(abilityId => {
+                    const ab = ALL_SANDBOX_ABILITIES.find(x => x.id === abilityId);
+                    return (
+                      <button
+                        key={abilityId}
+                        onClick={() => applyRemoveAbility(abilityId)}
+                        className="py-3 px-4 border border-slate-700 bg-slate-800 hover:bg-cyan-400 hover:text-black font-mono text-xs uppercase tracking-widest transition-colors cursor-pointer rounded flex justify-between items-center"
+                      >
+                        <span className="font-bold">{ab?.name || abilityId}</span>
+                        <span className="text-[10px] opacity-75">{ab?.char}</span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              <button
+                onClick={() => setSandboxRemoveModalTarget(null)}
+                className="mt-6 text-xs font-mono text-slate-500 hover:text-white uppercase tracking-widest cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Sandbox Modal: Money Guy 2nd Ability (Invest) — Double Effect */}
       {sandboxBuffModalTarget && (() => {
         const isYou = sandboxBuffModalTarget === 'you';
         const activeList = (isYou ? myAbilities : oppAbilities).filter(
-          a => !a.startsWith('moneyguy') && !a.endsWith('_buffed')
+          a => !a.startsWith('moneyguy') && a !== 'helper2' && a !== 'helper3' && !a.endsWith('_buffed')
         );
 
         const applyBuff = (targetAbilityId: string | 'all') => {
@@ -2134,6 +2436,18 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                 oppWarpUsesRef.current = 0;
                 setMyAbilities([]);
                 setOppAbilities([]);
+                myAbilitiesRef.current = [];
+                oppAbilitiesRef.current = [];
+                setMyPickedExternalAbility(null);
+                setOppPickedExternalAbility(null);
+                setMyHelperPickedAbility(null);
+                setOppHelperPickedAbility(null);
+                setMyRemovedOppAbility(null);
+                setOppRemovedMyAbility(null);
+                setMyCorrectWords(0);
+                setOppCorrectWords(0);
+                myCorrectWordsRef.current = 0;
+                oppCorrectWordsRef.current = 0;
                 startNewRound(0);
               }}
               className="py-4 px-10 border border-[var(--hot)] text-black bg-[var(--hot)] hover:bg-white font-mono text-xs uppercase tracking-widest font-bold rounded shadow-[0_0_20px_var(--color-hot-soft)] transition-all cursor-pointer"

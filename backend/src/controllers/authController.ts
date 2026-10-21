@@ -32,7 +32,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_REGEX = /^[A-Za-z0-9_.-]{3,20}$/;
 const PORTAL_BORDER_REGEX = /^b(0|1|3|4|5|7|9|11|12|13|14|15|16)$/;
 const SAFE_DATA_IMAGE_REGEX = /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=\s]+$/i;
-const VALID_CHARACTERS = new Set(['mushgirl', 'screwed', 'joker', 'gravity', 'moneyguy']);
+const VALID_CHARACTERS = new Set(['mushgirl', 'screwed', 'joker', 'gravity', 'moneyguy', 'helper']);
 
 const isValidAvatarUrl = (url: string): boolean => {
   if (url === '') return true;

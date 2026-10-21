@@ -524,7 +524,7 @@ export const initSocket = (httpServer: HttpServer) => {
       }
     });
 
-    socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number}; charge?: number; bestLetter?: string; worstLetter?: string; rawWpm?: number; accuracy?: number; consistency?: number }) => {
+    socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number}; charge?: number; bestLetter?: string; worstLetter?: string; rawWpm?: number; accuracy?: number; consistency?: number; coins?: number; hearts?: number }) => {
       const match = rankedMatches[data?.matchId];
       if (match && match.state === 'playing') {
         const player = match.players[socket.id];
@@ -545,7 +545,9 @@ export const initSocket = (httpServer: HttpServer) => {
             worstLetter: data.worstLetter,
             rawWpm: data.rawWpm,
             accuracy: data.accuracy,
-            consistency: data.consistency
+            consistency: data.consistency,
+            coins: Number.isFinite(Number(data.coins)) ? Math.max(0, Math.min(1000000, Math.round(Number(data.coins)))) : undefined,
+            hearts: Number.isFinite(Number(data.hearts)) ? Math.max(0, Math.min(1000000, Math.round(Number(data.hearts)))) : undefined
           });
         }
       }
@@ -557,6 +559,27 @@ export const initSocket = (httpServer: HttpServer) => {
         const player = match.players[socket.id];
         if (player) player.abilities = Array.isArray(data.upgrades) ? data.upgrades : [];
         socket.to(data.matchId).emit('rankedOpponentUpgrades', { upgrades: data.upgrades });
+      }
+    });
+
+    // Money Guy Inflation: relay cost-increase percentages to the opponent (validated + clamped)
+    socket.on('rankedInflation', (data: { matchId: string; coinPct: number; heartPct: number }) => {
+      const match = rankedMatches[data?.matchId];
+      if (!match || !match.players[socket.id]) return;
+      const clamp = (v: unknown) => Math.max(0, Math.min(200, Math.round(Number(v) || 0)));
+      socket.to(data.matchId).emit('rankedInflation', { coinPct: clamp(data.coinPct), heartPct: clamp(data.heartPct) });
+    });
+
+    socket.on('rankedRemoveOpponentAbility', (data: { matchId: string; abilityId: string }) => {
+      const match = rankedMatches[data?.matchId];
+      if (match && typeof data?.abilityId === 'string') {
+        const opponent = Object.values(match.players).find(p => p.id !== socket.id);
+        if (opponent && Array.isArray(opponent.abilities)) {
+          opponent.abilities = opponent.abilities.filter(
+            a => a !== data.abilityId && a !== `${data.abilityId}_buffed`
+          );
+        }
+        socket.to(data.matchId).emit('rankedAbilityRemoved', { abilityId: data.abilityId });
       }
     });
     
