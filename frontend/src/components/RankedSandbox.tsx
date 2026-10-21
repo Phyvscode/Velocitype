@@ -29,6 +29,8 @@ export const ALL_SANDBOX_ABILITIES = [
   { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity', desc: 'Black Hole Sabotage popup (Ctrl+X to escape)' },
   { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity', desc: 'After 30s, ends the round if your WPM is higher (1 round only)' },
   { id: 'moneyguy1', name: 'Bribe', cost: 30, char: 'moneyguy', desc: 'Both players get coins/hearts: golden letters (+5 coins) & mistakes grant +3 hearts' },
+  { id: 'moneyguy2', name: 'Greed', cost: 60, char: 'moneyguy', desc: 'Your coin costs -1% per gold letter collected (max 30%), hearts unchanged' },
+  { id: 'moneyguy3', name: 'Inflation', cost: 100, char: 'moneyguy', desc: "Raises opponent's coin costs by (your unactivated ability costs / their base costs) x100%; +12% hearts if all your abilities are active" },
   { id: 'helper1', name: 'Auto-Correct', cost: 30, char: 'helper', desc: '5% chance to fix a wrong letter (+0.5% per right word, max 50%)' },
   { id: 'helper2', name: 'Cleanse', cost: 60, char: 'helper', desc: 'Removes any one currently active ability of the opponent' },
   { id: 'helper3', name: 'Buyout', cost: 100, char: 'helper', desc: 'Choose an ability from unselected characters' },
@@ -222,6 +224,8 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const [myCia, setMyCia] = useState<{ c: number; i: number; a: number }>({ c: 0, i: 0, a: 0 });
   const [myCharge, setMyCharge] = useState(0);
   const [myCoins, setMyCoins] = useState(0);
+  const [myGold, setMyGold] = useState(0);
+  const [oppGold, setOppGold] = useState(0);
   const [myHearts, setMyHearts] = useState(0);
   const myLetterStatesRef = useRef<number[]>([]);
   const mySpeedSamplesRef = useRef<number[]>([]);
@@ -287,8 +291,10 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
       flyingResourceRef.current.spawnCoin(startX, startY, targetX, targetY, () => {
         if (forOpponent) {
           setOppCoins(c => c + 5);
+          setOppGold(g => g + 1);
         } else {
           setMyCoins(c => c + 5);
+          setMyGold(g => g + 1);
         }
         setCoinPulse(true);
         setTimeout(() => setCoinPulse(false), 350);
@@ -296,8 +302,10 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     } else {
       if (forOpponent) {
         setOppCoins(c => c + 5);
+        setOppGold(g => g + 1);
       } else {
         setMyCoins(c => c + 5);
+        setMyGold(g => g + 1);
       }
     }
   }, [activePov]);
@@ -1251,6 +1259,25 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     });
   };
 
+  // Money Guy Greed / Inflation figures for a player (no shop in Sandbox, so these are shown live in the HUD)
+  const getMgFigures = (abilities: string[], gold: number) => {
+    const greedPct = abilities.includes('moneyguy2') ? Math.min(30, gold) : 0;
+    const baseC = (cost: number) => (cost <= 40 ? 100 : cost <= 70 ? 150 : 300);
+    let coinPct = 0, heartPct = 0;
+    if (abilities.includes('moneyguy3')) {
+      const mine = ALL_SANDBOX_ABILITIES.filter(a => selectedCharacters.includes(a.char));
+      const unact = mine.filter(a => !abilities.includes(a.id));
+      if (unact.length === 0) {
+        heartPct = 12;
+      } else {
+        const num = unact.reduce((t, a) => t + Math.round(baseC(a.cost) * (1 - greedPct / 100)), 0);
+        const den = unact.reduce((t, a) => t + baseC(a.cost), 0);
+        coinPct = Math.round((num / den) * 100);
+      }
+    }
+    return { greedPct, coinPct, heartPct };
+  };
+
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const ss = s % 60;
@@ -1590,6 +1617,13 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                       ) : (
                         <div className="font-mono text-xs text-slate-500">{isBlindMasked ? '???' : `${myCharge}%`} Charge</div>
                       )}
+                      {myAbilities.includes('moneyguy2') && (
+                        <div className="font-mono text-xs text-yellow-400">Greed: -{getMgFigures(myAbilities, myGold).greedPct}% coin costs ({myGold} gold)</div>
+                      )}
+                      {myAbilities.includes('moneyguy3') && (() => {
+                        const f = getMgFigures(myAbilities, myGold);
+                        return <div className="font-mono text-xs text-red-400">Inflation: opp +{f.coinPct}% coins{f.heartPct > 0 ? `, +${f.heartPct}% hearts` : ''}</div>;
+                      })()}
                       {myAbilities.includes('helper1') && (
                         <div className="font-mono text-xs text-cyan-400">
                           Auto-Correct: {isBlindMasked ? '???' : `${Math.min(50, (myAbilities.includes('helper1_buffed') ? 10 : 5) + myCorrectWords * (myAbilities.includes('helper1_buffed') ? 1 : 0.5)).toFixed(1)}%`}
@@ -1665,6 +1699,13 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                       ) : (
                         <div className="font-mono text-xs text-slate-500">{isBlindMasked ? '???' : `${oppCharge}%`} Charge</div>
                       )}
+                      {oppAbilities.includes('moneyguy2') && (
+                        <div className="font-mono text-xs text-yellow-400">Greed: -{getMgFigures(oppAbilities, oppGold).greedPct}% coin costs ({oppGold} gold)</div>
+                      )}
+                      {oppAbilities.includes('moneyguy3') && (() => {
+                        const f = getMgFigures(oppAbilities, oppGold);
+                        return <div className="font-mono text-xs text-red-400">Inflation: opp +{f.coinPct}% coins{f.heartPct > 0 ? `, +${f.heartPct}% hearts` : ''}</div>;
+                      })()}
                       {oppAbilities.includes('helper1') && (
                         <div className="font-mono text-xs text-cyan-400">
                           Auto-Correct: {isBlindMasked ? '???' : `${Math.min(50, (oppAbilities.includes('helper1_buffed') ? 10 : 5) + oppCorrectWords * (oppAbilities.includes('helper1_buffed') ? 1 : 0.5)).toFixed(1)}%`}
@@ -2447,6 +2488,8 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                 setOppRemovedMyAbility(null);
                 setMyCorrectWords(0);
                 setOppCorrectWords(0);
+                setMyGold(0);
+                setOppGold(0);
                 myCorrectWordsRef.current = 0;
                 oppCorrectWordsRef.current = 0;
                 startNewRound(0);
