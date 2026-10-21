@@ -2041,8 +2041,13 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
             </div>
           </div>
           <button 
-            onClick={() => window.location.href = '/?page=ranked'}
-            className="mt-8 px-8 py-3 border border-slate-500 text-slate-300 font-mono text-xs uppercase tracking-widest hover:bg-slate-800 hover:text-white transition-colors rounded"
+            onClick={() => {
+              setMatchData(null);
+              setScores({});
+              setMatchWinner(null);
+              setEloChanges({});
+            }}
+            className="mt-8 px-8 py-3 border border-slate-500 text-slate-300 font-mono text-xs uppercase tracking-widest hover:bg-slate-800 hover:text-white transition-colors rounded cursor-pointer"
           >
             Back to Queue
           </button>

@@ -30,6 +30,8 @@ export interface GameConfig {
 }
 
 interface Props {
+  activeMode?: string | null;
+  onSelectMode?: (mode: string | null) => void;
   onStart: (config: GameConfig) => void;
   onOpenLibrary: () => void;
   onOpenLeaderboard: () => void;
@@ -152,6 +154,8 @@ const PortalButton = ({ active, onClick, letter, label, title, borderStyle }: { 
 };
 
 export default function SetupScreen({
+  activeMode: controlledMode,
+  onSelectMode,
   onStart,
   onOpenLibrary,
   onOpenLeaderboard,
@@ -436,47 +440,14 @@ export default function SetupScreen({
   const [minLen, setMinLen] = useState<number | string>(prefs.minLen ?? 2);
   const [maxLen, setMaxLen] = useState<number | string>(prefs.maxLen ?? 8);
   const [error, setError] = useState<string>('');
-  const historyIdxRef = useRef<number>(
-    typeof window !== 'undefined' && window.history.state?.idx !== undefined
-      ? window.history.state.idx
-      : 0
-  );
-
-  const [activeMode, setActiveMode] = useState<string | null>(() => {
-    if (typeof window !== 'undefined' && window.history.state?.activeMode) {
-      return window.history.state.activeMode as string;
-    }
-    return null;
-  });
-
-  useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
-      const stateIdx = e.state?.idx ?? 0;
-      if (stateIdx > historyIdxRef.current) {
-        // Ignore forward navigations (handled by App.tsx)
-        return;
-      }
-      historyIdxRef.current = stateIdx;
-
-      if (e.state && e.state.activeMode !== undefined) {
-        setActiveMode(e.state.activeMode);
-      } else {
-        setActiveMode(null);
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    if (!window.history.state || window.history.state.activeMode === undefined) {
-      window.history.replaceState({ ...window.history.state, activeMode: null, idx: window.history.state?.idx ?? 0 }, '');
-    }
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  const [internalMode, setInternalMode] = useState<string | null>(null);
+  const activeMode = controlledMode !== undefined ? controlledMode : internalMode;
 
   const navigateMode = (mode: string | null) => {
-    if (mode !== activeMode) {
-      const nextIdx = historyIdxRef.current + 1;
-      window.history.pushState({ ...window.history.state, activeMode: mode, idx: nextIdx }, '');
-      historyIdxRef.current = nextIdx;
-      setActiveMode(mode);
+    if (onSelectMode) {
+      onSelectMode(mode);
+    } else {
+      setInternalMode(mode);
     }
   };
 
@@ -767,7 +738,12 @@ export default function SetupScreen({
       <header className="w-full flex items-center justify-center px-8 py-4 border-b border-slate-800/0">
         <div className="flex items-center gap-10">
           <div>
-            <h1 className="text-7xl font-display tracking-widest text-[var(--hot)] uppercase">Velocitype</h1>
+            <h1
+              onClick={() => navigateMode(null)}
+              className="text-7xl font-display tracking-widest text-[var(--hot)] uppercase cursor-pointer"
+            >
+              Velocitype
+            </h1>
           </div>
         </div>
       </header>

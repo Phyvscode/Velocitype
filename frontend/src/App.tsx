@@ -44,7 +44,25 @@ function App() {
     setScreenState(newScreen);
   };
 
-  const isQuittingRef = useRef(false);
+  const [activeMode, setActiveModeState] = useState<string | null>(() => {
+    if (typeof window !== 'undefined' && window.history.state?.activeMode) {
+      return window.history.state.activeMode as string;
+    }
+    return null;
+  });
+  const activeModeRef = useRef<string | null>(activeMode);
+  const setActiveMode = (newMode: string | null) => {
+    activeModeRef.current = newMode;
+    setActiveModeState(newMode);
+  };
+
+  const closeAllModals = () => {
+    setIsAuthOpen(false);
+    setIsLeaderboardOpen(false);
+    setIsFontModalOpen(false);
+    setIsBorderModalOpen(false);
+    setIsThemeModalOpen(false);
+  };
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
@@ -54,42 +72,85 @@ function App() {
         window.history.back();
         return;
       }
-      
-      if (screenRef.current === 'game' && stateIdx < historyIdxRef.current) {
-        if (isQuittingRef.current) {
-          // Bypassing trap because we are intentionally popping the game state via Quit
-          isQuittingRef.current = false;
-        } else {
-          // Trap them in the game on actual back navigation!
-          const nextIdx = historyIdxRef.current + 1;
-          window.history.pushState({ ...e.state, screen: 'game', idx: nextIdx }, '');
-          historyIdxRef.current = nextIdx;
-          return;
-        }
-      }
-      
-      historyIdxRef.current = stateIdx;
 
-      if (e.state && e.state.screen) {
-        setScreen(e.state.screen);
-      } else {
-        setScreen('setup');
-      }
+      historyIdxRef.current = stateIdx;
+      closeAllModals();
+
+      // Any back navigation returns directly to the mode selection home page screen
+      window.history.replaceState({ screen: 'setup', activeMode: null, idx: stateIdx }, '');
+      setActiveMode(null);
+      setScreen('setup');
     };
+
     window.addEventListener('popstate', handlePopState);
     if (!window.history.state || window.history.state.idx === undefined) {
-      window.history.replaceState({ ...window.history.state, screen: 'setup', idx: 0 }, '');
+      window.history.replaceState({ screen: 'setup', activeMode: null, idx: 0 }, '');
+      historyIdxRef.current = 0;
+    } else if ((screenRef.current !== 'setup' || activeModeRef.current !== null) && historyIdxRef.current === 0) {
+      window.history.replaceState({ screen: 'setup', activeMode: null, idx: 0 }, '');
+      window.history.pushState({ screen: screenRef.current, activeMode: activeModeRef.current, idx: 1 }, '');
+      historyIdxRef.current = 1;
     }
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  const handleHome = () => {
+    closeAllModals();
+    if (screenRef.current === 'setup' && activeModeRef.current === null) {
+      return;
+    }
+    setActiveMode(null);
+    setScreen('setup');
+    if (historyIdxRef.current > 0) {
+      window.history.back();
+    } else {
+      window.history.replaceState({ screen: 'setup', activeMode: null, idx: 0 }, '');
+    }
+  };
+
+  const navigateMode = (newMode: string | null) => {
+    if (newMode === null) {
+      handleHome();
+      return;
+    }
+    if (newMode !== activeModeRef.current || screenRef.current !== 'setup') {
+      const wasAtHome = screenRef.current === 'setup' && activeModeRef.current === null;
+      if (wasAtHome || historyIdxRef.current === 0) {
+        if (historyIdxRef.current === 0) {
+          window.history.replaceState({ screen: 'setup', activeMode: null, idx: 0 }, '');
+        }
+        const nextIdx = historyIdxRef.current + 1;
+        window.history.pushState({ screen: 'setup', activeMode: newMode, idx: nextIdx }, '');
+        historyIdxRef.current = nextIdx;
+      } else {
+        window.history.replaceState({ screen: 'setup', activeMode: newMode, idx: historyIdxRef.current }, '');
+      }
+      setActiveMode(newMode);
+      setScreen('setup');
+    }
+  };
+
   const navigate = (newScreen: Screen) => {
-    if (newScreen !== screen) {
-      const nextIdx = historyIdxRef.current + 1;
-      window.history.pushState({ ...window.history.state, screen: newScreen, idx: nextIdx }, '');
-      historyIdxRef.current = nextIdx;
-      
-      if (document.startViewTransition && (newScreen === 'game' || screen === 'game')) {
+    if (newScreen === 'setup') {
+      handleHome();
+      return;
+    }
+    if (newScreen !== screenRef.current) {
+      const wasAtHome = screenRef.current === 'setup' && activeModeRef.current === null;
+      if (wasAtHome || historyIdxRef.current === 0) {
+        if (historyIdxRef.current === 0) {
+          window.history.replaceState({ screen: 'setup', activeMode: null, idx: 0 }, '');
+        }
+        const nextIdx = historyIdxRef.current + 1;
+        window.history.pushState({ screen: newScreen, activeMode: null, idx: nextIdx }, '');
+        historyIdxRef.current = nextIdx;
+      } else {
+        window.history.replaceState({ screen: newScreen, activeMode: null, idx: historyIdxRef.current }, '');
+      }
+
+      const prevScreen = screenRef.current;
+      setActiveMode(null);
+      if (document.startViewTransition && (newScreen === 'game' || prevScreen === 'game')) {
         document.startViewTransition(() => {
           flushSync(() => setScreen(newScreen));
         });
@@ -159,18 +220,16 @@ function App() {
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        // If the user is typing in an input field, let them blur it or escape naturally
-        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-          return;
+        e.preventDefault();
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
         }
-        window.history.back();
+        handleHome();
       }
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
-
-
 
   const openAuth = (mode: 'login' | 'signup' = 'signup') => {
     setAuthMode(mode);
@@ -195,15 +254,6 @@ function App() {
     navigate('game');
   };
 
-  const handleHome = () => {
-    if (screen === 'game') {
-      isQuittingRef.current = true;
-      window.history.back();
-    } else {
-      navigate('setup');
-    }
-  };
-
   const [fontLoaded, setFontLoaded] = useState(false);
 
   useEffect(() => {
@@ -225,12 +275,12 @@ function App() {
       {screen === 'casual' && (
         <div className="min-h-screen bg-transparent text-slate-100 flex flex-col items-center p-8">
           <header className="w-full flex flex-col items-center justify-center mb-12">
-            <h1 className="text-7xl font-display tracking-widest text-white uppercase cursor-pointer" onClick={() => navigate('setup')}>Veloci<span className="text-[var(--hot)]">type</span></h1>
+            <h1 className="text-7xl font-display tracking-widest text-white uppercase cursor-pointer" onClick={handleHome}>Veloci<span className="text-[var(--hot)]">type</span></h1>
             <h2 className="text-xl font-mono text-[var(--hot)] uppercase tracking-widest mt-4">Casual Multiplayer</h2>
           </header>
           <div className="w-full max-w-2xl relative">
             <button 
-              onClick={() => navigate('setup')} 
+              onClick={handleHome} 
               className="absolute -top-12 left-0 text-[var(--hot)] hover:text-white font-mono text-sm tracking-widest uppercase transition-colors"
             >
               &larr; Back
@@ -245,15 +295,17 @@ function App() {
 
       
       {screen === 'ranked_test' && (
-        <RankedSandbox onBack={() => navigate('setup')} />
+        <RankedSandbox onBack={handleHome} />
       )}
 
       {screen === 'ranked' && (
-        <RankedMode onBack={() => navigate('setup')} onOpenAuth={() => openAuth('login')} />
+        <RankedMode onBack={handleHome} onOpenAuth={() => openAuth('login')} />
       )}
 
       {screen === 'setup' && (
         <SetupScreen
+          activeMode={activeMode}
+          onSelectMode={navigateMode}
           onStart={handleStart}
           onOpenLibrary={() => navigate('library')}
           onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
@@ -275,7 +327,7 @@ function App() {
       {screen === 'lobby' && lobbyCode && (
         <LobbyScreen 
           lobbyCode={lobbyCode}
-          onLeave={() => { setLobbyCode(null); navigate('setup'); }}
+          onLeave={() => { setLobbyCode(null); handleHome(); }}
           onGameStart={(cfg) => { setConfig(cfg); navigate('multiplayerGame'); }}
         />
       )}
@@ -284,7 +336,7 @@ function App() {
         <MultiplayerGame 
           lobbyCode={lobbyCode}
           config={config}
-          onLeave={() => { setLobbyCode(null); setScreen('setup'); }}
+          onLeave={() => { setLobbyCode(null); handleHome(); }}
         />
       )}
       {screen === 'game' && config && (
