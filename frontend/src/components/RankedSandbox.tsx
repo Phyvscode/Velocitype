@@ -1098,19 +1098,6 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   }, [gameState, myTargetText, showGravityPopup, triggerSandboxCoinSpawn, triggerSandboxHeartSpawn]);
 
   const toggleMyAbility = (abilityId: string) => {
-    if (abilityId === 'moneyguy3') {
-      if (myAbilities.includes('moneyguy3')) {
-        setMyAbilities(prev => {
-          const next = prev.filter(a => a !== 'moneyguy3' && a !== myPickedExternalAbility && a !== `${myPickedExternalAbility}_buffed`);
-          myAbilitiesRef.current = next;
-          return next;
-        });
-        setMyPickedExternalAbility(null);
-      } else {
-        setSandboxAbilityModalTarget({ player: 'you', source: 'moneyguy3' });
-      }
-      return;
-    }
     if (abilityId === 'helper3') {
       if (myAbilities.includes('helper3')) {
         setMyAbilities(prev => {
@@ -1144,18 +1131,6 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
       }
       return;
     }
-    if (abilityId === 'moneyguy2') {
-      if (myAbilities.includes('moneyguy2')) {
-        setMyAbilities(prev => {
-          const next = prev.filter(a => a !== 'moneyguy2' && !a.endsWith('_buffed'));
-          myAbilitiesRef.current = next;
-          return next;
-        });
-      } else {
-        setSandboxBuffModalTarget('you');
-      }
-      return;
-    }
     setMyAbilities(prev => {
       const next = prev.includes(abilityId) ? prev.filter(a => a !== abilityId && a !== `${abilityId}_buffed`) : [...prev, abilityId];
       myAbilitiesRef.current = next;
@@ -1179,19 +1154,6 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   };
 
   const toggleOppAbility = (abilityId: string) => {
-    if (abilityId === 'moneyguy3') {
-      if (oppAbilities.includes('moneyguy3')) {
-        setOppAbilities(prev => {
-          const next = prev.filter(a => a !== 'moneyguy3' && a !== oppPickedExternalAbility && a !== `${oppPickedExternalAbility}_buffed`);
-          oppAbilitiesRef.current = next;
-          return next;
-        });
-        setOppPickedExternalAbility(null);
-      } else {
-        setSandboxAbilityModalTarget({ player: 'opp', source: 'moneyguy3' });
-      }
-      return;
-    }
     if (abilityId === 'helper3') {
       if (oppAbilities.includes('helper3')) {
         setOppAbilities(prev => {
@@ -1222,18 +1184,6 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         }
       } else {
         setSandboxRemoveModalTarget('opp');
-      }
-      return;
-    }
-    if (abilityId === 'moneyguy2') {
-      if (oppAbilities.includes('moneyguy2')) {
-        setOppAbilities(prev => {
-          const next = prev.filter(a => a !== 'moneyguy2' && !a.endsWith('_buffed'));
-          oppAbilitiesRef.current = next;
-          return next;
-        });
-      } else {
-        setSandboxBuffModalTarget('opp');
       }
       return;
     }
@@ -2012,7 +1962,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                                 <p className="font-mono text-[10px] text-slate-400 mt-1">{ab.desc}</p>
                               </div>
                               <div className="flex items-center gap-2">
-                                {(ab.id === 'moneyguy3' || ab.id === 'helper3') && active && (
+                                {ab.id === 'helper3' && active && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -2099,7 +2049,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                                 <p className="font-mono text-[10px] text-slate-400 mt-1">{ab.desc}</p>
                               </div>
                               <div className="flex items-center gap-2">
-                                {(ab.id === 'moneyguy3' || ab.id === 'helper3') && active && (
+                                {ab.id === 'helper3' && active && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
