@@ -699,7 +699,8 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
 
   const [myBuffedAbilities, setMyBuffedAbilities] = useState<string[]>([]);
   const prevValLengthRef = useRef(0);
-  const [showAbilitySelect, setShowAbilitySelect] = useState<'moneyguy1' | 'moneyguy2' | null>(null);
+  const [showAbilitySelect, setShowAbilitySelect] = useState(false);
+  const [pickedExternalAbility, setPickedExternalAbility] = useState<string | null>(null);
   const [showBuffSelect, setShowBuffSelect] = useState(false);
 
   const [myBestLetter, setMyBestLetter] = useState<string | null>(null);
@@ -1099,7 +1100,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
         }
         else if (currState === 2) myLetterStatesRef.current[i] = 3;
       } else {
-        if ((currState === 0 || currState === 1) && (myAbilities.includes('moneyguy2') || myAbilities.includes('moneyguy2_buffed'))) {
+        if ((currState === 0 || currState === 1) && (myAbilities.includes('moneyguy1') || myAbilities.includes('moneyguy1_buffed'))) {
           triggerHeartSpawn(i);
         }
         myLetterStatesRef.current[i] = 2;
@@ -1436,56 +1437,102 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
 
 
       {/* Modals for Money Guy */}
-      {showAbilitySelect && (
-        <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-[var(--hot)] p-8 rounded max-w-2xl w-full">
-            <h3 className="font-display text-2xl text-[var(--hot)] uppercase tracking-widest mb-2">Bribe: Select Ability</h3>
-            <p className="text-slate-400 font-mono text-xs mb-6">Choose an ability from a character not currently in the game.</p>
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { id: 'shrooms', name: 'Shrooms', cost: 30, char: 'mushgirl' },
-                { id: 'dyslexia', name: 'Dyslexia', cost: 60, char: 'mushgirl' },
-                { id: 'blinking', name: 'Blinking', cost: 100, char: 'mushgirl' },
-                { id: 'scramble', name: 'Scramble', cost: 30, char: 'screwed' },
-                { id: 'sabotage', name: 'Sabotage', cost: 60, char: 'screwed' },
-                { id: 'spam', name: 'Spam', cost: 100, char: 'screwed' },
-                { id: 'joker1', name: 'Delusion', cost: 30, char: 'joker' },
-                { id: 'joker2', name: 'Blindness', cost: 60, char: 'joker' },
-                { id: 'joker3', name: 'Amnesia', cost: 100, char: 'joker' },
-                { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity' },
-                { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity' },
-                { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity' }
-              ].filter(a => !selectedCharacters.includes(a.char)).map(ability => (
-                <button
-                  key={ability.id}
-                  onClick={() => {
-                    const getMG = (c) => c <= 40 ? {c:100,h:20} : c <= 70 ? {c:150,h:10} : {c:300,h:30};
-                    const baseCost = showAbilitySelect === 'moneyguy1' ? 30 : 60;
-                    const mgCost = getMG(baseCost);
-                    
-                    setMyCoins(c => c - mgCost.c);
-                    setMyHearts(h => h - mgCost.h);
-                    myCoinsRef.current -= mgCost.c;
-                    myHeartsRef.current -= mgCost.h;
-                    
-                    const newAbilities = [...myAbilities, showAbilitySelect, ability.id];
-                    setMyAbilities(newAbilities);
-                    if (typeof socket !== 'undefined' && socket) {
-                       socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newAbilities });
-                    }
-                    setShowAbilitySelect(null);
-                  }}
-                  className="py-3 px-2 border border-slate-700 bg-slate-800 font-mono text-xs uppercase tracking-widest hover:bg-slate-700 transition-colors text-white"
-                >
-                  {ability.name}
-                  <div className="text-[9px] text-slate-500 mt-1 capitalize">{ability.char}</div>
-                </button>
-              ))}
+      {showAbilitySelect && (() => {
+        const unselectedPool = [
+          { id: 'shrooms', name: 'Shrooms', cost: 30, char: 'mushgirl', desc: 'Split double-vision & trippy fog' },
+          { id: 'dyslexia', name: 'Dyslexia', cost: 60, char: 'mushgirl', desc: 'Inverts upcoming letters in place' },
+          { id: 'blinking', name: 'Blinking', cost: 100, char: 'mushgirl', desc: 'Periodic screen blackout blink' },
+          { id: 'scramble', name: 'Scramble', cost: 30, char: 'screwed', desc: 'Shuffles letters within words' },
+          { id: 'sabotage', name: 'Sabotage', cost: 60, char: 'screwed', desc: 'Inserts worst letter every 3rd word' },
+          { id: 'spam', name: 'Spam', cost: 100, char: 'screwed', desc: 'Inserts random 5-letter word every 10th word' },
+          { id: 'joker1', name: 'Delusion', cost: 30, char: 'joker', desc: 'All mistakes appear correct' },
+          { id: 'joker2', name: 'Blindness', cost: 60, char: 'joker', desc: 'Masks WPM and raw stats as ???' },
+          { id: 'joker3', name: 'Amnesia', cost: 100, char: 'joker', desc: 'Only reveals every 5th letter, timer as ???' },
+          { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity', desc: '+10s for both if your WPM is lower' },
+          { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity', desc: 'Black Hole Sabotage popup (Ctrl+X)' },
+          { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity', desc: 'After 30s, ends round if your WPM is higher' }
+        ].filter(a => !selectedCharacters.includes(a.char) && !myAbilities.includes(a.id));
+
+        const selectExternalAbility = (abilityId: string) => {
+          const mgCost = { c: 300, h: 30 };
+          if (myCharge >= 100) {
+            setMyCharge(c => c - 100);
+            myChargeRef.current -= 100;
+          } else {
+            setMyCoins(c => c - mgCost.c);
+            setMyHearts(h => h - mgCost.h);
+            myCoinsRef.current -= mgCost.c;
+            myHeartsRef.current -= mgCost.h;
+          }
+
+          const newAbilities = [...myAbilities, 'moneyguy3', abilityId];
+          setMyAbilities(newAbilities);
+          setPickedExternalAbility(abilityId);
+          if (typeof socket !== 'undefined' && socket) {
+            socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newAbilities });
+          }
+          setShowAbilitySelect(false);
+        };
+
+        return (
+          <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-900 border border-[var(--hot)] p-8 rounded-xl max-w-2xl w-full shadow-2xl">
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <h3 className="font-display text-2xl text-[var(--hot)] uppercase tracking-widest">
+                  Select Unselected Character Ability
+                </h3>
+                {unselectedPool.length > 0 && (
+                  <button
+                    onClick={() => {
+                      const rand = unselectedPool[Math.floor(Math.random() * unselectedPool.length)];
+                      selectExternalAbility(rand.id);
+                    }}
+                    className="px-3 py-1.5 rounded border border-amber-400/70 bg-amber-500/20 hover:bg-amber-400 hover:text-black text-amber-300 font-mono text-xs uppercase tracking-wider font-bold transition-all cursor-pointer"
+                  >
+                    🎲 Pick Random
+                  </button>
+                )}
+              </div>
+              <p className="text-slate-400 font-mono text-xs mb-6">
+                Choose one ability from the characters not selected by you.
+              </p>
+              {unselectedPool.length === 0 ? (
+                <div className="text-slate-400 font-mono text-xs py-6 text-center">
+                  No unselected character abilities remaining.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-h-[340px] overflow-y-auto pr-1">
+                  {unselectedPool.map(ability => (
+                    <button
+                      key={ability.id}
+                      onClick={() => selectExternalAbility(ability.id)}
+                      className="p-3 border border-slate-700 bg-slate-800/90 hover:border-[var(--hot)] hover:bg-slate-700 transition-all text-left rounded-lg cursor-pointer flex flex-col justify-between gap-2"
+                    >
+                      <div>
+                        <div className="font-mono text-xs uppercase tracking-widest text-white font-bold">
+                          {ability.name}
+                        </div>
+                        <div className="text-[10px] font-mono text-[var(--hot)] uppercase mt-0.5">
+                          {ability.char}
+                        </div>
+                      </div>
+                      <div className="text-[10px] font-mono text-slate-400 leading-snug">
+                        {ability.desc}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={() => setShowAbilitySelect(false)}
+                className="mt-6 text-xs font-mono text-slate-500 hover:text-white uppercase tracking-widest cursor-pointer"
+              >
+                Cancel
+              </button>
             </div>
-            <button onClick={() => setShowAbilitySelect(null)} className="mt-6 text-xs font-mono text-slate-500 hover:text-white uppercase tracking-widest">Cancel</button>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {showBuffSelect && (
         <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -1493,9 +1540,9 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
             <h3 className="font-display text-2xl text-yellow-500 uppercase tracking-widest mb-2">Invest: Double Effect</h3>
             <p className="text-slate-400 font-mono text-xs mb-6">Select an active ability to double its effect permanently!</p>
             <div className="flex flex-col gap-4">
-              {myAbilities.filter(a => !a.startsWith('moneyguy')).length === 0 ? (
+              {myAbilities.filter(a => !a.startsWith('moneyguy') && !a.endsWith('_buffed')).length === 0 ? (
                 <div className="text-red-400 text-xs font-mono">You have no active abilities to buff!</div>
-              ) : myAbilities.filter(a => !a.startsWith('moneyguy')).map(abilityId => {
+              ) : myAbilities.filter(a => !a.startsWith('moneyguy') && !a.endsWith('_buffed')).map(abilityId => {
                  const name = [
                     { id: 'shrooms', name: 'Shrooms' }, { id: 'dyslexia', name: 'Dyslexia' }, { id: 'blinking', name: 'Blinking' },
                     { id: 'scramble', name: 'Scramble' }, { id: 'sabotage', name: 'Sabotage' }, { id: 'spam', name: 'Spam' },
@@ -1510,21 +1557,21 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                     key={abilityId}
                     disabled={isBuffed}
                     onClick={() => {
-                      const getMG = (c) => c <= 40 ? {c:100,h:20} : c <= 70 ? {c:150,h:10} : {c:300,h:30};
-                      const mgCost = getMG(100); // Invest cost
-                      
-                      setMyCoins(c => c - mgCost.c);
-                      setMyHearts(h => h - mgCost.h);
-                      myCoinsRef.current -= mgCost.c;
-                      myHeartsRef.current -= mgCost.h;
-                      
-                      const newAbilities = [...myAbilities, 'moneyguy3'];
-                      setMyAbilities(newAbilities);
+                      const mgCost = { c: 150, h: 10 }; // Invest cost (Tier 2)
+                      if (myCharge >= 60) {
+                        setMyCharge(c => c - 60);
+                        myChargeRef.current -= 60;
+                      } else {
+                        setMyCoins(c => c - mgCost.c);
+                        setMyHearts(h => h - mgCost.h);
+                        myCoinsRef.current -= mgCost.c;
+                        myHeartsRef.current -= mgCost.h;
+                      }
                       
                       const newBuffs = [...myBuffedAbilities, abilityId];
                       setMyBuffedAbilities(newBuffs);
-                      const newSocketAbilities = [...newAbilities, abilityId + '_buffed'];
-
+                      const newAbilities = [...myAbilities, 'moneyguy2', abilityId + '_buffed'];
+                      setMyAbilities(newAbilities);
                       
                       if (typeof socket !== 'undefined' && socket) {
                          socket.emit('rankedUpgrades', { matchId: matchData?.matchId, upgrades: newAbilities });
@@ -1783,9 +1830,9 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
     { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity' },
     { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity' },
     { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity' },
-    { id: 'moneyguy1', name: 'Bribe I', cost: 30, char: 'moneyguy' },
-    { id: 'moneyguy2', name: 'Bribe II', cost: 60, char: 'moneyguy' },
-    { id: 'moneyguy3', name: 'Invest', cost: 100, char: 'moneyguy' }
+    { id: 'moneyguy1', name: 'Bribe', cost: 30, char: 'moneyguy' },
+    { id: 'moneyguy2', name: 'Invest', cost: 60, char: 'moneyguy' },
+    { id: 'moneyguy3', name: 'Buyout', cost: 100, char: 'moneyguy' }
   ];
 
   const getMG = (cost) => {
@@ -1812,9 +1859,13 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
             onClick={() => {
               if (canAfford && !hasIt) {
                 if (ability.char === 'moneyguy') {
-                  if (ability.id === 'moneyguy3') {
+                  if (ability.id === 'moneyguy2') {
                     setShowBuffSelect(true);
                     return; 
+                  }
+                  if (ability.id === 'moneyguy3') {
+                    setShowAbilitySelect(true);
+                    return;
                   }
                   
                   if (myCharge >= ability.cost) {
@@ -1857,7 +1908,9 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
                <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-[9px] px-1 rounded font-bold">BUFFED</span>
             )}
             <span className={hasIt ? "text-emerald-400" : ""}>
-              {ability.name}
+              {ability.id === 'moneyguy3' && pickedExternalAbility
+                ? `Buyout (${ALL_ABILITIES.find(x => x.id === pickedExternalAbility)?.name || pickedExternalAbility})`
+                : ability.name}
             </span>
             {isMG && ability.char !== 'moneyguy' ? (
               <div className="flex gap-2 text-[9px]">

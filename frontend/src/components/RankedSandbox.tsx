@@ -28,9 +28,9 @@ export const ALL_SANDBOX_ABILITIES = [
   { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity', desc: '+10s for both if your WPM is lower (max 3/match)' },
   { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity', desc: 'Black Hole Sabotage popup (Ctrl+X to escape)' },
   { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity', desc: 'After 30s, ends the round if your WPM is higher' },
-  { id: 'moneyguy1', name: 'Bribe I', cost: 30, char: 'moneyguy', desc: 'Golden letters spawn in text (+5 coins)' },
-  { id: 'moneyguy2', name: 'Bribe II', cost: 60, char: 'moneyguy', desc: 'Typing mistakes grant +3 hearts' },
-  { id: 'moneyguy3', name: 'Invest', cost: 100, char: 'moneyguy', desc: 'Buffs all character abilities' },
+  { id: 'moneyguy1', name: 'Bribe', cost: 30, char: 'moneyguy', desc: 'Golden letters (+5 coins) & mistakes grant +3 hearts' },
+  { id: 'moneyguy2', name: 'Invest', cost: 60, char: 'moneyguy', desc: 'Doubles the effect of active character abilities' },
+  { id: 'moneyguy3', name: 'Buyout', cost: 100, char: 'moneyguy', desc: 'Choose an ability from unselected characters' },
 ];
 
 /**
@@ -353,6 +353,10 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   // Gravity Sabotage Popup
   const [showGravityPopup, setShowGravityPopup] = useState(false);
   const showGravityPopupRef = useRef(false);
+  const [sandboxAbilityModalTarget, setSandboxAbilityModalTarget] = useState<'you' | 'opp' | null>(null);
+  const [sandboxBuffModalTarget, setSandboxBuffModalTarget] = useState<'you' | 'opp' | null>(null);
+  const [myPickedExternalAbility, setMyPickedExternalAbility] = useState<string | null>(null);
+  const [oppPickedExternalAbility, setOppPickedExternalAbility] = useState<string | null>(null);
   useEffect(() => { showGravityPopupRef.current = showGravityPopup; }, [showGravityPopup]);
   const gravityEscapingRef = useRef(false);
 
@@ -691,7 +695,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               myLetterStatesRef.current[charIdx] = 3; // Amended!
             }
           } else {
-            if ((currState === 0 || currState === 1) && myAbilitiesRef.current.includes('moneyguy2')) {
+            if ((currState === 0 || currState === 1) && myAbilitiesRef.current.includes('moneyguy1')) {
               triggerSandboxHeartSpawn(charIdx, false);
             }
             myLetterStatesRef.current[charIdx] = 2; // Incorrect
@@ -782,7 +786,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
               oppLetterStatesRef.current[charIdx] = 3;
             }
           } else {
-            if ((currState === 0 || currState === 1) && oppAbilitiesRef.current.includes('moneyguy2')) {
+            if ((currState === 0 || currState === 1) && oppAbilitiesRef.current.includes('moneyguy1')) {
               triggerSandboxHeartSpawn(charIdx, true);
             }
             oppLetterStatesRef.current[charIdx] = 2;
@@ -900,7 +904,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                 myLetterStatesRef.current[charIdx] = 3;
               }
             } else {
-              if ((currState === 0 || currState === 1) && myAbilitiesRef.current.includes('moneyguy2')) {
+              if ((currState === 0 || currState === 1) && myAbilitiesRef.current.includes('moneyguy1')) {
                 triggerSandboxHeartSpawn(charIdx, false);
               }
               myLetterStatesRef.current[charIdx] = 2;
@@ -941,8 +945,33 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   }, [gameState, myTargetText, showGravityPopup, triggerSandboxCoinSpawn, triggerSandboxHeartSpawn]);
 
   const toggleMyAbility = (abilityId: string) => {
+    if (abilityId === 'moneyguy3') {
+      if (myAbilities.includes('moneyguy3')) {
+        setMyAbilities(prev => {
+          const next = prev.filter(a => a !== 'moneyguy3' && a !== myPickedExternalAbility && a !== `${myPickedExternalAbility}_buffed`);
+          myAbilitiesRef.current = next;
+          return next;
+        });
+        setMyPickedExternalAbility(null);
+      } else {
+        setSandboxAbilityModalTarget('you');
+      }
+      return;
+    }
+    if (abilityId === 'moneyguy2') {
+      if (myAbilities.includes('moneyguy2')) {
+        setMyAbilities(prev => {
+          const next = prev.filter(a => a !== 'moneyguy2' && !a.endsWith('_buffed'));
+          myAbilitiesRef.current = next;
+          return next;
+        });
+      } else {
+        setSandboxBuffModalTarget('you');
+      }
+      return;
+    }
     setMyAbilities(prev => {
-      const next = prev.includes(abilityId) ? prev.filter(a => a !== abilityId) : [...prev, abilityId];
+      const next = prev.includes(abilityId) ? prev.filter(a => a !== abilityId && a !== `${abilityId}_buffed`) : [...prev, abilityId];
       myAbilitiesRef.current = next;
       if (abilityId === 'moneyguy1') {
         if (next.includes('moneyguy1') && selectedCharacters.includes('moneyguy')) {
@@ -964,8 +993,33 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   };
 
   const toggleOppAbility = (abilityId: string) => {
+    if (abilityId === 'moneyguy3') {
+      if (oppAbilities.includes('moneyguy3')) {
+        setOppAbilities(prev => {
+          const next = prev.filter(a => a !== 'moneyguy3' && a !== oppPickedExternalAbility && a !== `${oppPickedExternalAbility}_buffed`);
+          oppAbilitiesRef.current = next;
+          return next;
+        });
+        setOppPickedExternalAbility(null);
+      } else {
+        setSandboxAbilityModalTarget('opp');
+      }
+      return;
+    }
+    if (abilityId === 'moneyguy2') {
+      if (oppAbilities.includes('moneyguy2')) {
+        setOppAbilities(prev => {
+          const next = prev.filter(a => a !== 'moneyguy2' && !a.endsWith('_buffed'));
+          oppAbilitiesRef.current = next;
+          return next;
+        });
+      } else {
+        setSandboxBuffModalTarget('opp');
+      }
+      return;
+    }
     setOppAbilities(prev => {
-      const next = prev.includes(abilityId) ? prev.filter(a => a !== abilityId) : [...prev, abilityId];
+      const next = prev.includes(abilityId) ? prev.filter(a => a !== abilityId && a !== `${abilityId}_buffed`) : [...prev, abilityId];
       oppAbilitiesRef.current = next;
       if (abilityId === 'moneyguy1') {
         if (next.includes('moneyguy1') && selectedCharacters.includes('moneyguy')) {
@@ -1655,6 +1709,10 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                       ) : (
                         availableAbilities.map(ab => {
                           const active = myAbilities.includes(ab.id);
+                          const isBuffed = myAbilities.includes(`${ab.id}_buffed`);
+                          const pickedObj = ab.id === 'moneyguy3' && myPickedExternalAbility
+                            ? ALL_SANDBOX_ABILITIES.find(x => x.id === myPickedExternalAbility)
+                            : null;
                           return (
                             <div
                               key={'my-ab-' + ab.id}
@@ -1666,17 +1724,38 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                               }`}
                             >
                               <div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <span className="font-mono text-xs font-bold text-white uppercase">{ab.name}</span>
                                   <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{ab.char}</span>
+                                  {isBuffed && (
+                                    <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-yellow-500 text-black font-bold">BUFFED 2x</span>
+                                  )}
+                                  {pickedObj && (
+                                    <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-[var(--hot)]/20 text-[var(--hot)] border border-[var(--hot)]/40 font-bold">
+                                      Picked: {pickedObj.name} ({pickedObj.char})
+                                    </span>
+                                  )}
                                 </div>
                                 <p className="font-mono text-[10px] text-slate-400 mt-1">{ab.desc}</p>
                               </div>
-                              <span className={`font-mono text-xs uppercase px-2 py-1 rounded font-bold ${
-                                active ? 'bg-emerald-500 text-black' : 'bg-slate-800 text-slate-500'
-                              }`}>
-                                {active ? 'ACTIVE' : 'OFF'}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                {ab.id === 'moneyguy3' && active && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSandboxAbilityModalTarget('you');
+                                    }}
+                                    className="font-mono text-[10px] uppercase px-2 py-1 rounded border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"
+                                  >
+                                    Change
+                                  </button>
+                                )}
+                                <span className={`font-mono text-xs uppercase px-2 py-1 rounded font-bold ${
+                                  active ? 'bg-emerald-500 text-black' : 'bg-slate-800 text-slate-500'
+                                }`}>
+                                  {active ? 'ACTIVE' : 'OFF'}
+                                </span>
+                              </div>
                             </div>
                           );
                         })
@@ -1696,6 +1775,10 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                       ) : (
                         availableAbilities.map(ab => {
                           const active = oppAbilities.includes(ab.id);
+                          const isBuffed = oppAbilities.includes(`${ab.id}_buffed`);
+                          const pickedObj = ab.id === 'moneyguy3' && oppPickedExternalAbility
+                            ? ALL_SANDBOX_ABILITIES.find(x => x.id === oppPickedExternalAbility)
+                            : null;
                           return (
                             <div
                               key={'opp-ab-' + ab.id}
@@ -1707,17 +1790,38 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
                               }`}
                             >
                               <div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <span className="font-mono text-xs font-bold text-white uppercase">{ab.name}</span>
                                   <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{ab.char}</span>
+                                  {isBuffed && (
+                                    <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-yellow-500 text-black font-bold">BUFFED 2x</span>
+                                  )}
+                                  {pickedObj && (
+                                    <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-bold">
+                                      Picked: {pickedObj.name} ({pickedObj.char})
+                                    </span>
+                                  )}
                                 </div>
                                 <p className="font-mono text-[10px] text-slate-400 mt-1">{ab.desc}</p>
                               </div>
-                              <span className={`font-mono text-xs uppercase px-2 py-1 rounded font-bold ${
-                                active ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-500'
-                              }`}>
-                                {active ? 'ACTIVE' : 'OFF'}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                {ab.id === 'moneyguy3' && active && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSandboxAbilityModalTarget('opp');
+                                    }}
+                                    className="font-mono text-[10px] uppercase px-2 py-1 rounded border border-slate-600 bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"
+                                  >
+                                    Change
+                                  </button>
+                                )}
+                                <span className={`font-mono text-xs uppercase px-2 py-1 rounded font-bold ${
+                                  active ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-500'
+                                }`}>
+                                  {active ? 'ACTIVE' : 'OFF'}
+                                </span>
+                              </div>
                             </div>
                           );
                         })
@@ -1740,6 +1844,186 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
           </div>
         </div>
       )}
+
+      {/* Sandbox Modal: Money Guy 3rd Ability — Choose Ability from Unselected Characters */}
+      {sandboxAbilityModalTarget && (() => {
+        const isYou = sandboxAbilityModalTarget === 'you';
+        const currentPicked = isYou ? myPickedExternalAbility : oppPickedExternalAbility;
+        const unselectedPool = ALL_SANDBOX_ABILITIES.filter(
+          a => a.char !== 'moneyguy' && !selectedCharacters.includes(a.char)
+        );
+
+        const applyPickedAbility = (abilityId: string) => {
+          if (isYou) {
+            setMyAbilities(prev => {
+              const cleaned = prev.filter(a => a !== 'moneyguy3' && a !== myPickedExternalAbility && a !== `${myPickedExternalAbility}_buffed`);
+              const next = [...cleaned, 'moneyguy3', abilityId];
+              myAbilitiesRef.current = next;
+              return next;
+            });
+            setMyPickedExternalAbility(abilityId);
+          } else {
+            setOppAbilities(prev => {
+              const cleaned = prev.filter(a => a !== 'moneyguy3' && a !== oppPickedExternalAbility && a !== `${oppPickedExternalAbility}_buffed`);
+              const next = [...cleaned, 'moneyguy3', abilityId];
+              oppAbilitiesRef.current = next;
+              return next;
+            });
+            setOppPickedExternalAbility(abilityId);
+          }
+          setSandboxAbilityModalTarget(null);
+        };
+
+        return (
+          <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+            <div className="bg-slate-900 border border-[var(--hot)] p-8 rounded-xl max-w-2xl w-full shadow-2xl">
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <h3 className="font-display text-2xl text-[var(--hot)] uppercase tracking-widest">
+                  {isYou ? 'You' : 'Opponent'}: Select Unselected Character Ability
+                </h3>
+                {unselectedPool.length > 0 && (
+                  <button
+                    onClick={() => {
+                      const rand = unselectedPool[Math.floor(Math.random() * unselectedPool.length)];
+                      applyPickedAbility(rand.id);
+                    }}
+                    className="px-3 py-1.5 rounded border border-amber-400/70 bg-amber-500/20 hover:bg-amber-400 hover:text-black text-amber-300 font-mono text-xs uppercase tracking-wider font-bold transition-all cursor-pointer"
+                  >
+                    🎲 Pick Random
+                  </button>
+                )}
+              </div>
+              <p className="text-slate-400 font-mono text-xs mb-6">
+                Choose one ability from the characters not selected for this match.
+              </p>
+              {unselectedPool.length === 0 ? (
+                <div className="text-slate-400 font-mono text-xs py-6 text-center">
+                  All characters are currently selected.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-h-[340px] overflow-y-auto pr-1">
+                  {unselectedPool.map(ability => {
+                    const isSelected = currentPicked === ability.id;
+                    return (
+                      <button
+                        key={ability.id}
+                        onClick={() => applyPickedAbility(ability.id)}
+                        className={`p-3 border transition-all text-left rounded-lg cursor-pointer flex flex-col justify-between gap-2 ${
+                          isSelected
+                            ? 'border-[var(--hot)] bg-[var(--hot)]/20'
+                            : 'border-slate-700 bg-slate-800/90 hover:border-[var(--hot)] hover:bg-slate-700'
+                        }`}
+                      >
+                        <div>
+                          <div className="font-mono text-xs uppercase tracking-widest text-white font-bold">
+                            {ability.name}
+                          </div>
+                          <div className="text-[10px] font-mono text-[var(--hot)] uppercase mt-0.5">
+                            {ability.char}
+                          </div>
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-400 leading-snug">
+                          {ability.desc}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <button
+                onClick={() => setSandboxAbilityModalTarget(null)}
+                className="mt-6 text-xs font-mono text-slate-500 hover:text-white uppercase tracking-widest cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Sandbox Modal: Money Guy 2nd Ability (Invest) — Double Effect */}
+      {sandboxBuffModalTarget && (() => {
+        const isYou = sandboxBuffModalTarget === 'you';
+        const activeList = (isYou ? myAbilities : oppAbilities).filter(
+          a => !a.startsWith('moneyguy') && !a.endsWith('_buffed')
+        );
+
+        const applyBuff = (targetAbilityId: string | 'all') => {
+          const updateFn = (prev: string[]) => {
+            const base = prev.includes('moneyguy2') ? prev : [...prev, 'moneyguy2'];
+            if (targetAbilityId === 'all') {
+              const buffs = activeList.map(id => `${id}_buffed`).filter(b => !base.includes(b));
+              return [...base, ...buffs];
+            }
+            const buffedId = `${targetAbilityId}_buffed`;
+            return base.includes(buffedId) ? base : [...base, buffedId];
+          };
+          if (isYou) {
+            setMyAbilities(prev => {
+              const next = updateFn(prev);
+              myAbilitiesRef.current = next;
+              return next;
+            });
+          } else {
+            setOppAbilities(prev => {
+              const next = updateFn(prev);
+              oppAbilitiesRef.current = next;
+              return next;
+            });
+          }
+          setSandboxBuffModalTarget(null);
+        };
+
+        return (
+          <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+            <div className="bg-slate-900 border border-yellow-500 p-8 rounded-xl max-w-md w-full shadow-2xl">
+              <h3 className="font-display text-2xl text-yellow-500 uppercase tracking-widest mb-2">
+                {isYou ? 'You' : 'Opponent'} — Invest: Double Effect
+              </h3>
+              <p className="text-slate-400 font-mono text-xs mb-6">
+                Select an active ability to double its effect!
+              </p>
+              <div className="flex flex-col gap-3">
+                {activeList.length === 0 ? (
+                  <div className="text-red-400 text-xs font-mono">
+                    Enable at least one non-Money Guy ability first to buff it!
+                  </div>
+                ) : (
+                  <>
+                    {activeList.map(abilityId => {
+                      const ab = ALL_SANDBOX_ABILITIES.find(x => x.id === abilityId);
+                      return (
+                        <button
+                          key={abilityId}
+                          onClick={() => applyBuff(abilityId)}
+                          className="py-3 px-4 border border-slate-700 bg-slate-800 hover:bg-yellow-500 hover:text-black font-mono text-xs uppercase tracking-widest transition-colors cursor-pointer rounded flex justify-between items-center"
+                        >
+                          <span className="font-bold">{ab?.name || abilityId}</span>
+                          <span className="text-[10px] opacity-75">{ab?.char}</span>
+                        </button>
+                      );
+                    })}
+                    {activeList.length > 1 && (
+                      <button
+                        onClick={() => applyBuff('all')}
+                        className="py-2.5 px-4 border border-yellow-500/60 bg-yellow-500/15 hover:bg-yellow-500 hover:text-black text-yellow-400 font-mono text-xs uppercase tracking-widest font-bold transition-colors cursor-pointer rounded mt-1"
+                      >
+                        ⚡ Buff All Active ({activeList.length})
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+              <button
+                onClick={() => setSandboxBuffModalTarget(null)}
+                className="mt-6 text-xs font-mono text-slate-500 hover:text-white uppercase tracking-widest cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* MATCH FINISHED: First to 5 Wins Screen */}
       {gameState === 'match_finished' && (
