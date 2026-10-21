@@ -159,6 +159,9 @@ export function ProfileOrb({ onOpenAuth }: Props) {
                       e.stopPropagation();
                       setCurrentLanguage(l.id);
                       resetDictionary();
+                      if (signedIn) {
+                        api.updateSettings({ language: l.id }).catch(() => {});
+                      }
                       setLangOpen(false);
                       setOpen(false);
                     }}

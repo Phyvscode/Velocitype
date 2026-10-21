@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api, type User, type UserProfileResponse } from '@/lib/api';
 import { applyGoogleFont } from '@/lib/fonts';
+import { saveLayoutConfig } from '@/lib/layoutConfig';
+import { setCurrentLanguage } from '@/lib/languages';
 
 
 interface AuthContextType {
@@ -28,9 +30,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(res.user);
       setStats(res.stats);
       if (res.user.fontFamily) applyGoogleFont(res.user.fontFamily);
-      if (res.user.portalBorder && typeof window !== 'undefined') {
-        localStorage.setItem('velocitype_portal_border', res.user.portalBorder);
-        window.dispatchEvent(new Event('storage'));
+      if (typeof window !== 'undefined') {
+        if (res.user.portalBorder) {
+          localStorage.setItem('velocitype_portal_border', res.user.portalBorder);
+          window.dispatchEvent(new Event('storage'));
+        }
+        if (res.user.layoutConfig && typeof res.user.layoutConfig === 'object') {
+          saveLayoutConfig(res.user.layoutConfig);
+          window.dispatchEvent(new Event('layoutConfigChanged'));
+        }
+        if (Array.isArray(res.user.selectedCharacters) && res.user.selectedCharacters.length === 3) {
+          localStorage.setItem('velocitype_ranked_chars', JSON.stringify(res.user.selectedCharacters));
+        }
+        if (res.user.language) {
+          setCurrentLanguage(res.user.language);
+        }
+        if (res.stats?.bestWpm && res.stats.bestWpm > 0) {
+          const currentHighest = parseInt(localStorage.getItem('velocitype_highest_wpm') || '0', 10) || 0;
+          if (res.stats.bestWpm > currentHighest) {
+            localStorage.setItem('velocitype_highest_wpm', String(res.stats.bestWpm));
+          }
+        }
       }
       if (res.user.colorTheme && typeof res.user.colorTheme === 'string') {
         import('@/lib/themes').then(({ THEMES }) => {

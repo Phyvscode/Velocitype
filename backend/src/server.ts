@@ -1,18 +1,25 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import { createServer } from 'http';
 import { connectDB } from './config/db.js';
+import { getAllowedOrigins } from './config/security.js';
+import { enforceHttps, sanitizeRequest, securityHeaders } from './middleware/security.js';
 import authRoutes from './routes/authRoutes.js';
 import wordRoutes from './routes/wordRoutes.js';
 import resultRoutes from './routes/resultRoutes.js';
+import sentenceRoutes from './routes/sentenceRoutes.js';
 import { initSocket } from './services/socketService.js';
 
-dotenv.config();
-
 const app = express();
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 5000;
 
@@ -22,19 +29,60 @@ connectDB();
 // Init Socket.io
 initSocket(httpServer);
 
-// Middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
-app.use(cors());
-app.use(helmet());
-app.use(morgan('dev'));
+// Security & HTTPS enforcement
+app.use(enforceHttps);
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'https:', 'ws:', 'wss:'],
+        frameAncestors: ["'none'"],
+      },
+    },
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+app.use(securityHeaders);
 
-// Routes
+// CORS configuration with origin allowlist
+const allowedOrigins = getAllowedOrigins();
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (same-origin, server-to-server, curl/tests) or in allowlist
+      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        return callback(null, true);
+      }
+      return callback(new Error('Origin not allowed by CORS policy'));
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    maxAge: 86400,
+  })
+);
+
+// Body parsers & NoSQL/prototype-pollution sanitization
+app.use(express.json({ limit: '6mb' }));
+app.use(express.urlencoded({ limit: '6mb', extended: true }));
+app.use(sanitizeRequest);
+
+if (process.env.NODE_ENV !== 'test') {
+  app.use(morgan('dev'));
+}
+
+// REST API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/words', wordRoutes);
 app.use('/api/results', resultRoutes);
+app.use('/api/sentences', sentenceRoutes);
 
-// Health check endpoint
+// Health check endpoints
 app.get('/', (_req: Request, res: Response) => {
   res.json({
     name: 'Velocitype Backend API',
@@ -45,13 +93,32 @@ app.get('/', (_req: Request, res: Response) => {
 });
 
 app.get('/api/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  const dbReady = mongoose.connection.readyState === 1;
+  res.status(dbReady ? 200 : 503).json({
+    status: dbReady ? 'ok' : 'degraded',
+    database: dbReady ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// Error handling middleware
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('Unhandled Error:', err.stack);
-  res.status(500).json({ message: err.message || 'Internal Server Error' });
+// 404 handler for unknown API routes
+app.use('/api/*', (_req: Request, res: Response) => {
+  res.status(404).json({ message: 'API endpoint not found' });
+});
+
+// Safe error handling middleware (never leaks stack traces to clients)
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof SyntaxError && 'body' in err) {
+    return res.status(400).json({ message: 'Invalid JSON payload' });
+  }
+  if (err?.type === 'entity.too.large') {
+    return res.status(413).json({ message: 'Request payload too large' });
+  }
+  if (err?.message === 'Origin not allowed by CORS policy') {
+    return res.status(403).json({ message: 'CORS policy: Origin not allowed' });
+  }
+  console.error('Unhandled Error:', err?.message || err);
+  return res.status(500).json({ message: 'Internal Server Error' });
 });
 
 httpServer.listen(PORT, () => {

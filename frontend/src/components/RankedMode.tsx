@@ -2,6 +2,7 @@ import { AnimatedCharacter } from './AnimatedCharacter';
 import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 import { LANGUAGES } from '@/lib/languages';
 import { THEMES } from '@/lib/themes';
 import { loadDictionary, DICTIONARY, applyScrewedEffects } from "@/lib/words";
@@ -761,6 +762,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
   const [myAbilities, setMyAbilities] = useState<string[]>([]);
   const [oppAbilities, setOppAbilities] = useState<string[]>([]);
   const oppAbilitiesRef = useRef<string[]>([]);
+  const [eventHorizonUsed, setEventHorizonUsed] = useState(false);
 
   const [frame, setFrame] = useState(1);
 
@@ -768,7 +770,10 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
     try {
       localStorage.setItem('velocitype_ranked_chars', JSON.stringify(selectedCharacters));
     } catch {}
-  }, [selectedCharacters]);
+    if (user && selectedCharacters.length === 3) {
+      api.updateSettings({ selectedCharacters }).catch(() => {});
+    }
+  }, [selectedCharacters, user]);
 
   useEffect(() => { oppAbilitiesRef.current = oppAbilities; }, [oppAbilities]);
   useEffect(() => { myWorstLetterRef.current = myWorstLetter; }, [myWorstLetter]);
@@ -871,6 +876,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
     const onMatchFound = async (data: RankedMatchData) => {
       setQueueing(false);
       setMatchData(data);
+      setEventHorizonUsed(false);
       
       // If host, generate payload
       if (data.role === 'host') {
@@ -956,6 +962,19 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
     const onRoundEnd = (data: { winnerId: string; scores: Record<string, number> }) => {
       setGameState('round_finished');
       setScores(data.scores);
+      // Event Horizon is 1-time only for that round: consume it when the round finishes
+      setMyAbilities(prev => {
+        if (prev.includes('gravity3') || prev.includes('gravity3_buffed')) {
+          setEventHorizonUsed(true);
+          return prev.filter(a => a !== 'gravity3' && a !== 'gravity3_buffed');
+        }
+        return prev;
+      });
+      setOppAbilities(prev => {
+        const next = prev.filter(a => a !== 'gravity3' && a !== 'gravity3_buffed');
+        oppAbilitiesRef.current = next;
+        return next;
+      });
     };
 
     const onNextRound = (data: { round: number }) => {
@@ -993,9 +1012,9 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       gravityNoticeTimerRef.current = setTimeout(() => setGravityNotice(null), 3500);
     };
 
-    // Time Warp: server adds time for BOTH players when the caster is slower (max 3 per match)
+    // Time Warp: when timer hits 0, server adds +10s (+20s if buffed) for BOTH players when the caster is slower (max 3 per match)
     const onGravityTimeSync = (data: { amountSec: number; casterId?: string; usesLeft?: number }) => {
-      setTimeLeft(prev => prev + data.amountSec);
+      setTimeLeft(data.amountSec);
       showGravityNotice(`TIME WARP! +${data.amountSec}s for both players${data.usesLeft !== undefined ? ` (${data.usesLeft} left)` : ''}`);
     };
 
@@ -1492,10 +1511,10 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
           { id: 'joker1', name: 'Delusion', cost: 30, char: 'joker', desc: 'All mistakes appear correct' },
           { id: 'joker2', name: 'Blindness', cost: 60, char: 'joker', desc: 'Masks WPM and raw stats as ???' },
           { id: 'joker3', name: 'Amnesia', cost: 100, char: 'joker', desc: 'Only reveals every 5th letter, timer as ???' },
-          { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity', desc: '+10s for both if your WPM is lower' },
+          { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity', desc: '+10s when timer hits 0 if your WPM is lower' },
           { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity', desc: 'Black Hole Sabotage popup (Ctrl+X)' },
-          { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity', desc: 'After 30s, ends round if your WPM is higher' }
-        ].filter(a => !selectedCharacters.includes(a.char) && !myAbilities.includes(a.id));
+          { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity', desc: 'After 30s, ends round if your WPM is higher (1 round only)' }
+        ].filter(a => !selectedCharacters.includes(a.char) && !myAbilities.includes(a.id) && !(a.id === 'gravity3' && eventHorizonUsed));
 
         const selectExternalAbility = (abilityId: string) => {
           const mgCost = { c: 300, h: 30 };
@@ -1891,7 +1910,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
   return (
     <div className="grid grid-cols-3 gap-3 mb-6">
       {shopAbilities.map(ability => {
-        const hasIt = myAbilities.includes(ability.id) || myBuffedAbilities.includes(ability.id);
+        const hasIt = myAbilities.includes(ability.id) || myBuffedAbilities.includes(ability.id) || (ability.id === 'gravity3' && eventHorizonUsed);
         const mgCost = getMG(ability.cost);
         const canAfford = ability.char === 'moneyguy'
           ? (myCharge >= ability.cost || (myCoins >= mgCost.c && myHearts >= mgCost.h))

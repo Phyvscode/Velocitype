@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import type { RowKey } from '@/lib/words';
 import { filterWords, loadDictionary } from '@/lib/words';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 import { parseFile, extractSentences, type ParsedDocument } from '@/lib/fileParser';
 import { generateSentences } from '@/lib/quotes';
 import LiveKeyboard, { getKeyLabel } from './LiveKeyboard';
@@ -497,18 +498,29 @@ export default function SetupScreen({
   });
 
   useEffect(() => {
+    if (stats?.bestWpm && stats.bestWpm > 0) {
+      setHighestWpm((prev) => {
+        const next = prev ? Math.max(prev, stats.bestWpm) : stats.bestWpm;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('velocitype_highest_wpm', String(next));
+        }
+        return next;
+      });
+    }
+  }, [stats?.bestWpm]);
+
+  useEffect(() => {
     if (user) {
+      const serverPrefs = user.setupPrefs;
       const stored = localStorage.getItem(`velocitype_settings_${user.id}`);
-      if (stored) {
-        try {
-          const s = JSON.parse(stored);
-          if (s.minLen) setMinLen(s.minLen);
-          if (s.maxLen) setMaxLen(s.maxLen);
-          if (s.rows) setRows(s.rows);
-          if (s.durationWords) setDurationWords(s.durationWords);
-          if (s.durationFile) setDurationFile(s.durationFile);
-          if (s.durationSentences) setDurationSentences(s.durationSentences);
-        } catch(e) {}
+      const s = serverPrefs || (stored ? (() => { try { return JSON.parse(stored); } catch { return null; } })() : null);
+      if (s) {
+        if (s.minLen) setMinLen(s.minLen);
+        if (s.maxLen) setMaxLen(s.maxLen);
+        if (s.rows) setRows(s.rows);
+        if (s.durationWords) setDurationWords(String(s.durationWords));
+        if (s.durationFile) setDurationFile(String(s.durationFile));
+        if (s.durationSentences) setDurationSentences(String(s.durationSentences));
       }
     } else {
       setMinLen(2);
@@ -523,14 +535,19 @@ export default function SetupScreen({
       const parsedMaxL = parseInt(String(maxLen), 10);
       
       if (!isNaN(parsedMinL) && !isNaN(parsedMaxL)) {
-        localStorage.setItem(`velocitype_settings_${user.id}`, JSON.stringify({
+        const nextSetupPrefs = {
           minLen: parsedMinL,
           maxLen: parsedMaxL,
           rows,
           durationWords,
           durationFile,
           durationSentences,
-        }));
+        };
+        localStorage.setItem(`velocitype_settings_${user.id}`, JSON.stringify(nextSetupPrefs));
+        const timer = setTimeout(() => {
+          api.updateSettings({ setupPrefs: nextSetupPrefs }).catch(() => {});
+        }, 800);
+        return () => clearTimeout(timer);
       }
     }
   }, [user, minLen, maxLen, rows, durationWords, durationFile, durationSentences]);

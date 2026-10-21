@@ -49,7 +49,7 @@ export default function ResultsScreen({ typed, duration, rows, cia, onPlayAgain,
 
   // Save result to MongoDB backend via Node.js API
   useEffect(() => {
-    if (user && !resultSavedRef.current) {
+    if (user && !resultSavedRef.current && duration > 0) {
       resultSavedRef.current = true;
       api
         .saveResult({
@@ -57,13 +57,16 @@ export default function ResultsScreen({ typed, duration, rows, cia, onPlayAgain,
           accuracy,
           correctCount,
           totalWords: typed.length,
+          correctChars,
           duration,
           rows,
+          cia,
+          typed: typed.map((t) => ({ word: t.word, correct: t.correct })),
         })
         .then(() => refreshUser())
         .catch((err) => console.error('Failed to auto-save test result to backend:', err));
     }
-  }, [user, wpm, accuracy, correctCount, typed.length, duration, rows, refreshUser]);
+  }, [user, wpm, accuracy, correctCount, correctChars, typed, duration, rows, cia, refreshUser]);
 
   const ensureState = (word: string): WordState => {
     if (states[word]) return states[word];

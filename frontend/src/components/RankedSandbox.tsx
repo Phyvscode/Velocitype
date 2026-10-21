@@ -25,9 +25,9 @@ export const ALL_SANDBOX_ABILITIES = [
   { id: 'joker1', name: 'Delusion', cost: 30, char: 'joker', desc: 'All mistakes appear correct/green' },
   { id: 'joker2', name: 'Blindness', cost: 60, char: 'joker', desc: 'Masks WPM and raw stats as ???' },
   { id: 'joker3', name: 'Amnesia', cost: 100, char: 'joker', desc: 'Only reveals every 5th letter, timer as ???' },
-  { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity', desc: '+10s for both if your WPM is lower (max 3/match)' },
+  { id: 'gravity1', name: 'Time Warp', cost: 40, char: 'gravity', desc: '+10s when timer hits 0 if your WPM is lower (max 3/match)' },
   { id: 'gravity2', name: 'Black Hole', cost: 70, char: 'gravity', desc: 'Black Hole Sabotage popup (Ctrl+X to escape)' },
-  { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity', desc: 'After 30s, ends the round if your WPM is higher' },
+  { id: 'gravity3', name: 'Event Horizon', cost: 110, char: 'gravity', desc: 'After 30s, ends the round if your WPM is higher (1 round only)' },
   { id: 'moneyguy1', name: 'Bribe', cost: 30, char: 'moneyguy', desc: 'Golden letters (+5 coins) & mistakes grant +3 hearts' },
   { id: 'moneyguy2', name: 'Invest', cost: 60, char: 'moneyguy', desc: 'Doubles the effect of active character abilities' },
   { id: 'moneyguy3', name: 'Buyout', cost: 100, char: 'moneyguy', desc: 'Choose an ability from unselected characters' },
@@ -537,6 +537,18 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     if (myTimeoutRef.current) clearTimeout(myTimeoutRef.current);
     if (oppTimeoutRef.current) clearTimeout(oppTimeoutRef.current);
 
+    // Event Horizon is 1-time only for that round: consume it when the round ends
+    setMyAbilities(prev => {
+      const next = prev.filter(a => a !== 'gravity3' && a !== 'gravity3_buffed');
+      myAbilitiesRef.current = next;
+      return next;
+    });
+    setOppAbilities(prev => {
+      const next = prev.filter(a => a !== 'gravity3' && a !== 'gravity3_buffed');
+      oppAbilitiesRef.current = next;
+      return next;
+    });
+
     // Determine round winner: if forcedWinner (e.g. Event Horizon) or targetWinner was chosen, award to them
     const myCorrect = myLetterStatesRef.current.filter(x => x === 1 || x === 3).length;
     const oppCorrect = oppLetterStatesRef.current.filter(x => x === 1 || x === 3).length;
@@ -594,12 +606,6 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
     const interval = setInterval(() => {
       roundElapsedRef.current += 1;
       const t = timeLeftRef.current;
-      if (t <= 1) {
-        timeLeftRef.current = 0;
-        setTimeLeft(0);
-        handleEndRound();
-        return;
-      }
 
       // Trigger Gravity Sabotage popup if Opponent has gravity2 (Black Hole)
       const oppHasBH = oppAbilitiesRef.current.includes('gravity2') || oppAbilitiesRef.current.includes('gravity2_buffed');
@@ -622,7 +628,7 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
         { abilities: oppAbilitiesRef.current, wpm: oppWpmRef.current, otherWpm: myWpmRef.current, usesRef: oppWarpUsesRef, name: 'Opponent' },
       ];
 
-      // Event Horizon: after 30s, if the caster's WPM beats the other player's, end the round instantly
+      // Event Horizon: 1-time only for that round — after 30s, if the caster's WPM beats the other player's, end the round instantly
       const horizon = casters.find(
         c => (c.abilities.includes('gravity3') || c.abilities.includes('gravity3_buffed')) && roundElapsedRef.current >= 30 && c.wpm > c.otherWpm
       );
@@ -634,16 +640,21 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
 
       let next = t - 1;
 
-      // Time Warp: when <= 10s remain, a slower caster adds +10s for BOTH players (max 3 per match)
-      if (next <= 10) {
+      // Time Warp: when the timer hits 0, a slower caster adds +10s (+20s if buffed) for BOTH players (max 3 per match)
+      if (next <= 0) {
         const warp = casters.find(
           c => (c.abilities.includes('gravity1') || c.abilities.includes('gravity1_buffed')) && c.usesRef.current < 3 && c.wpm < c.otherWpm
         );
         if (warp) {
           warp.usesRef.current += 1;
           const bonusSec = warp.abilities.includes('gravity1_buffed') ? 20 : 10;
-          next += bonusSec;
+          next = bonusSec;
           showSandboxGravityNotice(`TIME WARP! +${bonusSec}s for both players (${warp.name}: ${3 - warp.usesRef.current} left)`);
+        } else {
+          timeLeftRef.current = 0;
+          setTimeLeft(0);
+          handleEndRound();
+          return;
         }
       }
 

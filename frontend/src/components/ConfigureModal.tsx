@@ -1,16 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getLayoutConfig, saveLayoutConfig, LayoutConfig, DEFAULT_CONFIG } from '@/lib/layoutConfig';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 import LiveKeyboard from './LiveKeyboard';
 
 export default function ConfigureModal() {
+  const { user } = useAuth();
   const [config, setConfig] = useState<LayoutConfig>(getLayoutConfig());
 
   useEffect(() => {
     saveLayoutConfig(config);
-    // Dispatch a custom event so other components (like App or SetupScreen) could know if they cared,
-    // but typically GameScreen reads this on mount.
     window.dispatchEvent(new Event('layoutConfigChanged'));
-  }, [config]);
+    if (!user) return;
+    const timer = setTimeout(() => {
+      api.updateSettings({ layoutConfig: config }).catch(() => {});
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [config, user]);
 
   // Dragging state
   // Dragging state for Box

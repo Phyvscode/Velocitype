@@ -10,7 +10,7 @@ interface Props {
 
 export default function LeaderboardModal({ isOpen, onClose }: Props) {
   const { user } = useAuth();
-  const [tab, setTab] = useState<'leaderboard' | 'history'>('leaderboard');
+  const [tab, setTab] = useState<'leaderboard' | 'elo' | 'history'>('leaderboard');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +19,10 @@ export default function LeaderboardModal({ isOpen, onClose }: Props) {
     setLoading(true);
     try {
       if (tab === 'leaderboard') {
-        const data = await api.getLeaderboard();
+        const data = await api.getLeaderboard('wpm', 10);
+        setLeaderboard(data);
+      } else if (tab === 'elo') {
+        const data = await api.getLeaderboard('elo', 10);
         setLeaderboard(data);
       } else if (user) {
         const data = await api.getHistory();
@@ -29,6 +32,17 @@ export default function LeaderboardModal({ isOpen, onClose }: Props) {
       console.error('Failed to load leaderboard/history:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteHistory = async (id: string) => {
+    const prev = history;
+    setHistory((h) => h.filter((item) => item._id !== id));
+    try {
+      await api.deleteResult(id);
+    } catch (err) {
+      console.error('Failed to delete test result:', err);
+      setHistory(prev);
     }
   };
 
@@ -73,6 +87,16 @@ export default function LeaderboardModal({ isOpen, onClose }: Props) {
              Global Top 10
           </button>
           <button
+            onClick={() => setTab('elo')}
+            className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+              tab === 'elo'
+                ? 'bg-amber-400 text-slate-950 shadow-md'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+             Ranked ELO
+          </button>
+          <button
             onClick={() => setTab('history')}
             className={`flex-1 py-2 text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
               tab === 'history'
@@ -88,13 +112,12 @@ export default function LeaderboardModal({ isOpen, onClose }: Props) {
         <div className="flex-1 overflow-y-auto pr-1">
           {loading ? (
             <div className="flex items-center justify-center py-16 text-slate-400">
-              
+              Loading...
             </div>
-          ) : tab === 'leaderboard' ? (
+          ) : tab === 'leaderboard' || tab === 'elo' ? (
             leaderboard.length === 0 ? (
               <div className="text-center py-12 text-slate-500">
-                
-                <p>No high scores recorded yet. Be the first!</p>
+                <p>No rankings recorded yet. Be the first!</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -125,10 +148,17 @@ export default function LeaderboardModal({ isOpen, onClose }: Props) {
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-amber-400">{item.wpm} WPM</div>
-                        <div className="text-xs text-slate-400">{item.accuracy}% acc</div>
-                      </div>
+                      {tab === 'elo' ? (
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-amber-400">{item.elo ?? 10} ELO</div>
+                          <div className="text-xs text-slate-400">Ranked Rating</div>
+                        </div>
+                      ) : (
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-amber-400">{item.wpm} WPM</div>
+                          <div className="text-xs text-slate-400">{item.accuracy}% acc</div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -169,6 +199,15 @@ export default function LeaderboardModal({ isOpen, onClose }: Props) {
                     <div className="text-slate-400 text-xs flex items-center gap-1">
                        {item.accuracy}%
                     </div>
+                    {item._id && (
+                      <button
+                        onClick={() => handleDeleteHistory(item._id)}
+                        className="text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-1"
+                        title="Delete result"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

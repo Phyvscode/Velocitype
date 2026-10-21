@@ -4,9 +4,16 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  role?: 'user' | 'admin';
+  elo?: number;
   fontFamily?: string;
   colorTheme?: any;
   bgTheme?: any;
+  fullTheme?: string | null;
+  language?: string;
+  selectedCharacters?: string[];
+  layoutConfig?: any;
+  setupPrefs?: any;
   avatarUrl?: string;
   portalBorder?: string;
 }
@@ -17,6 +24,10 @@ export interface UserProfileResponse {
     testCount: number;
     savedWordsCount: number;
     bestWpm: number;
+    avgWpm?: number;
+    avgAccuracy?: number;
+    totalDuration?: number;
+    elo?: number;
   };
 }
 
@@ -29,24 +40,44 @@ export interface SavedWord {
 
 export interface TestResultData {
   wpm: number;
+  rawWpm?: number;
   accuracy: number;
+  consistency?: number;
   correctCount: number;
   totalWords: number;
+  correctChars?: number;
   duration: number;
+  mode?: string;
   rows?: string[];
+  cia?: { c: number; i: number; a: number };
+  typed?: Array<{ word: string; correct: boolean }>;
 }
 
 export interface LeaderboardEntry {
   id: string;
   username: string;
+  elo?: number;
   wpm: number;
   accuracy: number;
   duration: number;
   createdAt: string;
 }
 
+export interface UserSettingsPayload {
+  fontFamily?: string;
+  colorTheme?: any;
+  bgTheme?: any;
+  fullTheme?: string | null;
+  avatarUrl?: string;
+  portalBorder?: string;
+  language?: string;
+  selectedCharacters?: string[];
+  layoutConfig?: any;
+  setupPrefs?: any;
+}
+
 class ApiClient {
-  private getToken(): string | null {
+  public getToken(): string | null {
     return localStorage.getItem('velocitype_token');
   }
 
@@ -141,8 +172,9 @@ class ApiClient {
   }
 
   // Words Endpoints
-  public async getSavedWords(): Promise<SavedWord[]> {
-    return this.request<SavedWord[]>('/words/saved');
+  public async getSavedWords(query?: string): Promise<SavedWord[]> {
+    const qs = query ? `?q=${encodeURIComponent(query)}` : '';
+    return this.request<SavedWord[]>(`/words/saved${qs}`);
   }
 
   public async saveWord(word: string, meaning: string): Promise<SavedWord> {
@@ -152,8 +184,15 @@ class ApiClient {
     });
   }
 
+  public async updateSavedWord(id: string, meaning: string): Promise<SavedWord> {
+    return this.request<SavedWord>(`/words/saved/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ meaning }),
+    });
+  }
+
   public async deleteSavedWord(id: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/words/saved/${id}`, {
+    return this.request<{ message: string }>(`/words/saved/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
   }
@@ -166,18 +205,50 @@ class ApiClient {
     });
   }
 
-  public async getHistory(): Promise<any[]> {
-    return this.request<any[]>('/results/history');
+  public async getHistory(limit = 20, page = 1): Promise<any[]> {
+    return this.request<any[]>(`/results/history?limit=${limit}&page=${page}`);
   }
 
-  public async getLeaderboard(): Promise<LeaderboardEntry[]> {
-    return this.request<LeaderboardEntry[]>('/results/leaderboard');
+  public async getUserStats(): Promise<any> {
+    return this.request<any>('/results/stats');
   }
 
-  public async updateSettings(settings: { fontFamily?: string, colorTheme?: any, avatarUrl?: string, portalBorder?: string, bgTheme?: any }): Promise<any> {
-    return this.request('/auth/settings', {
+  public async getLeaderboard(type: 'wpm' | 'elo' = 'wpm', limit = 10): Promise<LeaderboardEntry[]> {
+    return this.request<LeaderboardEntry[]>(`/results/leaderboard?type=${type}&limit=${limit}`);
+  }
+
+  public async deleteResult(id: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/results/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // User Settings & Profile
+  public async updateSettings(settings: UserSettingsPayload): Promise<{ message: string; user: User }> {
+    return this.request<{ message: string; user: User }>('/auth/settings', {
       method: 'PUT',
       body: JSON.stringify(settings),
+    });
+  }
+
+  public async updateProfile(payload: { username?: string; avatarUrl?: string }): Promise<{ message: string; user: User }> {
+    return this.request<{ message: string; user: User }>('/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // Backend AI Sentence Generation Proxy
+  public async generateSentences(params: {
+    rows?: string[];
+    minWords?: number;
+    maxWords?: number;
+    count?: number;
+    theme?: string;
+  }): Promise<{ sentences: string[] }> {
+    return this.request<{ sentences: string[] }>('/sentences/generate', {
+      method: 'POST',
+      body: JSON.stringify(params),
     });
   }
 }

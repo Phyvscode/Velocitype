@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
+import { api } from '@/lib/api';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL 
   ? import.meta.env.VITE_API_URL.replace('/api', '') 
@@ -22,8 +23,9 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // We only connect if user is logged in
-    if (!user) {
+    const token = api.getToken();
+    // Only connect if user is logged in and has a valid JWT token
+    if (!user || !token) {
       if (socket) {
         socket.disconnect();
         setSocket(null);
@@ -34,6 +36,9 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     const newSocket = io(SOCKET_URL, {
       transports: ['websocket'],
+      auth: {
+        token,
+      },
     });
 
     newSocket.on('connect', () => {

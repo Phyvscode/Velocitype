@@ -1,4 +1,5 @@
 import { RowKey, filterWords } from './words';
+import { api } from './api';
 
 export interface Quote {
   text: string;
@@ -24,6 +25,17 @@ export async function generateSentences(
 ): Promise<string[]> {
   let sentences: string[] = [];
   
+  if (theme && theme.trim().length > 0 && (!apiKey || apiKey.trim().length === 0)) {
+    try {
+      const proxyRes = await api.generateSentences({ rows, minWords, maxWords, count, theme: theme.trim() });
+      if (Array.isArray(proxyRes.sentences) && proxyRes.sentences.length > 0) {
+        return proxyRes.sentences.map(s => s.toLowerCase().replace(/[.,!?;:]/g, ''));
+      }
+    } catch {
+      // Fall back to local dictionary/Markov generation if backend GEMINI_API_KEY is not configured
+    }
+  }
+
   if (apiKey && apiKey.trim().length > 0) {
     sentences = await generateWithGemini(apiKey.trim(), rows, minWords, maxWords, count, theme, customLetters, extraInitial, extraMiddle, extraFinal);
   } else if (rows.length > 0) {

@@ -1,7 +1,10 @@
 
 import { Server, Socket } from 'socket.io';
 import { Server as HttpServer } from 'http';
+import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
+import { getAllowedOrigins, getJwtSecret } from '../config/security.js';
 
 interface Player {
   id: string; // Socket ID
@@ -67,6 +70,7 @@ interface RankedMatch {
   roundEndAt?: number; // Epoch ms when the current round ends (extended by Time Warp)
   gravityInterval?: NodeJS.Timeout; // Watches Gravity abilities (Time Warp / Event Horizon)
   timeWarpUses?: Record<string, number>; // Time Warp uses per player id (max 3 per match)
+  eventHorizonUsed?: Record<string, boolean>; // Event Horizon is 1-time only (for that round)
 }
 
 const MAX_TIME_WARPS_PER_MATCH = 3;
@@ -84,39 +88,87 @@ function generateLobbyCode() {
 }
 
 export const initSocket = (httpServer: HttpServer) => {
+  const allowedOrigins = getAllowedOrigins();
   const io = new Server(httpServer, {
     cors: {
-      origin: '*', // Adjust this for production
+      origin: allowedOrigins,
       methods: ['GET', 'POST'],
+      credentials: true,
     },
   });
 
+  // Authenticate every Socket.io connection via JWT and resolve user identity from MongoDB
+  io.use(async (socket, next) => {
+    try {
+      const rawToken =
+        socket.handshake.auth?.token ||
+        (typeof socket.handshake.headers?.authorization === 'string' &&
+        socket.handshake.headers.authorization.startsWith('Bearer ')
+          ? socket.handshake.headers.authorization.slice(7).trim()
+          : undefined);
+
+      if (!rawToken || typeof rawToken !== 'string') {
+        return next(new Error('Authentication error: token required'));
+      }
+
+      const decoded = jwt.verify(rawToken, getJwtSecret()) as { id?: string; purpose?: string };
+      if (!decoded.id || decoded.purpose || !mongoose.isValidObjectId(decoded.id)) {
+        return next(new Error('Authentication error: invalid token'));
+      }
+
+      const dbUser = await User.findById(decoded.id).select('username elo');
+      if (!dbUser) {
+        return next(new Error('Authentication error: user not found'));
+      }
+
+      socket.data.user = {
+        userId: dbUser._id.toString(),
+        username: dbUser.username,
+        elo: dbUser.elo,
+      };
+      return next();
+    } catch {
+      return next(new Error('Authentication error: token verification failed'));
+    }
+  });
+
   io.on('connection', (socket: Socket) => {
-    console.log(`Socket connected: ${socket.id}`);
+    const authUser = socket.data.user as { userId: string; username: string; elo: number } | undefined;
+    if (!authUser) {
+      socket.disconnect(true);
+      return;
+    }
+    console.log(`Socket connected: ${socket.id} (${authUser.username})`);
 
     // ----- CASUAL MODE LOBBIES -----
-    socket.on('createLobby', (data: { userId: string; username: string; elo: number; isPublic: boolean; maxPlayers: number; config: GameConfig }) => {
+    socket.on('createLobby', async (data: { userId?: string; username?: string; elo?: number; isPublic: boolean; maxPlayers: number; config: GameConfig }) => {
+      const freshUser = await User.findById(authUser.userId).select('username elo');
+      const verifiedUsername = freshUser?.username || authUser.username;
+      const verifiedElo = freshUser?.elo ?? authUser.elo;
+
       let code = generateLobbyCode();
       while (lobbies[code]) {
         code = generateLobbyCode();
       }
 
+      const safeMaxPlayers = Math.min(100, Math.max(2, Number(data?.maxPlayers) || 4));
+
       const lobby: Lobby = {
         id: code,
         hostId: socket.id,
-        hostName: data.username,
-        isPublic: data.isPublic,
-        maxPlayers: data.maxPlayers,
+        hostName: verifiedUsername,
+        isPublic: Boolean(data?.isPublic),
+        maxPlayers: safeMaxPlayers,
         players: [{
           id: socket.id,
-          userId: data.userId,
-          username: data.username,
-          elo: data.elo,
+          userId: authUser.userId,
+          username: verifiedUsername,
+          elo: verifiedElo,
           progress: 0,
           wpm: 0,
           isFinished: false,
         }],
-        config: data.config,
+        config: data?.config || { mode: 'words', textPayload: [], duration: 60 },
         state: 'waiting',
       };
 
@@ -133,29 +185,36 @@ export const initSocket = (httpServer: HttpServer) => {
       socket.emit('publicLobbiesUpdated', getPublicLobbies());
     });
 
-    socket.on('joinLobby', (data: { code: string; userId: string; username: string; elo: number }) => {
-      const lobby = lobbies[data.code];
+    socket.on('joinLobby', async (data: { code: string; userId?: string; username?: string; elo?: number }) => {
+      const code = typeof data?.code === 'string' ? data.code.trim().toUpperCase() : '';
+      const lobby = lobbies[code];
       if (!lobby) return socket.emit('error', 'Lobby not found');
       if (lobby.state !== 'waiting') return socket.emit('error', 'Game has already started');
       if (lobby.players.length >= lobby.maxPlayers) return socket.emit('error', 'Lobby is full');
 
-      const existingPlayer = lobby.players.find(p => p.userId === data.userId);
+      const freshUser = await User.findById(authUser.userId).select('username elo');
+      const verifiedUsername = freshUser?.username || authUser.username;
+      const verifiedElo = freshUser?.elo ?? authUser.elo;
+
+      const existingPlayer = lobby.players.find(p => p.userId === authUser.userId);
       if (existingPlayer) {
          existingPlayer.id = socket.id;
+         existingPlayer.username = verifiedUsername;
+         existingPlayer.elo = verifiedElo;
       } else {
         lobby.players.push({
           id: socket.id,
-          userId: data.userId,
-          username: data.username,
-          elo: data.elo,
+          userId: authUser.userId,
+          username: verifiedUsername,
+          elo: verifiedElo,
           progress: 0,
           wpm: 0,
           isFinished: false,
         });
       }
 
-      socket.join(data.code);
-      io.to(data.code).emit('lobbyUpdated', lobby);
+      socket.join(code);
+      io.to(code).emit('lobbyUpdated', lobby);
 
       if (lobby.isPublic) {
         io.emit('publicLobbiesUpdated', getPublicLobbies());
@@ -204,13 +263,13 @@ export const initSocket = (httpServer: HttpServer) => {
     });
 
     socket.on('updateProgress', async (data: { code: string; progress: number; wpm: number; isFinished: boolean; cia?: {c: number, i: number, a: number} }) => {
-      const lobby = lobbies[data.code];
+      const lobby = lobbies[data?.code];
       if (!lobby || lobby.state !== 'playing') return;
 
       const player = lobby.players.find(p => p.id === socket.id);
       if (player) {
-        player.progress = data.progress;
-        player.wpm = data.wpm;
+        player.progress = Math.min(100, Math.max(0, Number(data.progress) || 0));
+        player.wpm = Math.min(350, Math.max(0, Math.round(Number(data.wpm) || 0)));
         if (data.isFinished && !player.isFinished) player.isFinished = true;
 
         io.to(data.code).emit('playerProgress', { playerId: socket.id, progress: player.progress, wpm: player.wpm, isFinished: player.isFinished, cia: data.cia });
@@ -230,18 +289,22 @@ export const initSocket = (httpServer: HttpServer) => {
     });
 
     // ----- RANKED MODE -----
-    socket.on('joinRankedQueue', (data: { userId: string; username: string; elo: number; language: string; colorTheme?: any; fontFamily?: string; bgTheme?: any; characters?: string[]; fullTheme?: any }) => {
-      const lang = data.language || 'english';
+    socket.on('joinRankedQueue', async (data: { userId?: string; username?: string; elo?: number; language: string; colorTheme?: any; fontFamily?: string; bgTheme?: any; characters?: string[]; fullTheme?: any }) => {
+      const lang = typeof data?.language === 'string' && data.language.trim() ? data.language.trim().toLowerCase() : 'english';
       if (!rankedQueue[lang]) rankedQueue[lang] = [];
+
+      const freshUser = await User.findById(authUser.userId).select('username elo');
+      const verifiedUsername = freshUser?.username || authUser.username;
+      const verifiedElo = freshUser?.elo ?? authUser.elo;
 
       // Avoid duplicate queueing (allow same userId if different socket for testing in multiple tabs)
       rankedQueue[lang] = rankedQueue[lang].filter(p => p.id !== socket.id);
 
       const player: RankedPlayer = {
         id: socket.id,
-        userId: data.userId,
-        username: data.username,
-        elo: data.elo,
+        userId: authUser.userId,
+        username: verifiedUsername,
+        elo: verifiedElo,
         ready: false,
         score: 0,
         progress: 0,
@@ -250,7 +313,7 @@ export const initSocket = (httpServer: HttpServer) => {
         colorTheme: data.colorTheme,
         fontFamily: data.fontFamily,
         bgTheme: data.bgTheme,
-        characters: data.characters,
+        characters: Array.isArray(data.characters) ? data.characters.slice(0, 3) : [],
         fullTheme: data.fullTheme
       };
 
@@ -337,20 +400,52 @@ export const initSocket = (httpServer: HttpServer) => {
             match.roundEndAt = roundStartAt + 60000;
             if (match.gravityInterval) clearInterval(match.gravityInterval);
             if (!match.timeWarpUses) match.timeWarpUses = {};
+            if (!match.eventHorizonUsed) match.eventHorizonUsed = {};
 
-            const handleRoundEnd = async () => {
+            const handleRoundEnd = async (forcedByEventHorizon = false) => {
               if (rankedMatches[match.id] && match.state === 'playing' && match.currentRound === roundIndex) {
                 // Time Warp may have pushed the end of the round further out
                 const remainingMs = (match.roundEndAt || 0) - Date.now();
-                if (remainingMs > 50) {
-                  match.roundTimer = setTimeout(handleRoundEnd, remainingMs);
+                if (!forcedByEventHorizon && remainingMs > 50) {
+                  match.roundTimer = setTimeout(() => handleRoundEnd(false), remainingMs);
                   return;
+                }
+
+                const playersList = Object.values(match.players);
+
+                // Time Warp: when timer hits 0, a slower caster adds +10s (+20s if buffed) for BOTH players (max 3 per match)
+                if (!forcedByEventHorizon && playersList.length >= 2) {
+                  for (const caster of playersList) {
+                    const opp = playersList.find(p => p.id !== caster.id)!;
+                    const ab = caster.abilities || [];
+                    const used = match.timeWarpUses![caster.id] || 0;
+                    if ((ab.includes('gravity1') || ab.includes('gravity1_buffed')) && used < MAX_TIME_WARPS_PER_MATCH && caster.wpm < opp.wpm) {
+                      const bonusMs = ab.includes('gravity1_buffed') ? TIME_WARP_BONUS_MS * 2 : TIME_WARP_BONUS_MS;
+                      match.timeWarpUses![caster.id] = used + 1;
+                      match.roundEndAt = Date.now() + bonusMs;
+                      if (match.roundTimer) clearTimeout(match.roundTimer);
+                      match.roundTimer = setTimeout(() => handleRoundEnd(false), bonusMs);
+                      io.to(match.id).emit('rankedGravityTimeSync', {
+                        amountSec: bonusMs / 1000,
+                        casterId: caster.id,
+                        usesLeft: MAX_TIME_WARPS_PER_MATCH - (used + 1)
+                      });
+                      return;
+                    }
+                  }
+                }
+
+                // Event Horizon is 1-time only for the round it was active in: consume it at round end
+                for (const p of playersList) {
+                  if (p.abilities && (p.abilities.includes('gravity3') || p.abilities.includes('gravity3_buffed'))) {
+                    match.eventHorizonUsed![p.id] = true;
+                    p.abilities = p.abilities.filter(a => a !== 'gravity3' && a !== 'gravity3_buffed');
+                  }
                 }
 
                 if (match.gravityInterval) clearInterval(match.gravityInterval);
                 match.state = 'round_finished';
                 
-                const playersList = Object.values(match.players);
                 let roundWinner = playersList[0];
                 let roundLoser = playersList[1];
                 
@@ -390,7 +485,7 @@ export const initSocket = (httpServer: HttpServer) => {
                 }
               }
             };
-            match.roundTimer = setTimeout(handleRoundEnd, 60000);
+            match.roundTimer = setTimeout(() => handleRoundEnd(false), 60000);
 
             // Gravity abilities, evaluated server-side from live WPM
             match.gravityInterval = setInterval(() => {
@@ -402,41 +497,25 @@ export const initSocket = (httpServer: HttpServer) => {
               if (players.length < 2) return;
 
               const elapsedSec = (Date.now() - roundStartAt) / 1000;
-              const remainingSec = ((match.roundEndAt || 0) - Date.now()) / 1000;
 
-              // Event Horizon: after 30s, if the caster out-types the opponent, end the round instantly
+              // Event Horizon: 1-time only for that round — after 30s, if the caster out-types the opponent, end the round instantly
               for (const caster of players) {
                 const opp = players.find(p => p.id !== caster.id)!;
                 const ab = caster.abilities || [];
-                if ((ab.includes('gravity3') || ab.includes('gravity3_buffed')) && elapsedSec >= EVENT_HORIZON_MIN_ELAPSED_SEC && caster.wpm > opp.wpm) {
+                if (
+                  !match.eventHorizonUsed![caster.id] &&
+                  (ab.includes('gravity3') || ab.includes('gravity3_buffed')) &&
+                  elapsedSec >= EVENT_HORIZON_MIN_ELAPSED_SEC &&
+                  caster.wpm > opp.wpm
+                ) {
+                  match.eventHorizonUsed![caster.id] = true;
+                  caster.abilities = ab.filter(a => a !== 'gravity3' && a !== 'gravity3_buffed');
                   io.to(match.id).emit('rankedGravityEventHorizon', { casterId: caster.id });
                   if (match.gravityInterval) clearInterval(match.gravityInterval);
                   if (match.roundTimer) clearTimeout(match.roundTimer);
                   match.roundEndAt = Date.now();
-                  handleRoundEnd();
+                  handleRoundEnd(true);
                   return;
-                }
-              }
-
-              // Time Warp: when <= 10s remain, a slower caster adds +10s (+20s if buffed) for BOTH players (max 3 per match)
-              if (remainingSec <= 10 && remainingSec > 0) {
-                for (const caster of players) {
-                  const opp = players.find(p => p.id !== caster.id)!;
-                  const ab = caster.abilities || [];
-                  const used = match.timeWarpUses![caster.id] || 0;
-                  if ((ab.includes('gravity1') || ab.includes('gravity1_buffed')) && used < MAX_TIME_WARPS_PER_MATCH && caster.wpm < opp.wpm) {
-                    const bonusMs = ab.includes('gravity1_buffed') ? TIME_WARP_BONUS_MS * 2 : TIME_WARP_BONUS_MS;
-                    match.timeWarpUses![caster.id] = used + 1;
-                    match.roundEndAt = (match.roundEndAt || Date.now()) + bonusMs;
-                    if (match.roundTimer) clearTimeout(match.roundTimer);
-                    match.roundTimer = setTimeout(handleRoundEnd, Math.max(0, match.roundEndAt - Date.now()));
-                    io.to(match.id).emit('rankedGravityTimeSync', {
-                      amountSec: bonusMs / 1000,
-                      casterId: caster.id,
-                      usesLeft: MAX_TIME_WARPS_PER_MATCH - (used + 1)
-                    });
-                    break;
-                  }
                 }
               }
             }, 500);
@@ -446,16 +525,18 @@ export const initSocket = (httpServer: HttpServer) => {
     });
 
     socket.on('updateRankedProgress', (data: { matchId: string; progress: number; wpm: number; typedText?: string; activeKeys?: string[]; targetText?: string; cia?: {c: number, i: number, a: number}; charge?: number; bestLetter?: string; worstLetter?: string; rawWpm?: number; accuracy?: number; consistency?: number }) => {
-      const match = rankedMatches[data.matchId];
+      const match = rankedMatches[data?.matchId];
       if (match && match.state === 'playing') {
         const player = match.players[socket.id];
         if (player) {
-          player.progress = data.progress;
-          player.wpm = data.wpm;
+          const safeProgress = Math.min(100, Math.max(0, Number(data.progress) || 0));
+          const safeWpm = Math.min(350, Math.max(0, Math.round(Number(data.wpm) || 0)));
+          player.progress = safeProgress;
+          player.wpm = safeWpm;
           socket.to(data.matchId).emit('rankedOpponentProgress', {
             charge: data.charge, 
-            progress: data.progress, 
-            wpm: data.wpm, 
+            progress: safeProgress, 
+            wpm: safeWpm, 
             typedText: data.typedText, 
             activeKeys: data.activeKeys,
             targetText: data.targetText,
