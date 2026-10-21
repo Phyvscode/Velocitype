@@ -174,6 +174,11 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   useEffect(() => { myAbilitiesRef.current = myAbilities; }, [myAbilities]);
   useEffect(() => { oppAbilitiesRef.current = oppAbilities; }, [oppAbilities]);
 
+  const [myPickedExternalAbility, setMyPickedExternalAbility] = useState<string | null>(null);
+  const [oppPickedExternalAbility, setOppPickedExternalAbility] = useState<string | null>(null);
+  const [myHelperPickedAbility, setMyHelperPickedAbility] = useState<string | null>(null);
+  const [oppHelperPickedAbility, setOppHelperPickedAbility] = useState<string | null>(null);
+
   // Ensure active abilities always match currently selected characters (preserving Buyout external picks)
   useEffect(() => {
     setMyAbilities(prev => prev.filter(id => {
@@ -365,10 +370,6 @@ export default function RankedSandbox({ onBack }: RankedSandboxProps) {
   const [sandboxAbilityModalTarget, setSandboxAbilityModalTarget] = useState<{ player: 'you' | 'opp'; source: 'moneyguy3' | 'helper3' } | null>(null);
   const [sandboxBuffModalTarget, setSandboxBuffModalTarget] = useState<'you' | 'opp' | null>(null);
   const [sandboxRemoveModalTarget, setSandboxRemoveModalTarget] = useState<'you' | 'opp' | null>(null);
-  const [myPickedExternalAbility, setMyPickedExternalAbility] = useState<string | null>(null);
-  const [oppPickedExternalAbility, setOppPickedExternalAbility] = useState<string | null>(null);
-  const [myHelperPickedAbility, setMyHelperPickedAbility] = useState<string | null>(null);
-  const [oppHelperPickedAbility, setOppHelperPickedAbility] = useState<string | null>(null);
   const [myRemovedOppAbility, setMyRemovedOppAbility] = useState<string | null>(null);
   const [oppRemovedMyAbility, setOppRemovedMyAbility] = useState<string | null>(null);
   const [myCorrectWords, setMyCorrectWords] = useState(0);
