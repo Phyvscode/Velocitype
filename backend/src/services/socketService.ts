@@ -393,7 +393,6 @@ export const initSocket = (httpServer: HttpServer) => {
             match.roundTimer = setTimeout(handleRoundEnd, 60000);
 
             // Gravity abilities, evaluated server-side from live WPM
-            let timeWarpChecked = false;
             match.gravityInterval = setInterval(() => {
               if (!rankedMatches[match.id] || match.state !== 'playing' || match.currentRound !== roundIndex) {
                 if (match.gravityInterval) clearInterval(match.gravityInterval);
@@ -408,7 +407,8 @@ export const initSocket = (httpServer: HttpServer) => {
               // Event Horizon: after 30s, if the caster out-types the opponent, end the round instantly
               for (const caster of players) {
                 const opp = players.find(p => p.id !== caster.id)!;
-                if ((caster.abilities || []).includes('gravity3') && elapsedSec >= EVENT_HORIZON_MIN_ELAPSED_SEC && caster.wpm > opp.wpm) {
+                const ab = caster.abilities || [];
+                if ((ab.includes('gravity3') || ab.includes('gravity3_buffed')) && elapsedSec >= EVENT_HORIZON_MIN_ELAPSED_SEC && caster.wpm > opp.wpm) {
                   io.to(match.id).emit('rankedGravityEventHorizon', { casterId: caster.id });
                   if (match.gravityInterval) clearInterval(match.gravityInterval);
                   if (match.roundTimer) clearTimeout(match.roundTimer);
@@ -418,23 +418,23 @@ export const initSocket = (httpServer: HttpServer) => {
                 }
               }
 
-              // Time Warp: once the last 10s begin, a slower caster adds +10s for BOTH players (max 3 per match)
-              if (!timeWarpChecked && remainingSec <= 10) {
-                timeWarpChecked = true;
+              // Time Warp: when <= 10s remain, a slower caster adds +10s (+20s if buffed) for BOTH players (max 3 per match)
+              if (remainingSec <= 10 && remainingSec > 0) {
                 for (const caster of players) {
                   const opp = players.find(p => p.id !== caster.id)!;
+                  const ab = caster.abilities || [];
                   const used = match.timeWarpUses![caster.id] || 0;
-                  if ((caster.abilities || []).includes('gravity1') && used < MAX_TIME_WARPS_PER_MATCH && caster.wpm < opp.wpm) {
+                  if ((ab.includes('gravity1') || ab.includes('gravity1_buffed')) && used < MAX_TIME_WARPS_PER_MATCH && caster.wpm < opp.wpm) {
+                    const bonusMs = ab.includes('gravity1_buffed') ? TIME_WARP_BONUS_MS * 2 : TIME_WARP_BONUS_MS;
                     match.timeWarpUses![caster.id] = used + 1;
-                    match.roundEndAt = (match.roundEndAt || Date.now()) + TIME_WARP_BONUS_MS;
+                    match.roundEndAt = (match.roundEndAt || Date.now()) + bonusMs;
                     if (match.roundTimer) clearTimeout(match.roundTimer);
                     match.roundTimer = setTimeout(handleRoundEnd, Math.max(0, match.roundEndAt - Date.now()));
                     io.to(match.id).emit('rankedGravityTimeSync', {
-                      amountSec: TIME_WARP_BONUS_MS / 1000,
+                      amountSec: bonusMs / 1000,
                       casterId: caster.id,
                       usesLeft: MAX_TIME_WARPS_PER_MATCH - (used + 1)
                     });
-                    timeWarpChecked = false; // allow re-check at the next 10s mark (still capped at 3 per match)
                     break;
                   }
                 }

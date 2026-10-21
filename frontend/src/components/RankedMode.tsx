@@ -819,6 +819,20 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
         setMyAccuracy(accuracy);
         setMyConsistency(consistency);
 
+        if (socket && matchData?.matchId) {
+          socket.emit('updateRankedProgress', {
+            matchId: matchData.matchId,
+            progress: myProgress,
+            wpm,
+            rawWpm,
+            accuracy,
+            consistency,
+            typedText,
+            targetText: myTargetText,
+            charge: myChargeRef.current
+          });
+        }
+
         // Fallback for opponent in case socket didn't deliver them
         if (oppTypedText.length > 0) {
           let oppCorrect = 0;
@@ -963,8 +977,14 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       alert('Opponent disconnected. You win by default!');
     };
 
-    const onOpponentUpgrades = (data: { upgrades: number }) => {
-      setOppUpgrades(data.upgrades);
+    const onOpponentUpgrades = (data: { upgrades: string[] | number }) => {
+      if (Array.isArray(data.upgrades)) {
+        setOppAbilities(data.upgrades);
+        oppAbilitiesRef.current = data.upgrades;
+        setOppUpgrades(data.upgrades.length);
+      } else if (typeof data.upgrades === 'number') {
+        setOppUpgrades(data.upgrades);
+      }
     };
 
     const showGravityNotice = (msg: string) => {
@@ -984,9 +1004,14 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       showGravityNotice('EVENT HORIZON! Round ended early');
     };
 
+    const onGravitySabotage = () => {
+      setShowGravityPopup(true);
+    };
+
     socket.on('rankedQueueJoined', onQueueJoined);
     socket.on('rankedGravityTimeSync', onGravityTimeSync);
     socket.on('rankedGravityEventHorizon', onGravityEventHorizon);
+    socket.on('rankedGravitySabotage', onGravitySabotage);
     socket.on('rankedMatchFound', onMatchFound);
     socket.on('rankedMatchReady', onMatchReady);
     socket.on('rankedRoundStart', onRoundStart);
@@ -1005,6 +1030,7 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
       socket.off('rankedQueueJoined', onQueueJoined);
       socket.off('rankedGravityTimeSync', onGravityTimeSync);
       socket.off('rankedGravityEventHorizon', onGravityEventHorizon);
+      socket.off('rankedGravitySabotage', onGravitySabotage);
       socket.off('rankedMatchFound', onMatchFound);
       socket.off('rankedMatchReady', onMatchReady);
       socket.off('rankedRoundStart', onRoundStart);
@@ -1050,6 +1076,11 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
 
   useEffect(() => {
     if (gameState === 'playing' && timeLeft > 0 ) {
+      const hasOppBlackHole = oppAbilities.includes('gravity2') || oppAbilities.includes('gravity2_buffed');
+      const isBuffedBlackHole = oppAbilities.includes('gravity2_buffed');
+      if (hasOppBlackHole && (timeLeft === 40 || timeLeft === 20 || (isBuffedBlackHole && timeLeft === 30))) {
+        setShowGravityPopup(true);
+      }
       timerRef.current = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
     } else if (gameState !== 'playing') {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -1057,10 +1088,23 @@ export default function RankedMode({ onBack, onOpenAuth }: Props) {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [timeLeft, gameState]);
+  }, [timeLeft, gameState, oppAbilities]);
+
+  useEffect(() => {
+    if (!showGravityPopup) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+        e.preventDefault();
+        setShowGravityPopup(false);
+        setTimeout(() => inputRef.current?.focus(), 20);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showGravityPopup]);
 
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (gameState !== 'playing' || !matchData || !socket || timeLeft <= 0) return;
+    if (gameState !== 'playing' || !matchData || !socket || timeLeft <= 0 || showGravityPopup) return;
     let val = e.target.value;
     let target = myTargetText;
     
